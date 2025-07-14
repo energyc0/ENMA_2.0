@@ -1,14 +1,27 @@
-#include <stdio.h>
-#include "scanner.h"
-#include "token.h"
-#include "utils.h"
+#include "bytecode.h"
 
 int main(int argc, char** argv){
-    if(argc != 2)
-        fatal_printf("One input file expected!\n");
+    struct bytecode_chunk chunk;
+    bcchunk_init(&chunk);
 
-    scanner_init(fopen(argv[1], "r"));
-    scanner_debug_tokens();
-    
+    bcchunk_write_code(&chunk, OP_RETURN);
+
+    bcchunk_write_code(&chunk, OP_CONSTANT);
+    bcchunk_write_code(&chunk, 0);
+    bcchunk_write_data(&chunk, 123);
+
+    bcchunk_write_code(&chunk, OP_RETURN);
+
+    bcchunk_write_code(&chunk, OP_CONSTANT);
+    bcchunk_write_code(&chunk, 1);
+    bcchunk_write_data(&chunk, 98);
+
+    bcchunk_write_code(&chunk, OP_CONSTANT);
+    bcchunk_write_code(&chunk, 0);
+
+    bcchunk_write_code(&chunk, OP_RETURN);
+
+    bcchunk_disassemble("MAIN", &chunk);
+
     return 0;
 }
