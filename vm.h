@@ -2,14 +2,26 @@
 #define VM_H
 
 #include <stdint.h>
+#include <stdio.h>
 #include "bytecode.h"
 
+#define STACK_SIZE (256)
+
 struct virtual_machine{
-    struct bytecode_chunk code;
-    int32_t ip;
+    struct bytecode_chunk* code;
+    byte_t* ip;
+    vm_word_t stack[STACK_SIZE];
+    vm_word_t* stack_top;
 };
 
-//void vm_load_code();
-void vm_execute(struct virtual_machine* vm);
+typedef enum{
+    VME_SUCCESS,
+    VME_RUNTIME_ERROR,
+    VME_COMPILE_ERROR
+} vm_execute_result;
+
+void vm_init();
+vm_execute_result vm_execute(struct bytecode_chunk* code);
+void vm_free();
 
 #endif

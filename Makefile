@@ -9,6 +9,9 @@ OBJS:=$(patsubst %.c, $(BUILD_DIR)/%.o, $(SRC))
 
 all: $(BUILD_DIR)/$(INTERPRETER)
 
+debug: CFLAGS+=-g -DDEBUG
+debug: all
+
 $(BUILD_DIR)/$(INTERPRETER): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 

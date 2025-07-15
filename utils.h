@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
+
 #define fatal_printf(...) do{ \
-    fprintf(stderr, "FATAL: " __VA_ARGS__); \
+    eprintf("FATAL: " __VA_ARGS__); \
     exit(1); \
 }while(0)
 
