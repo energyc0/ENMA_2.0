@@ -8,7 +8,7 @@
 
 typedef uint8_t byte_t;
 typedef int32_t vm_value_t;
-typedef uint32_t vm_word_t;
+typedef int32_t vm_word_t;
 
 typedef enum{
     OP_RETURN,

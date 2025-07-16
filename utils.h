@@ -3,12 +3,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "scanner.h"
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
-#define fatal_printf(...) do{ \
-    eprintf("FATAL: " __VA_ARGS__); \
-    exit(1); \
-}while(0)
+void fatal_printf(const char* fmt, ...);
+void compile_error_printf(const char* fmt, ...);
+void user_error_printf(const char* fmt, ...);
 
 #endif

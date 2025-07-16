@@ -5,10 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+struct token cur_token;
+int line_counter = 1;
+
 #define INPUT_BUF_SZ 16
 
 static FILE* _scan_fp = NULL;
-static int _line_counter = 1;
 
 struct _input_buf{
     int sz;
@@ -24,7 +26,7 @@ static inline int _readint(int c); // last character in the stream must be a dig
 static inline int _get(){
     int c = _input_buf.sz > 0 ? _input_buf.buf[--_input_buf.sz] : getc(_scan_fp);
     if(c == '\n')
-        ++_line_counter ;
+        ++line_counter ;
     return c;
 }
 
@@ -51,10 +53,8 @@ static inline int _readint(int c){
 }
 
 void scanner_init(FILE* fp){
-    if(fp == NULL)
-        fatal_printf("scanner\'s fp = NULL\n");
     _scan_fp = fp;
-    _line_counter = 1;
+    line_counter = 1;
 }
 
 int scanner_next_token(struct token* t){
@@ -65,7 +65,7 @@ int scanner_next_token(struct token* t){
         case '-': t->type = T_SUB; break;
         case '/': t->type = T_DIV; break;
         case '*': t->type = T_MUL; break;
-        case EOF: t->type = T_NULL; return 0;
+        case EOF: t->type = T_EOF; return 0;
         default: 
             if(isdigit(c)){
                 t->type = T_INT;
@@ -79,11 +79,17 @@ int scanner_next_token(struct token* t){
 }
 
 void scanner_debug_tokens(){
-    struct token t;
-    while (scanner_next_token(&t)) {
-        if(t.type == T_INT)
-            printf("Token: %d\n", t.data);
-        else
-            printf("Token: %c\n", "  +-*/"[t.type]);
+    printf("Debug tokens:\n");
+    while (scanner_next_token(&cur_token)) {
+        switch (cur_token.type) {
+            case T_INT: printf("'%d' ", cur_token.data); break;
+            case T_ADD: printf("'+' "); break;
+            case T_SUB: printf("'-' "); break;
+            case T_MUL: printf("'*' "); break;
+            case T_DIV: printf("'/' "); break;
+            default:
+                fatal_printf("Undefined token in scanner_debug_tokens()!\n");
+        }
     }
+    putchar('\n');
 }
