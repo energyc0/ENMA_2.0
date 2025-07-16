@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "ast.h"
+#include "bytecode.h"
 #include "scanner.h"
 #include "token.h"
 #include "utils.h"
@@ -39,8 +40,19 @@ static ast_node* ast_primary(){
 
     ast_node* temp;
     switch (cur_token.type) {
-        case T_INT: return ast_mknode_constant(cur_token.data);
-        case T_LPAR: temp = ast_bin_expr(0);  break;
+        case T_INT: 
+            return ast_mknode_constant(cur_token.data);
+        case T_LPAR: 
+            temp = ast_bin_expr(0);
+            break;
+        case T_SUB:
+            temp = ast_primary();
+            if(temp->type == AST_CONSTANT){
+                *(vm_word_t*)temp->data *= -1; 
+                return temp;
+            }else{
+                return ast_mknode_binary(AST_MUL, ast_mknode_constant(-1), temp);
+            }
         default:
             compile_error_printf("Expected expression\n");
     }
