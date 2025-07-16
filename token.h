@@ -22,6 +22,6 @@ struct token{
     int data;
 };
 
-
+const char* token_to_string(token_type type);
 
 #endif

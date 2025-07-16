@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-extern int line_counter;
-
 void fatal_printf(const char* fmt, ...){
     va_list ap;
     va_start(ap, fmt);
@@ -33,4 +31,8 @@ void user_error_printf(const char* fmt, ...){
 
     va_end(ap);
     exit(1);
+}
+
+void unexpected_token(){
+    compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
 }

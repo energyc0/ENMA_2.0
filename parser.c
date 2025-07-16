@@ -4,12 +4,13 @@
 #include "token.h"
 #include "utils.h"
 
-static const int precedence[8] = {0, 1, 1, 2, 2};
+static const int precedence[8] = {0, 1, 1, 2, 2, 0, -1, 0};
 extern struct token cur_token;
+
+static inline int get_op_precedence(token_type op);
 
 static ast_node* ast_bin_expr(int prev_precedence);
 static ast_node* ast_primary();
-static inline int get_op_precedence(token_type op);
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -25,7 +26,8 @@ static ast_node* ast_bin_expr(int prev_precedence){
 
         left = ast_mknode_binary((ast_node_type)cur_op, left, right);
 
-        if((cur_op = cur_token.type) == T_EOF)
+        cur_op = cur_token.type;
+        if(!TOKEN_IS_BIN_OP(cur_op))
             break;
     }
     return left;
@@ -35,12 +37,17 @@ static ast_node* ast_primary(){
     if(!scanner_next_token(&cur_token))
         compile_error_printf("Expected expression\n");
 
+    ast_node* temp;
     switch (cur_token.type) {
         case T_INT: return ast_mknode_constant(cur_token.data);
+        case T_LPAR: temp = ast_bin_expr(0);  break;
         default:
             compile_error_printf("Expected expression\n");
     }
-    return NULL;
+    if(!is_match(T_RPAR))
+        compile_error_printf("Unclosed left parenthesis, ')' expected\n");
+
+    return temp;
 }
 
 static inline int get_op_precedence(token_type op){
@@ -48,6 +55,7 @@ static inline int get_op_precedence(token_type op){
         compile_error_printf("Expected operator\n");
     return precedence[op];
 }
+
 
 ast_node* ast_generate(){
     ast_node* root = ast_bin_expr(0);
