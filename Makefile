@@ -2,7 +2,7 @@ BUILD_DIR:=build
 INTERPRETER:=res.out
 
 CC:=gcc
-CFLAGS:=
+CFLAGS:=-Wall -Wextra -O2
 
 SRC:=$(wildcard *.c)
 OBJS:=$(patsubst %.c, $(BUILD_DIR)/%.o, $(SRC))

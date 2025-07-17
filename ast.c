@@ -28,6 +28,10 @@ void ast_freenode(ast_node* node){
             ast_freenode(((struct ast_binary*)node->data)->left);
             ast_freenode(((struct ast_binary*)node->data)->right);
             free(node->data);
+            break;
+        case AST_PRINT:
+            ast_freenode(node->data);
+            break;
         default:
             UNDEFINED_AST_NODE_TYPE();
             break;
@@ -66,6 +70,10 @@ ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* righ
     return res;
 }
 
+ast_node* ast_mknode_print(ast_node* expr){
+    return ast_mknode(AST_PRINT, expr);
+}
+
 void ast_debug_tree(const ast_node* node){
     #define DEBUG_BINARY(op) do{ \
         putchar('(');\
@@ -81,6 +89,7 @@ void ast_debug_tree(const ast_node* node){
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;
         case AST_DIV: DEBUG_BINARY(/); break;
+        case AST_PRINT: printf("print "); ast_debug_tree(node->data); printf(";\n"); break;
         default:
             UNDEFINED_AST_NODE_TYPE();
     }

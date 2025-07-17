@@ -8,11 +8,17 @@ typedef enum{
     T_SUB,
     T_MUL,
     T_DIV,
-
+    //precedence operators
     T_LPAR,
     T_RPAR,
+    //values
+    T_INT,
+    T_IDENT,
+    //keywords
+    T_PRINT,
+    //other
+    T_SEMI
     
-    T_INT
 } token_type; 
 
 #define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_DIV)

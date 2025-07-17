@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-void fatal_printf(const char* fmt, ...){
+__attribute__((noreturn)) void fatal_printf(const char* fmt, ...){
     va_list ap;
     va_start(ap, fmt);
 
@@ -13,7 +13,7 @@ void fatal_printf(const char* fmt, ...){
     va_end(ap);
     exit(1);
 }
-void compile_error_printf(const char* fmt, ...){
+__attribute__((noreturn)) void compile_error_printf(const char* fmt, ...){
     va_list ap;
     va_start(ap, fmt);
 
@@ -23,7 +23,7 @@ void compile_error_printf(const char* fmt, ...){
     va_end(ap);
     exit(1);
 }
-void user_error_printf(const char* fmt, ...){
+__attribute__((noreturn)) void user_error_printf(const char* fmt, ...){
     va_list ap;
     va_start(ap, fmt);
 
@@ -33,6 +33,6 @@ void user_error_printf(const char* fmt, ...){
     exit(1);
 }
 
-void unexpected_token(){
+__attribute__((noreturn)) void unexpected_token(){
     compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
 }

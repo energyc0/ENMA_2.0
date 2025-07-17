@@ -1,3 +1,6 @@
+statement: 'print' expression ';'
+&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
+
 expression: additive_expression
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| '(' additive_expression ')'
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;

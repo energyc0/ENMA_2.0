@@ -11,9 +11,10 @@ typedef enum {
     AST_ADD, 
     AST_SUB,    
     AST_MUL,
-    AST_DIV
+    AST_DIV,
 
-
+    /*statements*/
+    AST_PRINT //ast node contains pointer to an expression node
 }ast_node_type;
 
 #define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_DIV)
@@ -34,6 +35,7 @@ void ast_freenode(ast_node* node);
 
 ast_node* ast_mknode_constant(vm_word_t constant);
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right);
+ast_node* ast_mknode_print(ast_node* expr);
 
 //generate ast, must be called after scanner_init()
 //ast_node* generate_ast();

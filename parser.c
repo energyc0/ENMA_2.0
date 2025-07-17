@@ -5,7 +5,7 @@
 #include "token.h"
 #include "utils.h"
 
-static const int precedence[8] = {0, 1, 1, 2, 2, 0, -1, 0};
+static const int precedence[11] = {0, 1, 1, 2, 2, 0, -1, 0, 0, 0, -1};
 extern struct token cur_token;
 
 static inline int get_op_precedence(token_type op);
@@ -63,6 +63,10 @@ static ast_node* ast_primary(){
 }
 
 static inline int get_op_precedence(token_type op){
+#ifdef DEBUG
+    if(!(0 <= op && op < sizeof(precedence) / sizeof(precedence[0])))
+        fatal_printf("Unexpected token_type in get_op_precedence()!\n");
+#endif
     if(precedence[op] == 0)
         compile_error_printf("Expected operator\n");
     return precedence[op];
@@ -70,7 +74,12 @@ static inline int get_op_precedence(token_type op){
 
 
 ast_node* ast_generate(){
-    ast_node* root = ast_bin_expr(0);
+    if(!scanner_next_token(&cur_token))
+        return NULL;
 
-    return root;
+    if(cur_token.type == T_PRINT)
+        return ast_mknode_print(ast_bin_expr(0));
+    else
+        compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
+    return NULL;
 }

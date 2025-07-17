@@ -1,15 +1,16 @@
 #include "scanner.h"
 #include "token.h"
 #include "utils.h"
+#include "symtable.h"
 #include <ctype.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 
 struct token cur_token;
 int line_counter = 1;
 
-#define INPUT_BUF_SZ 16
-
+#define INPUT_BUF_SZ (16)
+#define WORD_SIZE (1024)
 static FILE* _scan_fp = NULL;
 
 struct _input_buf{
@@ -21,7 +22,7 @@ static inline int _get();
 static inline int _skip();
 static inline void _putback(int c);
 static inline int _readint(int c); // last character in the stream must be a digit
-
+static inline char* _readword(int c); //first character must be alphabetical
 
 static inline int _get(){
     int c = _input_buf.sz > 0 ? _input_buf.buf[--_input_buf.sz] : getc(_scan_fp);
@@ -52,6 +53,16 @@ static inline int _readint(int c){
     return val;
 }
 
+static inline char* _readword(int c){
+    static char buf[WORD_SIZE];
+    int sz = 0;
+    for(;sz < (WORD_SIZE-1) && (isalnum(c) || c == '_'); c = _get()){
+        buf[sz++] = c;
+    }
+    buf[sz] = '\0';
+    return buf;
+}
+
 void scanner_init(FILE* fp){
     _scan_fp = fp;
     line_counter = 1;
@@ -67,13 +78,21 @@ int scanner_next_token(struct token* t){
         case '*': t->type = T_MUL; break;
         case '(': t->type = T_LPAR; break;
         case ')': t->type = T_RPAR; break;
+        case ';': t->type = T_SEMI; break;
         case EOF: t->type = T_EOF; return 0;
         default: 
             if(isdigit(c)){
                 t->type = T_INT;
                 t->data = _readint(c);
+            }else if(isalpha(c)){
+                char* word = _readword(c);
+                token_type tok_type = symtable_procword(word);
+                if(tok_type == T_IDENT)
+                    t->data = symtable_addident(word);
+                t->type = tok_type;
+                break;
             }else{
-                compile_error_printf("undefined character: %c\n", c);
+                compile_error_printf("Undefined character: %c\n", c);
             }
             break;
     }
@@ -91,6 +110,9 @@ void scanner_debug_tokens(){
             case T_DIV: printf("'/' "); break;
             case T_LPAR: printf("'(' "); break;
             case T_RPAR: printf("')' "); break;
+            case T_SEMI: printf("';' "); break;
+            case T_PRINT: printf("'print' "); break;
+            case T_IDENT: printf("'%s' ", symtable_getident(cur_token.data)); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

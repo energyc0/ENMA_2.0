@@ -1,3 +1,4 @@
+#include "ast.h"
 #include "scanner.h"
 #include "parser.h"
 #include "utils.h"
@@ -22,8 +23,11 @@ int main(int argc, char** argv){
 #endif
 
     printf("Parsed expression:\n");
-    ast_node* node = ast_generate();
-    ast_debug_tree(node);
+    ast_node* node;
+    while((node = ast_generate()) != NULL){
+        ast_debug_tree(node);
+        ast_freenode(node);
+    }
     /*
     vm_init();
 

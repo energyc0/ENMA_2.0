@@ -10,12 +10,12 @@ extern int line_counter;
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
-void fatal_printf(const char* fmt, ...);
-void compile_error_printf(const char* fmt, ...);
-void user_error_printf(const char* fmt, ...);
+__attribute__((noreturn)) void fatal_printf(const char* fmt, ...);
+__attribute__((noreturn)) void compile_error_printf(const char* fmt, ...);
+__attribute__((noreturn)) void user_error_printf(const char* fmt, ...);
 
 //check cur_token type and print syntax error
-void unexpected_token();
+__attribute__((noreturn)) void unexpected_token();
 static inline int is_match(token_type expect){
     return cur_token.type == expect;
 }

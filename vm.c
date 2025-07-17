@@ -6,7 +6,7 @@
 static struct virtual_machine vm;
 
 #define VM_STACK_START (vm.stack)
-#define VM_STACK_END (VM_STACK_START + sizeof(vm.stack))
+#define VM_STACK_END (VM_STACK_START + sizeof(vm.stack) / sizeof(vm.stack[0]))
 
 static vm_execute_result interpret();
 //for debug purposes
@@ -99,8 +99,7 @@ static inline vm_word_t stack_pop(){
         return *--vm.stack_top;
 #endif
     }
-    else
-        fatal_printf("Stack smashed!\n");
+    fatal_printf("Stack smashed!\n");
 }
 
 static void examine_stack(){
