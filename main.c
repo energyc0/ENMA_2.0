@@ -1,7 +1,9 @@
 #include "ast.h"
+#include "bytecode.h"
 #include "scanner.h"
 #include "parser.h"
 #include "utils.h"
+#include "vm.h"
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
@@ -14,6 +16,7 @@ int main(int argc, char** argv){
     if(fp == NULL)
         user_error_printf("Failed to open %s: %s\n", argv[1], strerror(errno));
 
+    vm_init();
     scanner_init(fp);
 #ifdef DEBUG
     scanner_debug_tokens();
@@ -22,25 +25,21 @@ int main(int argc, char** argv){
     scanner_init(fp);
 #endif
 
-    printf("Parsed expression:\n");
     ast_node* node;
+    struct bytecode_chunk chunk;
     while((node = ast_generate()) != NULL){
+#ifdef DEBUG
+        printf("Parsed statement:\n");
         ast_debug_tree(node);
+#endif
+        bcchunk_init(&chunk);
+        bcchunk_generate(node, &chunk);
+        vm_execute(&chunk);
+        bcchunk_free(&chunk);
         ast_freenode(node);
     }
-    /*
-    vm_init();
-
-    struct bytecode_chunk chunk;
-    bcchunk_init(&chunk);
-
-    bcchunk_write_constant(&chunk, 20);
-    bcchunk_write_constant(&chunk, 5);
-    bcchunk_write_simple_op(&chunk, OP_MUL);
-    
-    vm_execute(&chunk);
 
     vm_free();
-    */
+    printf("Ended execution\n");
     return 0;
 }

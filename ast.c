@@ -71,7 +71,10 @@ ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* righ
 }
 
 ast_node* ast_mknode_print(ast_node* expr){
-    return ast_mknode(AST_PRINT, expr);
+    ast_node* node = ast_mknode(AST_PRINT, expr);
+    if(!is_match(T_SEMI))
+        compile_error_printf("';' expected\n");
+    return node;
 }
 
 void ast_debug_tree(const ast_node* node){

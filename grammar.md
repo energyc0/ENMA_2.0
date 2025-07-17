@@ -17,8 +17,10 @@ multiplicative_expression: primary_expression
 
 primary_expression: constant_number
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| variable
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| function_return
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
 
 constant_number:  T_INT
+&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
+
+variable:  T_IDENT
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;

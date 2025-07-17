@@ -34,7 +34,8 @@ static inline int _get(){
 static inline void _putback(int c){
     if(_input_buf.sz >= INPUT_BUF_SZ)
         fatal_printf("input buffer size limit exceeded!\n");
-    _input_buf.buf[_input_buf.sz++] = c;
+    if((_input_buf.buf[_input_buf.sz++] = c) == '\n')
+        --line_counter;
 }
 
 static inline int _skip(){

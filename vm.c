@@ -17,7 +17,7 @@ static inline vm_word_t stack_pop();
 
 //reads byte and increases ip pointer
 static inline byte_t read_byte();
-//reads 3 bytes and makes 4 byte constant (little-endian)
+//reads 4 bytes(little-endian)
 static inline vm_word_t read_constant();
 //pops two values from the stack and pushes the result
 #define CALC_OP(op) do{ \
@@ -62,6 +62,9 @@ static vm_execute_result interpret(){
             case OP_MUL: 
                 CALC_OP(*);
                 break; 
+            case OP_PRINT:
+                printf("print: %d\n", stack_pop());
+                break;
             default: 
                 eprintf("Undefined instruction!\n");
                 return VME_RUNTIME_ERROR;
@@ -75,7 +78,11 @@ static inline byte_t read_byte(){
 }
 
 static inline vm_word_t read_constant(){
-    return (read_byte() + (read_byte() << 8)  + (read_byte() << 16));
+    vm_word_t data = read_byte();
+    data += read_byte() << 8;
+    data += read_byte() << 16;
+    data += read_byte() << 24;
+    return data;
 }
 
 static inline void stack_push(vm_word_t data){

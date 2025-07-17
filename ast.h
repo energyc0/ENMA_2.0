@@ -19,7 +19,7 @@ typedef enum {
 
 #define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_DIV)
 
-typedef struct{
+typedef struct ast_node{
     ast_node_type type;
     void* data;
 } ast_node;
