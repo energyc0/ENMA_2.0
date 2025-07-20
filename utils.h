@@ -20,4 +20,6 @@ static inline int is_match(token_type expect){
     return cur_token.type == expect;
 }
 
+#define MALLOC_ERROR() fatal_printf("malloc() returned NULL!\n")
+
 #endif

@@ -2,6 +2,7 @@
 #include "bytecode.h"
 #include "scanner.h"
 #include "parser.h"
+#include "symtable.h"
 #include "utils.h"
 #include "vm.h"
 #include <string.h>
@@ -16,6 +17,7 @@ int main(int argc, char** argv){
     if(fp == NULL)
         user_error_printf("Failed to open %s: %s\n", argv[1], strerror(errno));
 
+    symtable_init();
     vm_init();
     scanner_init(fp);
 #ifdef DEBUG

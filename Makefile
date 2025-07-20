@@ -1,25 +1,30 @@
-BUILD_DIR:=build
-INTERPRETER:=res.out
+BUILD_DIR := build
+INTERPRETER := result
+EXE_DIR := $(BUILD_DIR)/release
 
 CC:=gcc
 CFLAGS:=-Wall -Wextra -O2
 
+ifeq ($(MAKECMDGOALS), debug)
+	CFLAGS += -g -DDEBUG
+	INTERPRETER := $(INTERPRETER).dbg
+	EXE_DIR := $(BUILD_DIR)/debug
+endif
+
 SRC:=$(wildcard *.c)
-OBJS:=$(patsubst %.c, $(BUILD_DIR)/%.o, $(SRC))
+OBJS:=$(patsubst %.c, $(EXE_DIR)/%.o, $(SRC))
 
-all: $(BUILD_DIR)/$(INTERPRETER)
+all debug: $(EXE_DIR)/$(INTERPRETER)
 
-debug: CFLAGS+=-g -DDEBUG
-debug: all
-
-$(BUILD_DIR)/$(INTERPRETER): $(OBJS)
+$(EXE_DIR)/$(INTERPRETER): $(OBJS)
+	mkdir -p $(EXE_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(BUILD_DIR)/%.o: %.c
-	mkdir -p $(BUILD_DIR)
+$(EXE_DIR)/%.o: %.c
+	mkdir -p $(EXE_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 clean:
-	rm -f $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)/*
 
-.PHONY: all clean
+.PHONY: all clean debug

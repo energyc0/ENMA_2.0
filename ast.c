@@ -8,7 +8,6 @@
 
 extern struct token cur_token;
 
-#define MALLOC_ERROR() fatal_printf("malloc() returned NULL!\n")
 #define UNDEFINED_AST_NODE_TYPE() fatal_printf("Undefined ast_node_type!\n")
 
 ast_node* ast_mknode(ast_node_type type, ast_data data){
