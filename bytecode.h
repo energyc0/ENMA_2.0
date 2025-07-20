@@ -40,6 +40,7 @@ struct bytecode_chunk{
 //initialize chunk with base capacity
 void chunk_init(struct chunk* chunk);
 void chunk_write(struct chunk* chunk, byte_t byte);
+void chunk_write_word(struct chunk* chunk, vm_word_t word);
 void chunk_free(struct chunk* chunk);
 
 //initialize chunks with base capacity

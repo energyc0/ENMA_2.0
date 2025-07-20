@@ -48,7 +48,7 @@ static ast_node* ast_primary(){
         case T_SUB:
             temp = ast_primary();
             if(temp->type == AST_CONSTANT){
-                *(vm_word_t*)temp->data *= -1; 
+                temp->data.val *= -1; 
                 return temp;
             }else{
                 return ast_mknode_binary(AST_MUL, ast_mknode_constant(-1), temp);

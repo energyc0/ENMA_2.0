@@ -19,9 +19,15 @@ typedef enum {
 
 #define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_DIV)
 
+typedef union{
+    void* ptr;
+    vm_word_t val;
+}ast_data;
+
+
 typedef struct ast_node{
     ast_node_type type;
-    void* data;
+    ast_data data;
 } ast_node;
 
 struct ast_binary{
@@ -30,7 +36,7 @@ struct ast_binary{
     ast_node* right;
 };
 
-ast_node* ast_mknode(ast_node_type type, void* data);
+ast_node* ast_mknode(ast_node_type type, ast_data data);
 void ast_freenode(ast_node* node);
 
 ast_node* ast_mknode_constant(vm_word_t constant);

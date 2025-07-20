@@ -1,5 +1,6 @@
 #include "bytecode.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "ast.h"
@@ -38,6 +39,13 @@ void chunk_write(struct chunk* chunk, byte_t byte){
     chunk->data[chunk->size++] = byte;
 }
 
+void chunk_write_word(struct chunk* chunk, vm_word_t word){
+    if (chunk->capacity < chunk->size + 4)
+        chunk_realloc(chunk, chunk->capacity + CHUNK_BASE_CAPACITY);
+    *((vm_word_t*)(chunk->data + chunk->size)) = word;
+    chunk->size += 4;
+}
+
 static inline void chunk_realloc(struct chunk* chunk, size_t newsize){
     if((chunk->capacity = newsize) == 0)
         fatal_printf("chunk_realloc(): newsize = 0!\n");
@@ -59,6 +67,7 @@ void bcchunk_free(struct bytecode_chunk* chunk){
 static inline void bcchunk_write_code(struct bytecode_chunk* chunk, byte_t byte){
     chunk_write(&chunk->_code, byte);
 }
+
 
 static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte){
     chunk_write(&chunk->_data, byte);
@@ -108,16 +117,13 @@ void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op){
 //4 bytes in the instruction
 void bcchunk_write_constant(struct bytecode_chunk* chunk, vm_value_t data){
     bcchunk_write_code(chunk, OP_CONSTANT);
-    bcchunk_write_code(chunk, data & 0xFF);
-    bcchunk_write_code(chunk, (data >> 8) & 0xFF);
-    bcchunk_write_code(chunk, (data >> 16) & 0xFF);
-    bcchunk_write_code(chunk, (data >> 24) & 0xFF);
+    chunk_write_word(&chunk->_code, data);
 }
 
 void bcchunk_generate(const ast_node* root, struct bytecode_chunk* chunk){
     switch (root->type) {
         case AST_PRINT: 
-            parse_ast_bin_expr(root->data, chunk);
+            parse_ast_bin_expr(root->data.ptr, chunk);
             bcchunk_write_code(chunk, OP_PRINT);
             break;
         default:
@@ -128,8 +134,8 @@ void bcchunk_generate(const ast_node* root, struct bytecode_chunk* chunk){
 
 static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
     #define BIN_OP(op) do {\
-        parse_ast_bin_expr(((struct ast_binary*)node->data)->left, chunk);\
-        parse_ast_bin_expr(((struct ast_binary*)node->data)->right, chunk);\
+        parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->left, chunk);\
+        parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->right, chunk);\
         bcchunk_write_simple_op(chunk, op);\
     }while(0)
 
@@ -147,7 +153,7 @@ static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
             BIN_OP(OP_DIV);
             break;
         case AST_CONSTANT:
-            bcchunk_write_constant(chunk, *(vm_value_t*)node->data);
+            bcchunk_write_constant(chunk, node->data.val);
             break;
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n");

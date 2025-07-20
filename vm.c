@@ -17,7 +17,7 @@ static inline vm_word_t stack_pop();
 
 //reads byte and increases ip pointer
 static inline byte_t read_byte();
-//reads 4 bytes(little-endian)
+//reads vm_word_t
 static inline vm_word_t read_constant();
 //pops two values from the stack and pushes the result
 #define CALC_OP(op) do{ \
@@ -78,10 +78,8 @@ static inline byte_t read_byte(){
 }
 
 static inline vm_word_t read_constant(){
-    vm_word_t data = read_byte();
-    data += read_byte() << 8;
-    data += read_byte() << 16;
-    data += read_byte() << 24;
+    vm_word_t data = *(vm_word_t*)vm.ip;
+    vm.ip+=4;
     return data;
 }
 
