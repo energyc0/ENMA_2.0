@@ -15,6 +15,8 @@ void symtable_init(){
     keywords = tr_alloc();
     tr_init(keywords, 0, 0);
     tr_add(keywords, "print", T_PRINT);
+    tr_add(keywords,"false", T_FALSE);
+    tr_add(keywords,"true", T_TRUE);
 }
 
 token_type symtable_procword(char* str){

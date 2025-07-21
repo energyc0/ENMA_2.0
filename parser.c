@@ -5,7 +5,21 @@
 #include "token.h"
 #include "utils.h"
 
-static const int precedence[11] = {0, 1, 1, 2, 2, 0, -1, 0, 0, 0, -1};
+static const int precedence[13] = {
+    0,  //T_EOF
+    1,  //T_ADD
+    1,  //T_SUB
+    2,  //T_MUL
+    2,  //T_DIV
+    0,  //T_LPAR
+    -1, //T_RPAR
+    0,  //T_T_INT
+    0,  //T_FALSE
+    0,  //T_TRUE
+    0,  //T_IDENT
+    0,  //T_PRINT
+    -1  //T_SEMI
+};
 extern struct token cur_token;
 
 static inline int get_op_precedence(token_type op);

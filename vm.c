@@ -9,8 +9,10 @@ static struct virtual_machine vm;
 #define VM_STACK_END (VM_STACK_START + sizeof(vm.stack) / sizeof(vm.stack[0]))
 
 static vm_execute_result interpret();
-//for debug purposes
+
+#ifdef DEBUG
 static void examine_stack(); 
+#endif
 
 static inline void stack_push(value_t data);
 static inline value_t stack_pop();
@@ -20,13 +22,15 @@ static inline byte_t read_byte();
 //reads int
 static inline int read_constant();
 //extract value from data chunk
-static inline union _inner_value_t read_inner_value(int offset);
+static inline union _inner_value_t extract_value(int offset);
 
 //pops two values from the stack and pushes the result
-#define CALC_OP(op) do{ \
+#define CALC_OP(return_type, op) do{ \
         value_t b = stack_pop(); \
         value_t a = stack_pop(); \
-        stack_push(VALUE_NUMBER(AS_NUMBER(a) op AS_NUMBER(b))); \
+        if(!IS_NUMBER(a) || !IS_NUMBER(b)) \
+            compile_error_printf("Incompatible type for operation\n");\
+        stack_push(return_type(AS_NUMBER(a) op AS_NUMBER(b))); \
     } while(0)
 
 void vm_init(){}
@@ -44,6 +48,7 @@ vm_execute_result vm_execute(struct bytecode_chunk* code){
 void vm_free(){}
 
 static vm_execute_result interpret(){
+    value_t val;
     int is_done = 0;
     while (!is_done) {
         switch (read_byte()) {
@@ -51,22 +56,29 @@ static vm_execute_result interpret(){
                 is_done = 1;
                 break;
             case OP_CONSTANT:
-                stack_push((value_t){.type = VT_NUMBER, .as = read_inner_value(read_constant())});
+                stack_push(VALUE_NUMBER(extract_value(read_constant()).number));
                 break;
             case OP_ADD:
-                CALC_OP(+);
+                CALC_OP(VALUE_NUMBER, +);
                 break;
             case OP_SUB: 
-                CALC_OP(-);
+                CALC_OP(VALUE_NUMBER,-);
                 break;
             case OP_DIV: 
-                CALC_OP(/);
+                CALC_OP(VALUE_NUMBER,/);
                 break;
             case OP_MUL: 
-                CALC_OP(*);
+                CALC_OP(VALUE_NUMBER,*);
                 break; 
             case OP_PRINT:
-                printf("print: %d\n", AS_NUMBER(stack_pop()));
+                val = stack_pop();
+                if(IS_NUMBER(val)){
+                    printf("%d\n", AS_NUMBER(val));
+                }else if(IS_BOOLEAN(val)){
+                    printf("%s\n", AS_BOOLEAN(val) ? "true" : "false");
+                }else{
+                    printf("Not implemented strings :(\n");
+                }
                 break;
             default: 
                 eprintf("Undefined instruction!\n");
@@ -86,7 +98,7 @@ static inline int read_constant(){
     return num;
 }
 
-static inline union _inner_value_t read_inner_value(int offset){
+static inline union _inner_value_t extract_value(int offset){
     return *(union _inner_value_t*)(vm.code->_data.data + offset);
 }
 
@@ -114,8 +126,10 @@ static inline value_t stack_pop(){
     fatal_printf("Stack smashed!\n");
 }
 
+#ifdef DEBUG
 static void examine_stack(){
     printf("=== Stack ===\n");
     for(value_t* ptr = vm.stack; ptr < vm.stack_top; ptr++)
         printf("%04X | %d\n", (unsigned)(ptr - vm.stack), AS_NUMBER(*ptr));
 }
+#endif

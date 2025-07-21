@@ -42,6 +42,6 @@ int main(int argc, char** argv){
     }
 
     vm_free();
-    printf("Ended execution\n");
+    
     return 0;
 }

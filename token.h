@@ -13,6 +13,8 @@ typedef enum{
     T_RPAR,
     //values
     T_INT,
+    T_FALSE,
+    T_TRUE,
     T_IDENT,
     //keywords
     T_PRINT,

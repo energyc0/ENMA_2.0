@@ -11,6 +11,7 @@ ifeq ($(MAKECMDGOALS), debug)
 	EXE_DIR := $(BUILD_DIR)/debug
 endif
 
+
 SRC:=$(wildcard *.c)
 OBJS:=$(patsubst %.c, $(EXE_DIR)/%.o, $(SRC))
 
@@ -27,4 +28,10 @@ $(EXE_DIR)/%.o: %.c
 clean:
 	rm -rf $(BUILD_DIR)/*
 
-.PHONY: all clean debug
+tests:
+	bash ./tests/run_tests.sh
+
+remake_tests:
+	bash ./tests/remake_tests.sh
+
+.PHONY: all clean debug tests remake_tests
