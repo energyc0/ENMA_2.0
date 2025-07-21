@@ -37,8 +37,8 @@ void ast_freenode(ast_node* node){
     free(node);
 }
 
-ast_node* ast_mknode_constant(vm_word_t constant){
-    ast_node* res = ast_mknode(AST_CONSTANT, (ast_data)constant);
+ast_node* ast_mknode_constant(value_t constant){
+    ast_node* res = ast_mknode(AST_CONSTANT, (ast_data){.val = constant});
     return res;
 }
 
@@ -61,9 +61,7 @@ ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* righ
 }
 
 ast_node* ast_mknode_print(ast_node* expr){
-    ast_data data;
-    data.ptr = expr;
-    ast_node* node = ast_mknode(AST_PRINT, data);
+    ast_node* node = ast_mknode(AST_PRINT, (ast_data){.ptr = expr});
     if(!is_match(T_SEMI))
         compile_error_printf("';' expected\n");
     return node;
@@ -79,7 +77,7 @@ void ast_debug_tree(const ast_node* node){
     }while(0)
 
     switch (node->type) {
-        case AST_CONSTANT: printf("%d", node->data.val); break;
+        case AST_CONSTANT: printf("%d", AS_NUMBER(node->data.val)); break;
         case AST_ADD: DEBUG_BINARY(+); break;
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;

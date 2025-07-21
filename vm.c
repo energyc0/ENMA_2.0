@@ -12,18 +12,21 @@ static vm_execute_result interpret();
 //for debug purposes
 static void examine_stack(); 
 
-static inline void stack_push(vm_word_t data);
-static inline vm_word_t stack_pop();
+static inline void stack_push(value_t data);
+static inline value_t stack_pop();
 
 //reads byte and increases ip pointer
 static inline byte_t read_byte();
-//reads vm_word_t
-static inline vm_word_t read_constant();
+//reads int
+static inline int read_constant();
+//extract value from data chunk
+static inline union _inner_value_t read_inner_value(int offset);
+
 //pops two values from the stack and pushes the result
 #define CALC_OP(op) do{ \
-        vm_word_t b = stack_pop(); \
-        vm_word_t a = stack_pop(); \
-        stack_push(a op b); \
+        value_t b = stack_pop(); \
+        value_t a = stack_pop(); \
+        stack_push(VALUE_NUMBER(AS_NUMBER(a) op AS_NUMBER(b))); \
     } while(0)
 
 void vm_init(){}
@@ -48,7 +51,7 @@ static vm_execute_result interpret(){
                 is_done = 1;
                 break;
             case OP_CONSTANT:
-                stack_push(read_constant());
+                stack_push((value_t){.type = VT_NUMBER, .as = read_inner_value(read_constant())});
                 break;
             case OP_ADD:
                 CALC_OP(+);
@@ -63,7 +66,7 @@ static vm_execute_result interpret(){
                 CALC_OP(*);
                 break; 
             case OP_PRINT:
-                printf("print: %d\n", stack_pop());
+                printf("print: %d\n", AS_NUMBER(stack_pop()));
                 break;
             default: 
                 eprintf("Undefined instruction!\n");
@@ -77,13 +80,17 @@ static inline byte_t read_byte(){
     return (*vm.ip++);
 }
 
-static inline vm_word_t read_constant(){
-    vm_word_t data = *(vm_word_t*)vm.ip;
-    vm.ip+=4;
-    return data;
+static inline int read_constant(){
+    int num = *(int*)vm.ip;
+    vm.ip+=sizeof(int);
+    return num;
 }
 
-static inline void stack_push(vm_word_t data){
+static inline union _inner_value_t read_inner_value(int offset){
+    return *(union _inner_value_t*)(vm.code->_data.data + offset);
+}
+
+static inline void stack_push(value_t data){
     if(vm.stack_top < VM_STACK_END)
         *vm.stack_top++ = data;
     else
@@ -93,7 +100,7 @@ static inline void stack_push(vm_word_t data){
     examine_stack();
 #endif
 }
-static inline vm_word_t stack_pop(){
+static inline value_t stack_pop(){
     if(vm.stack_top > VM_STACK_START){
 #ifdef DEBUG
         --vm.stack_top;
@@ -109,6 +116,6 @@ static inline vm_word_t stack_pop(){
 
 static void examine_stack(){
     printf("=== Stack ===\n");
-    for(vm_word_t* ptr = vm.stack; ptr < vm.stack_top; ptr++)
-        printf("%04X | %d\n", (unsigned)(ptr - vm.stack), *ptr);
+    for(value_t* ptr = vm.stack; ptr < vm.stack_top; ptr++)
+        printf("%04X | %d\n", (unsigned)(ptr - vm.stack), AS_NUMBER(*ptr));
 }

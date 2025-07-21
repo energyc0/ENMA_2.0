@@ -41,17 +41,17 @@ static ast_node* ast_primary(){
     ast_node* temp;
     switch (cur_token.type) {
         case T_INT: 
-            return ast_mknode_constant(cur_token.data);
+            return ast_mknode_constant(VALUE_NUMBER(cur_token.data));
         case T_LPAR: 
             temp = ast_bin_expr(0);
             break;
         case T_SUB:
             temp = ast_primary();
             if(temp->type == AST_CONSTANT){
-                temp->data.val *= -1; 
+                AS_NUMBER(temp->data.val) *= -1; 
                 return temp;
             }else{
-                return ast_mknode_binary(AST_MUL, ast_mknode_constant(-1), temp);
+                return ast_mknode_binary(AST_MUL, ast_mknode_constant(VALUE_NUMBER(-1)), temp);
             }
         default:
             compile_error_printf("Expected expression\n");

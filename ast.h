@@ -21,7 +21,7 @@ typedef enum {
 
 typedef union{
     void* ptr;
-    vm_word_t val;
+    value_t val;
 }ast_data;
 
 
@@ -39,7 +39,7 @@ struct ast_binary{
 ast_node* ast_mknode(ast_node_type type, ast_data data);
 void ast_freenode(ast_node* node);
 
-ast_node* ast_mknode_constant(vm_word_t constant);
+ast_node* ast_mknode_constant(value_t constant);
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right);
 ast_node* ast_mknode_print(ast_node* expr);
 

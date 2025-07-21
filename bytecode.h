@@ -9,8 +9,39 @@
 struct ast_node;
 
 typedef uint8_t byte_t;
-typedef int32_t vm_value_t;
-typedef int32_t vm_word_t;
+
+typedef enum{
+    VT_BOOL,
+    VT_NUMBER,
+    VT_STRING
+}value_type;
+
+union _inner_value_t{
+    int boolean;
+    int number;
+    char* str;
+};
+
+#define INNERVALUE_AS_NUMBER(value) ((union _inner_value_t){.number = (value)})
+#define INNERVALUE_AS_BOOLEAN(value) ((union _inner_value_t){.boolean = (value)})
+#define INNERVALUE_AS_STRING(value) ((union _inner_value_t){.str = (value)})
+
+typedef struct{
+    value_type type;
+    union _inner_value_t as;
+}value_t;
+
+#define VALUE_BOOLEAN(value) ((value_t){.type = VT_BOOL, .as = {(value)}})
+#define VALUE_NUMBER(value) ((value_t){.type = VT_NUMBER, .as = {(value)}})
+#define VALUE_STRING(value) ((value_t){.type = VT_STRING, .as = {(value)}})
+
+#define AS_NUMBER(value) ((value).as.number)
+#define AS_BOOLEAN(value) ((value).as.boolean)
+#define AS_STRING(value) ((value).as.string)
+
+#define IS_BOOLEAN(value) ((value).type == VT_BOOLEAN)
+#define IS_NUMBER(value) ((value).type == VT_NUMBER)
+#define IS_STRING(value) ((value).type == VT_STRING)
 
 typedef enum{
     //end execution
@@ -19,6 +50,8 @@ typedef enum{
     OP_PRINT,
     //read next 3 bytes and push them to the stack
     OP_CONSTANT,
+    OP_BOOLEAN,
+    OP_STRING,
     //binary ops
     OP_ADD,
     OP_SUB,
@@ -40,15 +73,16 @@ struct bytecode_chunk{
 //initialize chunk with base capacity
 void chunk_init(struct chunk* chunk);
 void chunk_write(struct chunk* chunk, byte_t byte);
-void chunk_write_word(struct chunk* chunk, vm_word_t word);
+void chunk_write_number(struct chunk* chunk, int number);
+void chunk_write_value(struct chunk* chunk, value_t val);
 void chunk_free(struct chunk* chunk);
 
 //initialize chunks with base capacity
 void bcchunk_init(struct bytecode_chunk* chunk);
 void bcchunk_free(struct bytecode_chunk* chunk);
 void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op);
-//4 bytes in the instruction
-void bcchunk_write_constant(struct bytecode_chunk* chunk, vm_value_t data);
+
+void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data);
 
 //for debug purposes
 void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* chunk);

@@ -10,8 +10,8 @@
 struct virtual_machine{
     struct bytecode_chunk* code;
     byte_t* ip;
-    vm_word_t stack[STACK_SIZE];
-    vm_word_t* stack_top;
+    value_t stack[STACK_SIZE];
+    value_t* stack_top;
 };
 
 typedef enum{

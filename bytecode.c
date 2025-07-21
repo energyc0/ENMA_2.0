@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ast.h"
-#include "token.h"
 #include "utils.h"
 
 static inline void chunk_realloc(struct chunk* chunk, size_t newsize);
@@ -14,10 +13,12 @@ static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte)
 
 static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset);
 static inline void print_instruction_debug(const char* name, size_t offset);
-static inline size_t simple_instruction_debug(const char* name, const byte_t* code, size_t offset);
-static inline size_t constant_instruction_debug(const char* name, const byte_t* code, size_t offset);
+static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
+static inline size_t constant_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 
 static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk);
+
+static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset);
 
 void chunk_init(struct chunk* chunk){
     chunk->size = 0;
@@ -39,11 +40,18 @@ void chunk_write(struct chunk* chunk, byte_t byte){
     chunk->data[chunk->size++] = byte;
 }
 
-void chunk_write_word(struct chunk* chunk, vm_word_t word){
-    if (chunk->capacity < chunk->size + 4)
+void chunk_write_number(struct chunk* chunk, int number){
+    if (chunk->capacity < chunk->size + sizeof(number))
         chunk_realloc(chunk, chunk->capacity + CHUNK_BASE_CAPACITY);
-    *((vm_word_t*)(chunk->data + chunk->size)) = word;
-    chunk->size += 4;
+    *((int*)(chunk->data + chunk->size)) = number;
+    chunk->size += sizeof(number);
+}
+
+void chunk_write_value(struct chunk* chunk, value_t val){
+    if (chunk->capacity < chunk->size + sizeof(val.as))
+        chunk_realloc(chunk, chunk->capacity + CHUNK_BASE_CAPACITY);
+    *((union _inner_value_t*)(chunk->data + chunk->size)) = val.as;
+    chunk->size += sizeof(val.as);
 }
 
 static inline void chunk_realloc(struct chunk* chunk, size_t newsize){
@@ -75,13 +83,13 @@ static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte)
 
 static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset){
     switch (chunk->_code.data[offset]) {
-        case OP_RETURN: return simple_instruction_debug("OP_RETURN",chunk->_code.data, offset);
-        case OP_ADD: return simple_instruction_debug("OP_ADD",chunk->_code.data, offset);
-        case OP_SUB: return simple_instruction_debug("OP_SUB",chunk->_code.data, offset);
-        case OP_DIV: return simple_instruction_debug("OP_DIV",chunk->_code.data, offset);
-        case OP_MUL: return simple_instruction_debug("OP_MUL",chunk->_code.data, offset);
-        case OP_CONSTANT: return constant_instruction_debug("OP_CONSTANT",chunk->_code.data, offset);
-        case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk->_code.data, offset);
+        case OP_RETURN: return simple_instruction_debug("OP_RETURN",chunk, offset);
+        case OP_ADD: return simple_instruction_debug("OP_ADD",chunk, offset);
+        case OP_SUB: return simple_instruction_debug("OP_SUB",chunk, offset);
+        case OP_DIV: return simple_instruction_debug("OP_DIV",chunk, offset);
+        case OP_MUL: return simple_instruction_debug("OP_MUL",chunk, offset);
+        case OP_CONSTANT: return constant_instruction_debug("OP_CONSTANT",chunk, offset);
+        case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk, offset);
         default:
             fatal_printf("Undefined instruction!\n");
     }
@@ -92,16 +100,14 @@ static inline void print_instruction_debug(const char* name, size_t offset){
     printf("%04X | %s", (unsigned)offset, name);
 }
 
-static inline size_t simple_instruction_debug(const char* name, const byte_t* code, size_t offset){
+static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset){
     print_instruction_debug(name, offset);
-    printf(" 0x%02X\n", *code);
+    printf(" 0x%02X\n", chunk->_code.data[0]);
     return offset+1;
 }
-static inline size_t constant_instruction_debug(const char* name, const byte_t* code, size_t offset){
+static inline size_t constant_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset){
     print_instruction_debug(name, offset);
-    printf(" %d 0x%08X\n",
-         code[offset + 1] + (code[offset + 2] << 8) + (code[offset + 3] << 16) + (code[offset + 4] << 24),
-          *(vm_word_t*)code);
+    printf(" %d\n", *(int*)(chunk->_code.data + 1));
     return offset+5;
 }
 
@@ -114,10 +120,12 @@ void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* ch
 void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op){
     bcchunk_write_code(chunk, op);
 }
-//4 bytes in the instruction
-void bcchunk_write_constant(struct bytecode_chunk* chunk, vm_value_t data){
+
+//8 bytes in the instruction
+void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data){
     bcchunk_write_code(chunk, OP_CONSTANT);
-    chunk_write_word(&chunk->_code, data);
+    chunk_write_number(&chunk->_code, chunk->_data.size);
+    chunk_write_value(&chunk->_data, data);
 }
 
 void bcchunk_generate(const ast_node* root, struct bytecode_chunk* chunk){
@@ -153,11 +161,38 @@ static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
             BIN_OP(OP_DIV);
             break;
         case AST_CONSTANT:
-            bcchunk_write_constant(chunk, node->data.val);
+            bcchunk_write_value(chunk, node->data.val);
             break;
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n");
     }
 
     #undef BIN_OP
+}
+
+static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset){
+    #define READ_CONSTANT_INDEX() (*(int*)(chunk->_code.data + code_offset + 1))
+    #define READ_INSTRUCTION_CONSTANT(type) ( ((type*)chunk->_data.data) [READ_CONSTANT_INDEX()] )
+
+    value_t res;
+    switch (chunk->_code.data[code_offset]) {
+        case OP_CONSTANT:
+            res.type = VT_NUMBER;
+            res.as = INNERVALUE_AS_NUMBER(READ_INSTRUCTION_CONSTANT(int));
+            break; 
+        case OP_BOOLEAN:
+            res.type = VT_BOOL;
+            res.as = INNERVALUE_AS_BOOLEAN(READ_INSTRUCTION_CONSTANT(int));
+            break;
+        case OP_STRING:
+            res.type = VT_STRING;
+            res.as = INNERVALUE_AS_STRING(READ_INSTRUCTION_CONSTANT(char*));
+            break;
+        default:
+        fatal_printf("Undefined operation in readvalue()!\n");
+    }
+
+    #undef READ_CONSTANT_INDEX
+    #undef READ_INSTRUCTION_CONSTANT
+    return res;
 }
