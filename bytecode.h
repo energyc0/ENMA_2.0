@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #define CHUNK_BASE_CAPACITY (1024)
 
@@ -17,7 +18,7 @@ typedef enum{
 }value_type;
 
 union _inner_value_t{
-    int boolean;
+    bool boolean;
     int number;
     char* str;
 };
@@ -31,9 +32,9 @@ typedef struct{
     union _inner_value_t as;
 }value_t;
 
-#define VALUE_BOOLEAN(value) ((value_t){.type = VT_BOOL, .as = {(value)}})
-#define VALUE_NUMBER(value) ((value_t){.type = VT_NUMBER, .as = {(value)}})
-#define VALUE_STRING(value) ((value_t){.type = VT_STRING, .as = {(value)}})
+#define VALUE_BOOLEAN(value) ((value_t){.type = VT_BOOL, .as = {.boolean = (value)}})
+#define VALUE_NUMBER(value) ((value_t){.type = VT_NUMBER, .as = {.number = (value)}})
+#define VALUE_STRING(value) ((value_t){.type = VT_STRING, .as = {.str = (value)}})
 
 #define AS_NUMBER(value) ((value).as.number)
 #define AS_BOOLEAN(value) ((value).as.boolean)
@@ -49,7 +50,7 @@ typedef enum{
     //get value from the stack and print it
     OP_PRINT,
     //read next 3 bytes and push them to the stack
-    OP_CONSTANT,
+    OP_NUMBER,
     OP_BOOLEAN,
     OP_STRING,
     //binary ops

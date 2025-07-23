@@ -2,12 +2,11 @@
 #define TOKEN_H
 
 typedef enum{
-    T_EOF,
     //binary operations
-    T_ADD,
-    T_SUB,
-    T_MUL,
-    T_DIV,
+    T_ADD = 0,
+    T_SUB = 1,
+    T_MUL = 2,
+    T_DIV = 3,
     //precedence operators
     T_LPAR,
     T_RPAR,
@@ -19,8 +18,8 @@ typedef enum{
     //keywords
     T_PRINT,
     //other
-    T_SEMI
-    
+    T_SEMI,
+    T_EOF,
 } token_type; 
 
 #define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_DIV)

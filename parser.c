@@ -6,7 +6,6 @@
 #include "utils.h"
 
 static const int precedence[13] = {
-    0,  //T_EOF
     1,  //T_ADD
     1,  //T_SUB
     2,  //T_MUL
@@ -18,7 +17,8 @@ static const int precedence[13] = {
     0,  //T_TRUE
     0,  //T_IDENT
     0,  //T_PRINT
-    -1  //T_SEMI
+    -1,  //T_SEMI
+    0  //T_EOF
 };
 extern struct token cur_token;
 
@@ -55,17 +55,21 @@ static ast_node* ast_primary(){
     ast_node* temp;
     switch (cur_token.type) {
         case T_INT: 
-            return ast_mknode_constant(VALUE_NUMBER(cur_token.data));
+            return ast_mknode_number(cur_token.data);
+        case T_FALSE:
+            return ast_mknode_boolean(false);
+        case T_TRUE:
+            return ast_mknode_boolean(true);
         case T_LPAR: 
             temp = ast_bin_expr(0);
             break;
         case T_SUB:
             temp = ast_primary();
-            if(temp->type == AST_CONSTANT){
+            if(temp->type == AST_NUMBER){
                 AS_NUMBER(temp->data.val) *= -1; 
                 return temp;
             }else{
-                return ast_mknode_binary(AST_MUL, ast_mknode_constant(VALUE_NUMBER(-1)), temp);
+                return ast_mknode_binary(AST_MUL, ast_mknode_number(-1), temp);
             }
         default:
             compile_error_printf("Expected expression\n");

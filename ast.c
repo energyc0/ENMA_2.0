@@ -20,7 +20,7 @@ ast_node* ast_mknode(ast_node_type type, ast_data data){
 }
 void ast_freenode(ast_node* node){
     switch (node->type) {
-        case AST_CONSTANT:
+        case AST_NUMBER: case AST_BOOLEAN:
             break;
         case AST_ADD: case AST_SUB: case AST_MUL: case AST_DIV:
             ast_freenode(((struct ast_binary*)node->data.ptr)->left);
@@ -37,8 +37,13 @@ void ast_freenode(ast_node* node){
     free(node);
 }
 
-ast_node* ast_mknode_constant(value_t constant){
-    ast_node* res = ast_mknode(AST_CONSTANT, (ast_data){.val = constant});
+ast_node* ast_mknode_number(int val){
+    ast_node* res = ast_mknode(AST_NUMBER, (ast_data){.val = VALUE_NUMBER(val)});
+    return res;
+}
+
+ast_node* ast_mknode_boolean(bool val){
+    ast_node* res = ast_mknode(AST_BOOLEAN, (ast_data){.val = VALUE_BOOLEAN(val)});
     return res;
 }
 
@@ -77,7 +82,8 @@ void ast_debug_tree(const ast_node* node){
     }while(0)
 
     switch (node->type) {
-        case AST_CONSTANT: printf("%d", AS_NUMBER(node->data.val)); break;
+        case AST_NUMBER: printf("%d", AS_NUMBER(node->data.val)); break;
+        case AST_BOOLEAN: printf("%s", AS_BOOLEAN(node->data.val) ? "true" : "false"); break;
         case AST_ADD: DEBUG_BINARY(+); break;
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;

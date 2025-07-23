@@ -4,15 +4,15 @@
 #include "bytecode.h"
 
 typedef enum {
-    /*ast node contains pointer to a dynamically allocated constant*/
-    AST_CONSTANT,
-
     /*ast node contains pointer to a ast_binary struct*/
-    AST_ADD, 
-    AST_SUB,    
-    AST_MUL,
-    AST_DIV,
+    AST_ADD = 0, 
+    AST_SUB = 1,    
+    AST_MUL = 2,
+    AST_DIV = 3,
 
+    AST_NUMBER,
+    AST_BOOLEAN,
+    AST_STRING,
     /*statements*/
     AST_PRINT //ast node contains pointer to an expression node
 }ast_node_type;
@@ -39,7 +39,8 @@ struct ast_binary{
 ast_node* ast_mknode(ast_node_type type, ast_data data);
 void ast_freenode(ast_node* node);
 
-ast_node* ast_mknode_constant(value_t constant);
+ast_node* ast_mknode_number(int);
+ast_node* ast_mknode_boolean(bool val);
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right);
 ast_node* ast_mknode_print(ast_node* expr);
 

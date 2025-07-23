@@ -40,7 +40,7 @@ static inline void _putback(int c){
 
 static inline int _skip(){
     int c;
-    while ((c = _get()) && isspace(c));
+    while ((c = _get()) != EOF && isspace(c));
     return c;
 }
 
@@ -60,6 +60,7 @@ static inline char* _readword(int c){
     for(;sz < (WORD_SIZE-1) && (isalnum(c) || c == '_'); c = _get()){
         buf[sz++] = c;
     }
+    _putback(c);
     buf[sz] = '\0';
     return buf;
 }
@@ -75,7 +76,16 @@ int scanner_next_token(struct token* t){
     switch (c) {
         case '+': t->type = T_ADD; break;
         case '-': t->type = T_SUB; break;
-        case '/': t->type = T_DIV; break;
+        case '/':{
+            //it is a commentary 
+            if((c = _get()) == '/'){
+                while ((c = _get()) != EOF && c != '\n');
+                return scanner_next_token(t);
+            }else{
+                _putback(c);
+                t->type = T_DIV; break;
+            }
+        }
         case '*': t->type = T_MUL; break;
         case '(': t->type = T_LPAR; break;
         case ')': t->type = T_RPAR; break;
@@ -113,6 +123,8 @@ void scanner_debug_tokens(){
             case T_RPAR: printf("')' "); break;
             case T_SEMI: printf("';' "); break;
             case T_PRINT: printf("'print' "); break;
+            case T_FALSE: printf("'false' "); break;
+            case T_TRUE: printf("'true' "); break;
             case T_IDENT: printf("'%s' ", symtable_getident(cur_token.data)); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");

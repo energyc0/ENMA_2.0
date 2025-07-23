@@ -11,6 +11,7 @@ static struct virtual_machine vm;
 static vm_execute_result interpret();
 
 #ifdef DEBUG
+static char* examine_value(value_t val);
 static void examine_stack(); 
 #endif
 
@@ -55,8 +56,11 @@ static vm_execute_result interpret(){
             case OP_RETURN: 
                 is_done = 1;
                 break;
-            case OP_CONSTANT:
+            case OP_NUMBER:
                 stack_push(VALUE_NUMBER(extract_value(read_constant()).number));
+                break;
+            case OP_BOOLEAN:
+                stack_push(VALUE_BOOLEAN(extract_value(read_constant()).boolean));
                 break;
             case OP_ADD:
                 CALC_OP(VALUE_NUMBER, +);
@@ -127,9 +131,26 @@ static inline value_t stack_pop(){
 }
 
 #ifdef DEBUG
+static char* examine_value(value_t val){
+    static char buf[16];
+    switch (val.type) {
+        case VT_NUMBER: 
+            sprintf(buf, "%d", AS_NUMBER(val));
+            return buf;
+        case VT_BOOL: 
+            return AS_BOOLEAN(val) ? "true" : "false";
+        case VT_STRING:
+            return "strings not implemented :(";
+            //return AS_STRING(val);
+        default: 
+            fatal_printf("Undefined value in the stack! Check examine_value()\n");
+    }
+}
+
+
 static void examine_stack(){
     printf("=== Stack ===\n");
     for(value_t* ptr = vm.stack; ptr < vm.stack_top; ptr++)
-        printf("%04X | %d\n", (unsigned)(ptr - vm.stack), AS_NUMBER(*ptr));
+        printf("%04X | %s\n", (unsigned)(ptr - vm.stack), examine_value(*ptr));
 }
 #endif
