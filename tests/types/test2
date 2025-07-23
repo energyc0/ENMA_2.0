@@ -1,3 +1,2 @@
-print false;
-//print  11 +   false;
-print -true;
+print not false and true;
+print not true and true;

@@ -17,6 +17,10 @@ void symtable_init(){
     tr_add(keywords, "print", T_PRINT);
     tr_add(keywords,"false", T_FALSE);
     tr_add(keywords,"true", T_TRUE);
+    tr_add(keywords, "and", T_AND);
+    tr_add(keywords, "or", T_OR);
+    tr_add(keywords, "xor", T_XOR);
+    tr_add(keywords, "not", T_NOT);
 }
 
 token_type symtable_procword(char* str){

@@ -122,6 +122,10 @@ void scanner_debug_tokens(){
             case T_LPAR: printf("'(' "); break;
             case T_RPAR: printf("')' "); break;
             case T_SEMI: printf("';' "); break;
+            case T_AND: printf("'and' "); break;
+            case T_OR: printf("'or' "); break;
+            case T_XOR: printf("'xor' "); break;
+            case T_NOT: printf("'not' "); break;
             case T_PRINT: printf("'print' "); break;
             case T_FALSE: printf("'false' "); break;
             case T_TRUE: printf("'true' "); break;

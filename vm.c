@@ -26,12 +26,20 @@ static inline int read_constant();
 static inline union _inner_value_t extract_value(int offset);
 
 //pops two values from the stack and pushes the result
-#define CALC_OP(return_type, op) do{ \
+#define CALC_NUMERICAL_OP(return_type, op) do{ \
         value_t b = stack_pop(); \
         value_t a = stack_pop(); \
         if(!IS_NUMBER(a) || !IS_NUMBER(b)) \
-            compile_error_printf("Incompatible type for operation\n");\
+            compile_error_printf("Incompatible type for operation. All operands must be numbers!\n");\
         stack_push(return_type(AS_NUMBER(a) op AS_NUMBER(b))); \
+    } while(0)
+
+#define CALC_BOOLEAN_OP(op) do{ \
+        value_t b = stack_pop(); \
+        value_t a = stack_pop(); \
+        if(!IS_BOOLEAN(a) || !IS_BOOLEAN(b)) \
+            compile_error_printf("Incompatible type for operation. All operands must be booleans!\n");\
+        stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) op AS_BOOLEAN(b))); \
     } while(0)
 
 void vm_init(){}
@@ -63,17 +71,29 @@ static vm_execute_result interpret(){
                 stack_push(VALUE_BOOLEAN(extract_value(read_constant()).boolean));
                 break;
             case OP_ADD:
-                CALC_OP(VALUE_NUMBER, +);
+                CALC_NUMERICAL_OP(VALUE_NUMBER, +);
                 break;
             case OP_SUB: 
-                CALC_OP(VALUE_NUMBER,-);
+                CALC_NUMERICAL_OP(VALUE_NUMBER,-);
                 break;
             case OP_DIV: 
-                CALC_OP(VALUE_NUMBER,/);
+                CALC_NUMERICAL_OP(VALUE_NUMBER,/);
                 break;
             case OP_MUL: 
-                CALC_OP(VALUE_NUMBER,*);
+                CALC_NUMERICAL_OP(VALUE_NUMBER,*);
                 break; 
+            case OP_AND:
+                CALC_BOOLEAN_OP(&&);
+                break;
+            case OP_OR:
+                CALC_BOOLEAN_OP(||);
+                break;
+            case OP_XOR:
+                CALC_BOOLEAN_OP(^);
+                break;
+            case OP_NOT:
+                stack_push(VALUE_BOOLEAN(!AS_BOOLEAN(stack_pop())));
+                break;
             case OP_PRINT:
                 val = stack_pop();
                 if(IS_NUMBER(val)){

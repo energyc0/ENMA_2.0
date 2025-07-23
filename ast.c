@@ -23,14 +23,16 @@ void ast_freenode(ast_node* node){
         case AST_NUMBER: case AST_BOOLEAN:
             break;
         case AST_ADD: case AST_SUB: case AST_MUL: case AST_DIV:
+        case AST_AND: case AST_OR: case AST_XOR:
             ast_freenode(((struct ast_binary*)node->data.ptr)->left);
             ast_freenode(((struct ast_binary*)node->data.ptr)->right);
             free(node->data.ptr);
             break;
-        case AST_PRINT:
+        case AST_PRINT: case AST_NOT:
             ast_freenode(node->data.ptr);
             break;
         default:
+            printf("ast_freenode(): ");
             UNDEFINED_AST_NODE_TYPE();
             break;
     }
@@ -88,8 +90,18 @@ void ast_debug_tree(const ast_node* node){
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;
         case AST_DIV: DEBUG_BINARY(/); break;
+        case AST_AND: DEBUG_BINARY(and); break;
+        case AST_OR: DEBUG_BINARY(or); break;
+        case AST_XOR: DEBUG_BINARY(xor); break;
+        case AST_NOT: {
+            printf("( not ");
+            ast_debug_tree(node->data.ptr);
+            printf(" )");
+            break;
+        }
         case AST_PRINT: printf("print "); ast_debug_tree(node->data.ptr); printf(";\n"); break;
         default:
+            printf("ast_debug_tree(): ");
             UNDEFINED_AST_NODE_TYPE();
     }
 }

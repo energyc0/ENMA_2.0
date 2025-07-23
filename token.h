@@ -7,6 +7,11 @@ typedef enum{
     T_SUB = 1,
     T_MUL = 2,
     T_DIV = 3,
+    //logical operators
+    T_AND = 4,
+    T_OR = 5,
+    T_XOR = 6,
+    T_NOT = 7,
     //precedence operators
     T_LPAR,
     T_RPAR,
@@ -22,7 +27,7 @@ typedef enum{
     T_EOF,
 } token_type; 
 
-#define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_DIV)
+#define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_XOR)
 
 struct token{
     token_type type;

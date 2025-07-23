@@ -5,11 +5,15 @@
 #include "token.h"
 #include "utils.h"
 
-static const int precedence[13] = {
-    1,  //T_ADD
-    1,  //T_SUB
-    2,  //T_MUL
-    2,  //T_DIV
+static const int precedence[] = {
+    5,  //T_ADD
+    5,  //T_SUB
+    6,  //T_MUL
+    6,  //T_DIV
+    3,  //T_AND
+    2,  //T_OR
+    1,  //T_XOR
+    4,  //T_NOT
     0,  //T_LPAR
     -1, //T_RPAR
     0,  //T_T_INT
@@ -63,6 +67,8 @@ static ast_node* ast_primary(){
         case T_LPAR: 
             temp = ast_bin_expr(0);
             break;
+        case T_NOT:
+            return ast_mknode(AST_NOT, (ast_data){.ptr = ast_primary()});
         case T_SUB:
             temp = ast_primary();
             if(temp->type == AST_NUMBER){

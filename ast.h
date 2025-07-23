@@ -10,6 +10,11 @@ typedef enum {
     AST_MUL = 2,
     AST_DIV = 3,
 
+    AST_AND = 4,
+    AST_OR = 5,
+    AST_XOR = 6,
+    AST_NOT = 7,
+    /*values */
     AST_NUMBER,
     AST_BOOLEAN,
     AST_STRING,
@@ -17,7 +22,7 @@ typedef enum {
     AST_PRINT //ast node contains pointer to an expression node
 }ast_node_type;
 
-#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_DIV)
+#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_XOR)
 
 typedef union{
     void* ptr;

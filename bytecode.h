@@ -57,7 +57,12 @@ typedef enum{
     OP_ADD,
     OP_SUB,
     OP_MUL,
-    OP_DIV
+    OP_DIV,
+    
+    OP_AND,
+    OP_OR,
+    OP_XOR,
+    OP_NOT
 } op_t;
 
 struct chunk{

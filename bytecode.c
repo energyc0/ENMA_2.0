@@ -88,6 +88,10 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_SUB: return simple_instruction_debug("OP_SUB",chunk, offset);
         case OP_DIV: return simple_instruction_debug("OP_DIV",chunk, offset);
         case OP_MUL: return simple_instruction_debug("OP_MUL",chunk, offset);
+        case OP_AND: return simple_instruction_debug("OP_AND",chunk, offset);
+        case OP_OR: return simple_instruction_debug("OP_OR",chunk, offset);
+        case OP_XOR: return simple_instruction_debug("OP_XOR",chunk, offset);
+        case OP_NOT: return simple_instruction_debug("OP_NOT",chunk, offset);
         case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
         case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk, offset);
@@ -118,6 +122,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" Not implemented constant instruction :(\n");
     }
     return offset+5;
+    #undef EXTRACTED_VALUE
 }
 
 void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* chunk){
@@ -174,6 +179,20 @@ static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
         case AST_DIV: 
             BIN_OP(OP_DIV);
             break;
+        case AST_AND:
+            BIN_OP(OP_AND);
+            break;
+        case AST_OR: 
+            BIN_OP(OP_OR);
+            break;
+        case AST_XOR:   
+            BIN_OP(OP_XOR);
+            break;
+        case AST_NOT:{
+            parse_ast_bin_expr(node->data.ptr, chunk);
+            bcchunk_write_simple_op(chunk, OP_NOT);
+            break;
+        }
         case AST_NUMBER: case AST_BOOLEAN:
             bcchunk_write_value(chunk, node->data.val);
             break;
