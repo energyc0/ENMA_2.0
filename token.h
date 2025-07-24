@@ -20,6 +20,7 @@ typedef enum{
     T_FALSE,
     T_TRUE,
     T_IDENT,
+    T_STRING,
     //keywords
     T_PRINT,
     //other

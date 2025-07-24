@@ -2,6 +2,7 @@
 #include "ast.h"
 #include "bytecode.h"
 #include "scanner.h"
+#include "symtable.h"
 #include "token.h"
 #include "utils.h"
 
@@ -20,6 +21,7 @@ static const int precedence[] = {
     0,  //T_FALSE
     0,  //T_TRUE
     0,  //T_IDENT
+    0,  //T_STRING
     0,  //T_PRINT
     -1,  //T_SEMI
     0  //T_EOF
@@ -69,6 +71,8 @@ static ast_node* ast_primary(){
             break;
         case T_NOT:
             return ast_mknode(AST_NOT, (ast_data){.ptr = ast_primary()});
+        case T_STRING:
+            return ast_mknode_string(symtable_getstring(cur_token.data));
         case T_SUB:
             temp = ast_primary();
             if(temp->type == AST_NUMBER){

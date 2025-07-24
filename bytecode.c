@@ -94,6 +94,7 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_NOT: return simple_instruction_debug("OP_NOT",chunk, offset);
         case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
+        case OP_STRING: return constant_instruction_debug("OP_STRING", chunk, offset);
         case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk, offset);
         default:
             fatal_printf("Undefined instruction!\n");
@@ -117,7 +118,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
     switch (*chunk->_code.data) {
         case OP_NUMBER: printf(" %d\n", EXTRACTED_VALUE().number); break;
         case OP_BOOLEAN: printf(" %s\n", EXTRACTED_VALUE().boolean ? "true" : "false"); break;
-        case OP_STRING: printf(" %s\n", EXTRACTED_VALUE().str); break;
+        case OP_STRING: printf(" \"%s\"\n", EXTRACTED_VALUE().str); break;
         default:
             printf(" Not implemented constant instruction :(\n");
     }
@@ -141,7 +142,9 @@ void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data){
         bcchunk_write_code(chunk, OP_NUMBER);
     else if(IS_BOOLEAN(data))
         bcchunk_write_code(chunk, OP_BOOLEAN);
-    else
+    else if(IS_STRING(data))
+        bcchunk_write_code(chunk, OP_STRING);
+    else 
         fatal_printf("Not implemented instruction :(\n");
     chunk_write_number(&chunk->_code, chunk->_data.size);
     chunk_write_value(&chunk->_data, data);
@@ -193,7 +196,7 @@ static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
             bcchunk_write_simple_op(chunk, OP_NOT);
             break;
         }
-        case AST_NUMBER: case AST_BOOLEAN:
+        case AST_NUMBER: case AST_BOOLEAN:case AST_STRING:
             bcchunk_write_value(chunk, node->data.val);
             break;
         default:

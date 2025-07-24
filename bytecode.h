@@ -38,7 +38,7 @@ typedef struct{
 
 #define AS_NUMBER(value) ((value).as.number)
 #define AS_BOOLEAN(value) ((value).as.boolean)
-#define AS_STRING(value) ((value).as.string)
+#define AS_STRING(value) ((value).as.str)
 
 #define IS_BOOLEAN(value) ((value).type == VT_BOOL)
 #define IS_NUMBER(value) ((value).type == VT_NUMBER)

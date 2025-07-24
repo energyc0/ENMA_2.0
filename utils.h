@@ -8,6 +8,8 @@
 extern struct token cur_token;
 extern int line_counter;
 
+#define ARR_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
 __attribute__((noreturn)) void fatal_printf(const char* fmt, ...);
@@ -20,6 +22,7 @@ static inline int is_match(token_type expect){
     return cur_token.type == expect;
 }
 
-#define MALLOC_ERROR() fatal_printf("malloc() returned NULL!\n")
+void* emalloc(size_t count);
+void* erealloc(void* ptr, size_t count);
 
 #endif

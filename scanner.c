@@ -3,7 +3,9 @@
 #include "utils.h"
 #include "symtable.h"
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 struct token cur_token;
@@ -11,6 +13,7 @@ int line_counter = 1;
 
 #define INPUT_BUF_SZ (16)
 #define WORD_SIZE (1024)
+
 static FILE* _scan_fp = NULL;
 
 struct _input_buf{
@@ -18,11 +21,13 @@ struct _input_buf{
     int buf[INPUT_BUF_SZ];
 }_input_buf;
 
-static inline int _get();
-static inline int _skip();
-static inline void _putback(int c);
+static inline int _get(); //return character in the stream
+static inline int _skip(); //skip spaces and return the last character
+static inline int _skip_until(int c); //skip all the characters until 'c' character or EOF, return 'c' or EOF
+static inline void _putback(int c); //puts character back in the stream
 static inline int _readint(int c); // last character in the stream must be a digit
 static inline char* _readword(int c); //first character must be alphabetical
+static inline char* _readuntil(int c); //reads until 'c' or EOF and return a dynamically allocated string, last character is put in the stream
 
 static inline int _get(){
     int c = _input_buf.sz > 0 ? _input_buf.buf[--_input_buf.sz] : getc(_scan_fp);
@@ -41,6 +46,12 @@ static inline void _putback(int c){
 static inline int _skip(){
     int c;
     while ((c = _get()) != EOF && isspace(c));
+    return c;
+}
+
+static inline int _skip_until(int target){
+    int c;
+    for(c = _get(); c != EOF && c != target; c = _get());
     return c;
 }
 
@@ -65,6 +76,25 @@ static inline char* _readword(int c){
     return buf;
 }
 
+static inline char* _readuntil(int target){
+    size_t capacity = WORD_SIZE;
+    size_t sz = 0;
+    char* temp_buf = emalloc(capacity);
+
+    int c;
+    for(c = _get(); c != EOF && c != target; c =_get()){
+        if(capacity <= sz){
+            capacity += WORD_SIZE;
+            char* ptr = erealloc(temp_buf, capacity);
+            temp_buf = ptr;
+        }
+        temp_buf[sz++] = c;
+    }
+    _putback(c);
+    temp_buf[sz] = '\0';
+    return temp_buf;
+}
+
 void scanner_init(FILE* fp){
     _scan_fp = fp;
     line_counter = 1;
@@ -79,19 +109,33 @@ int scanner_next_token(struct token* t){
         case '/':{
             //it is a commentary 
             if((c = _get()) == '/'){
-                while ((c = _get()) != EOF && c != '\n');
+                _skip_until('\n');
                 return scanner_next_token(t);
             }else{
                 _putback(c);
                 t->type = T_DIV; break;
             }
         }
+        case '#':{
+            _skip_until('\n');
+            return scanner_next_token(t);
+        }
         case '*': t->type = T_MUL; break;
         case '(': t->type = T_LPAR; break;
         case ')': t->type = T_RPAR; break;
         case ';': t->type = T_SEMI; break;
+        case '\"':{
+            t->type = T_STRING;
+            char* str = _readuntil('\"');
+            if(_get() != '\"')
+                compile_error_printf("Unclosed '\"'\n");
+
+            t->data = symtable_addstring(str);
+            free(str);
+            break;
+        }
         case EOF: t->type = T_EOF; return 0;
-        default: 
+        default:{
             if(isdigit(c)){
                 t->type = T_INT;
                 t->data = _readint(c);
@@ -106,6 +150,7 @@ int scanner_next_token(struct token* t){
                 compile_error_printf("Undefined character: %c\n", c);
             }
             break;
+        }
     }
     return 1;
 }
@@ -129,6 +174,7 @@ void scanner_debug_tokens(){
             case T_PRINT: printf("'print' "); break;
             case T_FALSE: printf("'false' "); break;
             case T_TRUE: printf("'true' "); break;
+            case T_STRING: printf("'\"%s\"' ", symtable_getstring(cur_token.data)); break;
             case T_IDENT: printf("'%s' ", symtable_getident(cur_token.data)); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");

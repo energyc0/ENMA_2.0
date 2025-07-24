@@ -1,15 +1,28 @@
 #include "symtable.h"
 #include "data_structs.h"
 #include "token.h"
+#include "utils.h"
+#include <stdlib.h>
 #include <string.h>
 
-#define SYMTABLE_SIZE (1024)
+#define TABLE_SIZE (1024)
 
 static struct trie_node* keywords = NULL;
 
-static char* symtable[SYMTABLE_SIZE];
-static int symtable_size = 0;
+struct table{
+    char** data;
+    int size;
+    int capacity;
+};
 
+static inline void table_init(struct table* t);
+static inline void table_expand(struct table* t); //expand size
+static inline int table_add(struct table* t, char* str);
+static inline char* table_get(struct table* t, int idx);
+static inline void table_free(struct table* t); //frees 'guts' of the struc
+
+static struct table symtable;
+static struct table stringtable;
 
 void symtable_init(){
     keywords = tr_alloc();
@@ -21,6 +34,15 @@ void symtable_init(){
     tr_add(keywords, "or", T_OR);
     tr_add(keywords, "xor", T_XOR);
     tr_add(keywords, "not", T_NOT);
+
+    table_init(&symtable);
+    table_init(&stringtable);
+}
+
+void symtable_cleanup(){
+    tr_free(keywords);
+    table_free(&symtable);
+    table_free(&stringtable);
 }
 
 token_type symtable_procword(char* str){
@@ -32,17 +54,54 @@ token_type symtable_procword(char* str){
 }
 
 int symtable_contain(char* id){
-    for(int i = 0; i < symtable_size; i++)
-        if (strcmp(id, symtable[i]) == 0)
+    for(int i = 0; i < symtable.size; i++)
+        if (strcmp(id, symtable.data[i]) == 0)
             return 1;
     return 0;
 }
 
 int symtable_addident(char* id){
-    symtable[symtable_size] = strdup(id);
-    return symtable_size++;
+    return table_add(&symtable, id);
 }
 
 char* symtable_getident(int idx){
-    return symtable[idx];
+    return table_get(&symtable, idx);
+}
+
+int symtable_addstring(char* str){
+    return table_add(&stringtable, str);
+}
+
+char* symtable_getstring(int idx){
+    return table_get(&stringtable, idx);
+}
+
+static inline void table_init(struct table* t){
+    t->capacity = TABLE_SIZE;
+    t->size = 0;
+    t->data = emalloc(t->capacity * sizeof(char*));
+}
+static inline void table_expand(struct table* t){
+    t->capacity += TABLE_SIZE;
+    t->data = erealloc(t->data, t->capacity * sizeof(char*));
+}
+static inline int table_add(struct table* t, char* str){
+    if(t->capacity <= t->size)
+        table_expand(t);
+    t->data[t->size] = strdup(str);
+    return t->size++;
+}
+static inline char* table_get(struct table* t, int idx){
+#ifdef DEBUG
+    if(!(0 <= idx && idx < t->size))
+        fatal_printf("Incorrect index in table_get()!\n");
+#endif
+    return t->data[idx];
+}
+
+static inline void table_free(struct table* t){
+    t->capacity = 0;
+    t->size = 0;
+    free(t->data);
+    t->data = NULL;
 }

@@ -11,16 +11,15 @@ extern struct token cur_token;
 #define UNDEFINED_AST_NODE_TYPE() fatal_printf("Undefined ast_node_type!\n")
 
 ast_node* ast_mknode(ast_node_type type, ast_data data){
-    ast_node* p = malloc(sizeof(ast_node));
-    if(p == NULL)
-        MALLOC_ERROR();
+    ast_node* p = emalloc(sizeof(ast_node));
     p->data = data;
     p->type = type;
     return p;
 }
 void ast_freenode(ast_node* node){
     switch (node->type) {
-        case AST_NUMBER: case AST_BOOLEAN:
+        //strings are freed in symtable_cleanup()
+        case AST_NUMBER: case AST_BOOLEAN: case AST_STRING:
             break;
         case AST_ADD: case AST_SUB: case AST_MUL: case AST_DIV:
         case AST_AND: case AST_OR: case AST_XOR:
@@ -32,7 +31,7 @@ void ast_freenode(ast_node* node){
             ast_freenode(node->data.ptr);
             break;
         default:
-            printf("ast_freenode(): ");
+            eprintf("ast_freenode() ");
             UNDEFINED_AST_NODE_TYPE();
             break;
     }
@@ -49,6 +48,11 @@ ast_node* ast_mknode_boolean(bool val){
     return res;
 }
 
+ast_node* ast_mknode_string(char* str){
+    ast_node* res = ast_mknode(AST_STRING, (ast_data){.val = VALUE_STRING(str)});
+    return res;
+}
+
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right){
 #ifdef DEBUG
     if(!(AST_IS_BIN_OP(bin_op)))
@@ -57,9 +61,7 @@ ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* righ
         fatal_printf("One of ast_node's == NULL in ast_mknode_binary()!\n");
 #endif
     ast_data binop_data;
-    binop_data.ptr = malloc(sizeof(struct ast_binary));
-    if(binop_data.ptr == NULL)
-        MALLOC_ERROR();
+    binop_data.ptr = emalloc(sizeof(struct ast_binary));
     ast_node* res = ast_mknode(bin_op, binop_data);
 
     ((struct ast_binary*)res->data.ptr)->left = left;
@@ -86,6 +88,7 @@ void ast_debug_tree(const ast_node* node){
     switch (node->type) {
         case AST_NUMBER: printf("%d", AS_NUMBER(node->data.val)); break;
         case AST_BOOLEAN: printf("%s", AS_BOOLEAN(node->data.val) ? "true" : "false"); break;
+        case AST_STRING: printf("\"%s\"", AS_STRING(node->data.val)); break;
         case AST_ADD: DEBUG_BINARY(+); break;
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;
@@ -105,3 +108,4 @@ void ast_debug_tree(const ast_node* node){
             UNDEFINED_AST_NODE_TYPE();
     }
 }
+

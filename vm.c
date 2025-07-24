@@ -70,6 +70,9 @@ static vm_execute_result interpret(){
             case OP_BOOLEAN:
                 stack_push(VALUE_BOOLEAN(extract_value(read_constant()).boolean));
                 break;
+            case OP_STRING:
+                stack_push(VALUE_STRING(extract_value(read_constant()).str));
+                break;
             case OP_ADD:
                 CALC_NUMERICAL_OP(VALUE_NUMBER, +);
                 break;
@@ -100,8 +103,10 @@ static vm_execute_result interpret(){
                     printf("%d\n", AS_NUMBER(val));
                 }else if(IS_BOOLEAN(val)){
                     printf("%s\n", AS_BOOLEAN(val) ? "true" : "false");
+                }else if(IS_STRING(val)){
+                    printf("%s\n", AS_STRING(val));
                 }else{
-                    printf("Not implemented strings :(\n");
+                    printf("print: Not implemented instruction :(\n");
                 }
                 break;
             default: 
@@ -160,7 +165,7 @@ static char* examine_value(value_t val){
         case VT_BOOL: 
             return AS_BOOLEAN(val) ? "true" : "false";
         case VT_STRING:
-            return "strings not implemented :(";
+            return AS_STRING(val);
             //return AS_STRING(val);
         default: 
             fatal_printf("Undefined value in the stack! Check examine_value()\n");

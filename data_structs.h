@@ -12,6 +12,7 @@ struct trie_node{
 
 struct trie_node* tr_alloc();
 void tr_init(struct trie_node* node, int data, int is_final);
+void tr_free(struct trie_node* node); //frees 'guts' of the struct and pointer to struct trie_node*
 
 //return 1 if successfully added
 //word must only contain characters 'a'-'z', 'A'-'Z', '0'-'9' or '_'

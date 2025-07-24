@@ -42,6 +42,7 @@ int main(int argc, char** argv){
     }
 
     vm_free();
+    symtable_cleanup();
     
     return 0;
 }

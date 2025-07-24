@@ -5,11 +5,17 @@
 static inline int tr_hash_char(int c);
 
 struct trie_node* tr_alloc(){
-    struct trie_node* ptr = malloc(sizeof(struct trie_node));
-    if(ptr == NULL)
-        MALLOC_ERROR();
+    struct trie_node* ptr = emalloc(sizeof(struct trie_node));
     return ptr;
 }
+
+void tr_free(struct trie_node* node){
+    for(size_t i = 0; i < ARR_SIZE(node->children); i++)
+        if(node->children[i] != NULL)
+            tr_free(node->children[i]);
+    free(node);
+}
+
 void tr_init(struct trie_node* node, int data, int is_final){
     node->data = data;
     node->is_final = is_final;

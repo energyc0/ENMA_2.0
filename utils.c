@@ -2,6 +2,7 @@
 #include "scanner.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 __attribute__((noreturn)) void fatal_printf(const char* fmt, ...){
     va_list ap;
@@ -35,4 +36,19 @@ __attribute__((noreturn)) void user_error_printf(const char* fmt, ...){
 
 __attribute__((noreturn)) void unexpected_token(){
     compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
+}
+
+void* emalloc(size_t count){
+    void* ptr = malloc(count);
+    if(ptr == NULL)
+        fatal_printf("malloc() returned NULL!\n");
+    return ptr;
+}
+void* erealloc(void* ptr, size_t count){
+    void* temp = realloc(ptr, count);
+    if(temp == NULL){
+        free(ptr);
+        fatal_printf("realloc() returned NULL!\n");
+    }
+    return temp;
 }
