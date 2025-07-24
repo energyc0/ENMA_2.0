@@ -18,11 +18,11 @@ OBJS:=$(patsubst %.c, $(EXE_DIR)/%.o, $(SRC))
 all debug: $(EXE_DIR)/$(INTERPRETER)
 
 $(EXE_DIR)/$(INTERPRETER): $(OBJS)
-	mkdir -p $(EXE_DIR)
+	@[ -e $(EXE_DIR) ] || ( echo "===Created build directory===" && mkdir -p $(EXE_DIR) )
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(EXE_DIR)/%.o: %.c
-	mkdir -p $(EXE_DIR)
+	@[ -e $(EXE_DIR) ] || ( echo "===Created build directory===" && mkdir -p $(EXE_DIR) )
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 clean:

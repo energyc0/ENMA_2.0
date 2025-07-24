@@ -17,17 +17,24 @@ make -C .. clean
 make -C ..
 
 EXECUTABLE=../build/release/result
-TESTNAME=binary_expr/test
+TESTNAME=test
 RED='\033[0;31m'
 NC='\033[0m'
 
 set +e
-for i in $(seq 1 5)
+for DIR in $(ls -d */)
 do
-    "${EXECUTABLE}" "${TESTNAME}${i}" &> "${TESTNAME}_out${i}"
-    printf "${RED}${TESTNAME}_out${i}:${NC}\n"
-    cat "${TESTNAME}_out${i}"
-    printf "\n"
+
+    DIR=${DIR%/}
+    echo ===$DIR===
+    for FILE in $(find  ${DIR} -name ${TESTNAME}'[0-9]*' | sort)
+    do
+        NUMBER=${FILE#${DIR}/${TESTNAME}}
+        "${EXECUTABLE}" "${FILE}" &> "${DIR}/${TESTNAME}_out${NUMBER}"
+        printf "${DIR}/${TESTNAME}_out${NUMBER}:${NC}\n"
+        cat "${DIR}/${TESTNAME}_out${NUMBER}"
+        printf "\n"
+    done
 done
 
 

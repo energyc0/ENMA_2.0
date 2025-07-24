@@ -5,21 +5,27 @@ make -C .. clean
 make -C ..
 
 EXECUTABLE=../build/release/result
-TESTNAME=binary_expr/test
+TESTNAME=test
 
 RED='\033[0;31m'
 NC='\033[0m'
 GREEN='\033[0;32m'
 
-for i in $(seq 1 5)
+for DIR in $(ls -d */)
 do
-    "${EXECUTABLE}" "${TESTNAME}${i}" &> "${TESTNAME}_temp${i}"
-    printf ${RED}
-    if diff "${TESTNAME}_temp${i}" "${TESTNAME}_out${i}"; then
-        printf "${GREEN}${TESTNAME}${i} - good\n${NC}"
-    else
-        printf "${RED}${TESTNAME}${i} - failed\n${NC}" 
-    fi
-done
+    DIR=${DIR%/}
+    echo ===$DIR===
+    for FILE in $(find  ${DIR} -name ${TESTNAME}'[0-9]*' | sort)
+    do
+        NUMBER=${FILE#${DIR}/${TESTNAME}}
+        "${EXECUTABLE}" "${FILE}" &> "${DIR}/${TESTNAME}_temp${NUMBER}"
+        printf ${RED}
+        if diff "${DIR}/${TESTNAME}_temp${NUMBER}" "${DIR}/${TESTNAME}_out${NUMBER}"; then
+            printf "${GREEN}${DIR}/${TESTNAME}${NUMBER} - good\n${NC}"
+        else
+            printf "${RED}${DIR}/${TESTNAME}${NUMBER} - failed\n${NC}" 
+        fi
+    done
 
-rm ${TESTNAME}_temp*
+    rm ${DIR}/${TESTNAME}_temp*
+done
