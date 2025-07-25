@@ -1,5 +1,5 @@
 #include "scanner.h"
-#include "garbage_collector.h"
+#include "hash_table.h"
 #include "lang_types.h"
 #include "token.h"
 #include "utils.h"
@@ -150,8 +150,8 @@ int scanner_next_token(struct token* t){
             char* str = _readstring(&sz);
             if(_get() != '\"')
                 compile_error_printf("Unclosed '\"'\n");
-
-            t->data.ptr = mk_objstring(str, sz);
+            int32_t hash = hash_string(str, sz);
+            t->data.ptr = mk_objstring(str, sz,hash);
             break;
         }
         case EOF: t->type = T_EOF; return 0;

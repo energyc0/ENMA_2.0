@@ -1,14 +1,15 @@
 #include "lang_types.h"
 #include "utils.h"
+#include <stdint.h>
 #include <string.h>
 #include "garbage_collector.h"
 
-obj_string_t* mk_objstring(char* s, size_t len){
+obj_string_t* mk_objstring(char* s, size_t len, int32_t hash){
     obj_string_t* ptr = emalloc(sizeof(obj_string_t));
     
     ptr->obj.type = OBJ_STRING;
     ptr->obj.next = NULL;
-    
+    ptr->hash = hash;
     ptr->len = len;
     ptr->str = emalloc(len + 1);
     strncpy(ptr->str, s, len);

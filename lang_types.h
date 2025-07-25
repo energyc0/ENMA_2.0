@@ -20,6 +20,7 @@ typedef struct obj_string_t{
     obj_t obj;
     char* str;
     size_t len;
+    int32_t hash;
 }obj_string_t;
 
 typedef enum{
@@ -60,6 +61,6 @@ typedef struct{
 
 //frees obj_t internals and the pointer
 void obj_free(obj_t* ptr);
-obj_string_t* mk_objstring(char* s, size_t len);
+obj_string_t* mk_objstring(char* s, size_t len, int32_t hash);
 
 #endif
