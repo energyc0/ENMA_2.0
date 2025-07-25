@@ -61,7 +61,7 @@ static ast_node* ast_primary(){
     ast_node* temp;
     switch (cur_token.type) {
         case T_INT: 
-            return ast_mknode_number(cur_token.data);
+            return ast_mknode_number(cur_token.data.num);
         case T_FALSE:
             return ast_mknode_boolean(false);
         case T_TRUE:
@@ -72,7 +72,7 @@ static ast_node* ast_primary(){
         case T_NOT:
             return ast_mknode(AST_NOT, (ast_data){.ptr = ast_primary()});
         case T_STRING:
-            return ast_mknode_string(symtable_getstring(cur_token.data));
+            return ast_mknode_string(cur_token.data.ptr);
         case T_SUB:
             temp = ast_primary();
             if(temp->type == AST_NUMBER){

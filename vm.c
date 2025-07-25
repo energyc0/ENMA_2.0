@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "bytecode.h"
+#include "lang_types.h"
 #include "utils.h"
 #include <stdio.h>
 
@@ -71,7 +72,7 @@ static vm_execute_result interpret(){
                 stack_push(VALUE_BOOLEAN(extract_value(read_constant()).boolean));
                 break;
             case OP_STRING:
-                stack_push(VALUE_STRING(extract_value(read_constant()).str));
+                stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
             case OP_ADD:
                 CALC_NUMERICAL_OP(VALUE_NUMBER, +);
@@ -103,8 +104,11 @@ static vm_execute_result interpret(){
                     printf("%d\n", AS_NUMBER(val));
                 }else if(IS_BOOLEAN(val)){
                     printf("%s\n", AS_BOOLEAN(val) ? "true" : "false");
-                }else if(IS_STRING(val)){
-                    printf("%s\n", AS_STRING(val));
+                }else if(IS_OBJ(val)){
+                    switch (AS_OBJ(val)->type) {
+                        case OBJ_STRING: printf("%s\n", AS_OBJSTRING(val)->str); break;
+                        default: fatal_printf("Undefined obj_type in interpret()!\n");
+                    }
                 }else{
                     printf("print: Not implemented instruction :(\n");
                 }
@@ -164,9 +168,13 @@ static char* examine_value(value_t val){
             return buf;
         case VT_BOOL: 
             return AS_BOOLEAN(val) ? "true" : "false";
-        case VT_STRING:
-            return AS_STRING(val);
-            //return AS_STRING(val);
+        case VT_OBJ:{
+            switch (AS_OBJ(val)->type) {
+                case OBJ_STRING: return AS_OBJSTRING(val)->str;
+                default: 
+                    fatal_printf("Undefined object type in examine_value()\n");
+            }
+        }
         default: 
             fatal_printf("Undefined value in the stack! Check examine_value()\n");
     }

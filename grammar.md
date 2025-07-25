@@ -1,6 +1,10 @@
 statement: 'print' expression ';'
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
 
+print_statement: 'print' expression ';' 
+
+declaration: 
+
 expression: additive_expression
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| oring_expression
 &ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| string_expression

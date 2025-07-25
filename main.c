@@ -1,5 +1,6 @@
 #include "ast.h"
 #include "bytecode.h"
+#include "garbage_collector.h"
 #include "scanner.h"
 #include "parser.h"
 #include "symtable.h"
@@ -43,6 +44,7 @@ int main(int argc, char** argv){
 
     vm_free();
     symtable_cleanup();
+    gc_cleanup();
     
     return 0;
 }

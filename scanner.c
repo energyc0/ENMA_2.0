@@ -1,4 +1,6 @@
 #include "scanner.h"
+#include "garbage_collector.h"
+#include "lang_types.h"
 #include "token.h"
 #include "utils.h"
 #include "symtable.h"
@@ -13,7 +15,7 @@ int line_counter = 1;
 
 #define INPUT_BUF_SZ (16)
 #define WORD_SIZE (1024)
-
+#define TAB_SIZE (4)
 static FILE* _scan_fp = NULL;
 
 struct _input_buf{
@@ -27,7 +29,9 @@ static inline int _skip_until(int c); //skip all the characters until 'c' charac
 static inline void _putback(int c); //puts character back in the stream
 static inline int _readint(int c); // last character in the stream must be a digit
 static inline char* _readword(int c); //first character must be alphabetical
-static inline char* _readuntil(int c); //reads until 'c' or EOF and return a dynamically allocated string, last character is put in the stream
+//reads until '\"' or EOF and return a string without null byte, last character is put in the stream
+//writes size of the string in the sz
+static inline char* _readstring(size_t* sz);
 
 static inline int _get(){
     int c = _input_buf.sz > 0 ? _input_buf.buf[--_input_buf.sz] : getc(_scan_fp);
@@ -75,24 +79,40 @@ static inline char* _readword(int c){
     buf[sz] = '\0';
     return buf;
 }
-
-static inline char* _readuntil(int target){
-    size_t capacity = WORD_SIZE;
-    size_t sz = 0;
-    char* temp_buf = emalloc(capacity);
+static inline char* _readstring(size_t* sz){
+    #define ADD_CHAR(c) (temp_buf[(*sz)++] = c)
+    static size_t capacity = 0;
+    static char* temp_buf = NULL;
+    *sz = 0;
 
     int c;
-    for(c = _get(); c != EOF && c != target; c =_get()){
-        if(capacity <= sz){
+    for(c = _get(); c != EOF && c != '\"'; c =_get()){
+        if(capacity <= *sz){
             capacity += WORD_SIZE;
-            char* ptr = erealloc(temp_buf, capacity);
-            temp_buf = ptr;
+            temp_buf = erealloc(temp_buf, capacity);
         }
-        temp_buf[sz++] = c;
+        if (c == '\\') {
+            c = _get();
+            switch (c) {
+                case '\\':  c = '\\'; break;
+                case 'n':   c = '\n'; break;
+                case 't':   c = '\t'; break;
+                case '\'':  c = '\''; break;
+                case '\"':  c = '\"'; break;
+                case '?':   c = '\?'; break;
+                case 'a':   c = '\a'; break;
+                case 'b':   c = '\b'; break;
+                case 'f':   c = '\f'; break;
+                case 'r':   c = '\r'; break;
+                case 'v':   c = '\v'; break;
+                default: compile_error_printf("Expected escape sequence\n");
+            }
+        }
+        ADD_CHAR(c);
     }
     _putback(c);
-    temp_buf[sz] = '\0';
     return temp_buf;
+    #undef ADD_CHAR
 }
 
 void scanner_init(FILE* fp){
@@ -126,24 +146,24 @@ int scanner_next_token(struct token* t){
         case ';': t->type = T_SEMI; break;
         case '\"':{
             t->type = T_STRING;
-            char* str = _readuntil('\"');
+            size_t sz;
+            char* str = _readstring(&sz);
             if(_get() != '\"')
                 compile_error_printf("Unclosed '\"'\n");
 
-            t->data = symtable_addstring(str);
-            free(str);
+            t->data.ptr = mk_objstring(str, sz);
             break;
         }
         case EOF: t->type = T_EOF; return 0;
         default:{
             if(isdigit(c)){
                 t->type = T_INT;
-                t->data = _readint(c);
+                t->data.num = _readint(c);
             }else if(isalpha(c)){
                 char* word = _readword(c);
                 token_type tok_type = symtable_procword(word);
                 if(tok_type == T_IDENT)
-                    t->data = symtable_addident(word);
+                    t->data.num = symtable_addident(word);
                 t->type = tok_type;
                 break;
             }else{
@@ -159,7 +179,7 @@ void scanner_debug_tokens(){
     printf("Debug tokens:\n");
     while (scanner_next_token(&cur_token)) {
         switch (cur_token.type) {
-            case T_INT: printf("'%d' ", cur_token.data); break;
+            case T_INT: printf("'%d' ", cur_token.data.num); break;
             case T_ADD: printf("'+' "); break;
             case T_SUB: printf("'-' "); break;
             case T_MUL: printf("'*' "); break;
@@ -174,8 +194,8 @@ void scanner_debug_tokens(){
             case T_PRINT: printf("'print' "); break;
             case T_FALSE: printf("'false' "); break;
             case T_TRUE: printf("'true' "); break;
-            case T_STRING: printf("'\"%s\"' ", symtable_getstring(cur_token.data)); break;
-            case T_IDENT: printf("'%s' ", symtable_getident(cur_token.data)); break;
+            case T_STRING: printf("'\"%s\"' ", ((obj_string_t*)(cur_token.data.ptr))->str); break;
+            case T_IDENT: printf("'%s' ", "SOME ID"); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

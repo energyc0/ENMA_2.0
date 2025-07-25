@@ -1,5 +1,6 @@
 #include "ast.h"
 #include "bytecode.h"
+#include "lang_types.h"
 #include "token.h"
 #include "utils.h"
 #include "scanner.h"
@@ -16,9 +17,10 @@ ast_node* ast_mknode(ast_node_type type, ast_data data){
     p->type = type;
     return p;
 }
+
 void ast_freenode(ast_node* node){
     switch (node->type) {
-        //strings are freed in symtable_cleanup()
+        //garbage collector is responsible for strings
         case AST_NUMBER: case AST_BOOLEAN: case AST_STRING:
             break;
         case AST_ADD: case AST_SUB: case AST_MUL: case AST_DIV:
@@ -48,8 +50,8 @@ ast_node* ast_mknode_boolean(bool val){
     return res;
 }
 
-ast_node* ast_mknode_string(char* str){
-    ast_node* res = ast_mknode(AST_STRING, (ast_data){.val = VALUE_STRING(str)});
+ast_node* ast_mknode_string(obj_string_t* str){
+    ast_node* res = ast_mknode(AST_STRING, (ast_data){.val = VALUE_OBJ(str)});
     return res;
 }
 
@@ -88,7 +90,7 @@ void ast_debug_tree(const ast_node* node){
     switch (node->type) {
         case AST_NUMBER: printf("%d", AS_NUMBER(node->data.val)); break;
         case AST_BOOLEAN: printf("%s", AS_BOOLEAN(node->data.val) ? "true" : "false"); break;
-        case AST_STRING: printf("\"%s\"", AS_STRING(node->data.val)); break;
+        case AST_STRING: printf("\"%s\"", AS_OBJSTRING(node->data.val)->str); break;
         case AST_ADD: DEBUG_BINARY(+); break;
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;

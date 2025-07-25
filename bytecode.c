@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ast.h"
+#include "lang_types.h"
 #include "utils.h"
 
 static inline void chunk_realloc(struct chunk* chunk, size_t newsize);
@@ -118,7 +119,11 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
     switch (*chunk->_code.data) {
         case OP_NUMBER: printf(" %d\n", EXTRACTED_VALUE().number); break;
         case OP_BOOLEAN: printf(" %s\n", EXTRACTED_VALUE().boolean ? "true" : "false"); break;
-        case OP_STRING: printf(" \"%s\"\n", EXTRACTED_VALUE().str); break;
+        case OP_STRING:{
+            if(!IS_OBJSTRING(EXTRACTED_VALUE().obj))
+                fatal_printf("constant_instruction_debug(): extracted object is not string\n");
+            printf(" \"%s\"\n", ((obj_string_t*)(EXTRACTED_VALUE().obj))->str); break;
+        }
         default:
             printf(" Not implemented constant instruction :(\n");
     }
@@ -142,8 +147,11 @@ void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data){
         bcchunk_write_code(chunk, OP_NUMBER);
     else if(IS_BOOLEAN(data))
         bcchunk_write_code(chunk, OP_BOOLEAN);
-    else if(IS_STRING(data))
-        bcchunk_write_code(chunk, OP_STRING);
+    else if(IS_OBJ(data))
+        switch (AS_OBJ(data)->type) {
+            case OBJ_STRING: bcchunk_write_code(chunk, OP_STRING); break;
+            default: fatal_printf("Undefined obj_type on bcchunk_write_value()\n");
+        }
     else 
         fatal_printf("Not implemented instruction :(\n");
     chunk_write_number(&chunk->_code, chunk->_data.size);
@@ -221,8 +229,8 @@ static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_
             res.as = INNERVALUE_AS_BOOLEAN(READ_INSTRUCTION_CONSTANT(bool));
             break;
         case OP_STRING:
-            res.type = VT_STRING;
-            res.as = INNERVALUE_AS_STRING(READ_INSTRUCTION_CONSTANT(char*));
+            res.type = VT_OBJ;
+            res.as = INNERVALUE_AS_OBJ(READ_INSTRUCTION_CONSTANT(obj_t*));
             break;
         default:
         fatal_printf("Undefined operation in readvalue()!\n");

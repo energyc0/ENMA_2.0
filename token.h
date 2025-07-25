@@ -32,7 +32,10 @@ typedef enum{
 
 struct token{
     token_type type;
-    int data;
+    union{
+        int num;
+        void* ptr;
+    }data;
 };
 
 const char* token_to_string(token_type type);
