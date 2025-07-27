@@ -15,6 +15,9 @@ typedef enum {
     AST_OR = 5,
     AST_XOR = 6,
     AST_NOT = 7,
+    AST_EQUAL = 8,
+    AST_NEQUAL = 9,
+    AST_ASSIGN = 10,
     /*values */
     AST_NUMBER,
     AST_BOOLEAN,
@@ -23,7 +26,7 @@ typedef enum {
     AST_PRINT //ast node contains pointer to an expression node
 }ast_node_type;
 
-#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_XOR)
+#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_ASSIGN)
 
 typedef union{
     void* ptr;

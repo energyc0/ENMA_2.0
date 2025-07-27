@@ -7,14 +7,17 @@
 #include "utils.h"
 
 static const int precedence[] = {
-    5,  //T_ADD
-    5,  //T_SUB
-    6,  //T_MUL
-    6,  //T_DIV
-    3,  //T_AND
-    2,  //T_OR
-    1,  //T_XOR
-    4,  //T_NOT
+    7,  //T_ADD
+    7,  //T_SUB
+    8,  //T_MUL
+    8,  //T_DIV
+    5,  //T_AND
+    4,  //T_OR
+    3,  //T_XOR
+    6,  //T_NOT
+    2,  //T_EQUAL,
+    2,  //T_NEQUAL,
+    1,  //T_ASSIGN,
     0,  //T_LPAR
     -1, //T_RPAR
     0,  //T_T_INT

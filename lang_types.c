@@ -4,7 +4,7 @@
 #include <string.h>
 #include "garbage_collector.h"
 
-obj_string_t* mk_objstring(char* s, size_t len, int32_t hash){
+obj_string_t* mk_objstring(const char* s, size_t len, int32_t hash){
     obj_string_t* ptr = emalloc(sizeof(obj_string_t));
     
     ptr->obj.type = OBJ_STRING;
@@ -14,11 +14,25 @@ obj_string_t* mk_objstring(char* s, size_t len, int32_t hash){
     ptr->str = emalloc(len + 1);
     strncpy(ptr->str, s, len);
     ptr->str[len]='\0';
-
+    //add it to the garbage collector
     gc_add((obj_t*)ptr);
     return ptr;
 }
 
+obj_string_t* objstring_conc(const obj_string_t* s1, const obj_string_t* s2){
+    obj_string_t* ptr = emalloc(sizeof(obj_string_t));
+    
+    ptr->obj.type = OBJ_STRING;
+    ptr->obj.next = NULL;
+    ptr->len = s1->len + s2->len;
+    ptr->str = emalloc(ptr->len + 1);
+    strncpy(ptr->str, s1->str, s1->len);
+    strncpy(ptr->str + s1->len, s2->str, s2->len);
+    ptr->str[ptr->len]='\0';
+    //add it to the garbage collector
+    gc_add((obj_t*)ptr);
+    return ptr;
+}
 void obj_free(obj_t* ptr){
     switch (ptr->type) {
         case OBJ_STRING:

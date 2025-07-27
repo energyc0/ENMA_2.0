@@ -28,8 +28,8 @@ static inline int _skip(); //skip spaces and return the last character
 static inline int _skip_until(int c); //skip all the characters until 'c' character or EOF, return 'c' or EOF
 static inline void _putback(int c); //puts character back in the stream
 static inline int _readint(int c); // last character in the stream must be a digit
-static inline char* _readword(int c); //first character must be alphabetical
-//reads until '\"' or EOF and return a string without null byte, last character is put in the stream
+static inline char* _readword(int c, size_t* sz); //first character must be alphabetical, return string and the size
+//reads until '\"' or EOF and return a string, last character is put in the stream
 //writes size of the string in the sz
 static inline char* _readstring(size_t* sz);
 
@@ -69,28 +69,31 @@ static inline int _readint(int c){
     return val;
 }
 
-static inline char* _readword(int c){
+static inline char* _readword(int c, size_t* sz){
     static char buf[WORD_SIZE];
-    int sz = 0;
-    for(;sz < (WORD_SIZE-1) && (isalnum(c) || c == '_'); c = _get()){
-        buf[sz++] = c;
+    *sz = 0;
+    for(;*sz < (WORD_SIZE-1) && (isalnum(c) || c == '_'); c = _get()){
+        buf[(*sz)++] = c;
     }
     _putback(c);
-    buf[sz] = '\0';
+    buf[*sz] = '\0';
     return buf;
 }
 static inline char* _readstring(size_t* sz){
     #define ADD_CHAR(c) (temp_buf[(*sz)++] = c)
+    #define GROW_SIZE() do { \
+            capacity += WORD_SIZE; \
+            temp_buf = erealloc(temp_buf, capacity);\
+    } while(0)
+
     static size_t capacity = 0;
     static char* temp_buf = NULL;
     *sz = 0;
 
     int c;
     for(c = _get(); c != EOF && c != '\"'; c =_get()){
-        if(capacity <= *sz){
-            capacity += WORD_SIZE;
-            temp_buf = erealloc(temp_buf, capacity);
-        }
+        if(capacity <= *sz)
+            GROW_SIZE();
         if (c == '\\') {
             c = _get();
             switch (c) {
@@ -112,7 +115,9 @@ static inline char* _readstring(size_t* sz){
     }
     _putback(c);
     return temp_buf;
+
     #undef ADD_CHAR
+    #undef GROW_SIZE
 }
 
 void scanner_init(FILE* fp){
@@ -141,9 +146,25 @@ int scanner_next_token(struct token* t){
             return scanner_next_token(t);
         }
         case '*': t->type = T_MUL; break;
+        case '=':{
+            if((c = _get()) == '='){
+                t->type = T_EQUAL;
+            }else{
+                t->type = T_ASSIGN;
+                _putback(c);
+            }
+            break;
+        }
         case '(': t->type = T_LPAR; break;
         case ')': t->type = T_RPAR; break;
         case ';': t->type = T_SEMI; break;
+        case '!':{
+            if(_get() != '='){
+                compile_error_printf("Undefined character '!'\n");
+            }
+            t->type = T_NEQUAL;
+            break;
+        }
         case '\"':{
             t->type = T_STRING;
             size_t sz;
@@ -151,7 +172,12 @@ int scanner_next_token(struct token* t){
             if(_get() != '\"')
                 compile_error_printf("Unclosed '\"'\n");
             int32_t hash = hash_string(str, sz);
-            t->data.ptr = mk_objstring(str, sz,hash);
+            obj_string_t* k = stringtable_findstr(str, sz, hash);
+            if(k == NULL){
+                k = mk_objstring(str, sz, hash);
+                stringtable_set(k);
+            }
+            t->data.ptr = k;
             break;
         }
         case EOF: t->type = T_EOF; return 0;
@@ -160,10 +186,13 @@ int scanner_next_token(struct token* t){
                 t->type = T_INT;
                 t->data.num = _readint(c);
             }else if(isalpha(c)){
-                char* word = _readword(c);
+                size_t len;
+                char* word = _readword(c, &len);
                 token_type tok_type = symtable_procword(word);
-                if(tok_type == T_IDENT)
-                    t->data.num = symtable_addident(word);
+                if(tok_type == T_IDENT){
+                    int32_t hash = hash_string(word, len);
+                    t->data.ptr = mk_objstring(word, len, hash);
+                }
                 t->type = tok_type;
                 break;
             }else{
@@ -194,8 +223,11 @@ void scanner_debug_tokens(){
             case T_PRINT: printf("'print' "); break;
             case T_FALSE: printf("'false' "); break;
             case T_TRUE: printf("'true' "); break;
+            case T_EQUAL: printf("'==' "); break;
+            case T_NEQUAL: printf("'!=' "); break;
+            case T_ASSIGN: printf("'=' "); break;
             case T_STRING: printf("'\"%s\"' ", ((obj_string_t*)(cur_token.data.ptr))->str); break;
-            case T_IDENT: printf("'%s' ", "SOME ID"); break;
+            case T_IDENT: printf("'%s' ", ((obj_string_t*)cur_token.data.ptr)->str); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

@@ -1,6 +1,7 @@
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
 
+#include "lang_types.h"
 #include "token.h"
 
 void symtable_init();
@@ -10,17 +11,15 @@ void symtable_cleanup();
 otherwise return valid token_type*/
 token_type symtable_procword(char* str);
 
-//return 1 if identifier is in symtable
-int symtable_contain(char* id);
+//return new allocated string if there is no such, or return existing one
+obj_string_t* symtable_findstr(const char* s, size_t sz, int32_t hash);
+obj_string_t* stringtable_findstr(const char* s, size_t sz, int32_t hash);
 
-//adds identifier to the table and returns the table index
-int symtable_addident(char* id);
-//returns identifier containing in the table
-char* symtable_getident(int idx);
+bool symtable_set(obj_string_t* id, value_t val);
+bool stringtable_set(obj_string_t* str);
 
-//adds constant string to the table and returns the table index
-int symtable_addstring(char* str);
-//return a string corresponds to the idx
-char* symtable_getstring(int idx);
+//check if identifier exists
+bool symtable_check(obj_string_t* id);
+
 
 #endif

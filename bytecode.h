@@ -25,7 +25,9 @@ typedef enum{
     OP_AND,
     OP_OR,
     OP_XOR,
-    OP_NOT
+    OP_NOT,
+    OP_EQUAL,
+    OP_ASSIGN
 } op_t;
 
 struct chunk{

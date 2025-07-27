@@ -12,6 +12,9 @@ typedef enum{
     T_OR = 5,
     T_XOR = 6,
     T_NOT = 7,
+    T_EQUAL = 8,
+    T_NEQUAL = 9,
+    T_ASSIGN = 10,
     //precedence operators
     T_LPAR,
     T_RPAR,

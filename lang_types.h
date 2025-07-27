@@ -24,6 +24,7 @@ typedef struct obj_string_t{
 }obj_string_t;
 
 typedef enum{
+    VT_NULL,
     VT_BOOL,
     VT_NUMBER,
     VT_OBJ
@@ -39,6 +40,8 @@ typedef struct{
     value_type type;
     union _inner_value_t as;
 }value_t;
+
+#define VALUE_NULL ((value_t){.type = VT_NULL})
 
 #define INNERVALUE_AS_NUMBER(value) ((union _inner_value_t){.number = (value)})
 #define INNERVALUE_AS_BOOLEAN(value) ((union _inner_value_t){.boolean = (value)})
@@ -61,6 +64,8 @@ typedef struct{
 
 //frees obj_t internals and the pointer
 void obj_free(obj_t* ptr);
-obj_string_t* mk_objstring(char* s, size_t len, int32_t hash);
+obj_string_t* mk_objstring(const char* s, size_t len, int32_t hash);
+//allocate new string
+obj_string_t* objstring_conc(const obj_string_t* s1, const obj_string_t* s2);
 
 #endif

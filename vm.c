@@ -1,8 +1,12 @@
 #include "vm.h"
 #include "bytecode.h"
+#include "hash_table.h"
 #include "lang_types.h"
+#include "symtable.h"
+#include "garbage_collector.h"
 #include "utils.h"
 #include <stdio.h>
+#include <string.h>
 
 static struct virtual_machine vm;
 
@@ -43,6 +47,8 @@ static inline union _inner_value_t extract_value(int offset);
         stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) op AS_BOOLEAN(b))); \
     } while(0)
 
+#define CALC_VAL_OP(return_type, op)
+
 void vm_init(){}
 
 vm_execute_result vm_execute(struct bytecode_chunk* code){
@@ -74,8 +80,37 @@ static vm_execute_result interpret(){
             case OP_STRING:
                 stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
-            case OP_ADD:
-                CALC_NUMERICAL_OP(VALUE_NUMBER, +);
+            case OP_ADD:{
+                value_t b = stack_pop();
+                value_t a = stack_pop();
+                if(IS_NUMBER(a) && IS_NUMBER(b)){
+                    stack_push(VALUE_NUMBER(AS_NUMBER(a) + AS_NUMBER(b)));
+                }else if(IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
+                    obj_string_t* s1 = AS_OBJSTRING(a);
+                    obj_string_t* s2 = AS_OBJSTRING(b);
+                    size_t len = s1->len + s2->len;
+                    char* s = emalloc(len + 1);
+                    strncpy(s, s1->str, s1->len);
+                    strncpy(s + s1->len, s2->str, s2->len);
+                    s[len] = '\0';
+                    int32_t hash = hash_string(s, len);
+
+                    obj_string_t*ptr = stringtable_findstr(s, len, hash);
+                    if(ptr == NULL){
+                        ptr = emalloc(sizeof(obj_string_t));
+                        ptr->obj.type = OBJ_STRING;
+                        ptr->obj.next = NULL;
+                        ptr->hash = hash;
+                        ptr->len = len;
+                        ptr->str = s;
+                        //add it to the garbage collector
+                        gc_add((obj_t*)ptr);
+                    }
+                    stack_push(VALUE_OBJ(ptr));
+                }else{
+                    compile_error_printf("Incompatible types for operation.\n");\
+                }
+            }
                 break;
             case OP_SUB: 
                 CALC_NUMERICAL_OP(VALUE_NUMBER,-);
@@ -98,6 +133,20 @@ static vm_execute_result interpret(){
             case OP_NOT:
                 stack_push(VALUE_BOOLEAN(!AS_BOOLEAN(stack_pop())));
                 break;
+            case OP_EQUAL:{
+                value_t a = stack_pop();
+                value_t b = stack_pop();
+                if(IS_NUMBER(a) && IS_NUMBER(b)){
+                    stack_push(VALUE_BOOLEAN(AS_NUMBER(a) == AS_NUMBER(b)));
+                }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
+                    stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) == AS_BOOLEAN(b)));
+                }else if(IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
+                    stack_push(VALUE_BOOLEAN(AS_OBJSTRING(a) == AS_OBJSTRING(b)));
+                }else{
+                    compile_error_printf("Incompatible types for operation!\n");
+                }
+                break;
+            }
             case OP_PRINT:
                 val = stack_pop();
                 if(IS_NUMBER(val)){

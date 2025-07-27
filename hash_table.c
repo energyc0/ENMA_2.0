@@ -1,6 +1,7 @@
 #include "hash_table.h"
 #include "lang_types.h"
 #include "utils.h"
+#include <string.h>
 
 #define LOAD_RATIO (0.5)
 #define TABLE_BASE_CAPACITY (16)
@@ -49,9 +50,15 @@ bool table_unset(struct hash_table* t, obj_string_t * key){
     return true;
 }
 
-bool table_check(struct hash_table* t , obj_string_t* key){
+bool table_check(struct hash_table* t , obj_string_t* key, value_t* value){
     hash_entry* ptr = find_entry(t, key);
-    return ptr->key != NULL;
+    if(ptr->key == NULL){
+        return false;
+    }else{
+        if(value != NULL)
+            *value = ptr->value;
+        return true;
+    }
 }
 
 void table_free(struct hash_table* t){
@@ -79,11 +86,24 @@ static hash_entry* find_entry(struct hash_table* t, obj_string_t* key){
 
 int32_t hash_string(const char* str, size_t len){
     uint32_t hash = 2166136261u;
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         hash ^= (uint8_t)str[i];
         hash *= 16777619;
     }
     return hash;
+}
+
+obj_string_t* table_find_string(struct hash_table* t, const char* s, size_t sz, int32_t hash){
+    int32_t idx = hash % t->capacity;
+    for(;;){
+        if (t->entries[idx].key && t->entries[idx].key->len == sz && strncmp(t->entries[idx].key->str, s, sz) == 0) {
+            return t->entries[idx].key;
+        }
+        if(t->entries[idx].key == NULL && !AS_BOOLEAN(t->entries[idx].value)){
+            return NULL;
+        }
+        idx = (idx + 1) % t->capacity;
+    }
 }
 
 static void entries_init(hash_entry* entries, size_t count){

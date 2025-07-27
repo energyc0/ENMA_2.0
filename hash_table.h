@@ -21,9 +21,12 @@ void table_init(struct hash_table* t);
 //return true if new entry was added
 bool table_set(struct hash_table* t, obj_string_t* key, value_t value);
 //return true if the entry is in the table
-bool table_check(struct hash_table* t , obj_string_t* key);
+//and write its value
+bool table_check(struct hash_table* t , obj_string_t* key, value_t* value);
 //return true if the entry was successfully deleted
 bool table_unset(struct hash_table* t, obj_string_t * key);
+
+obj_string_t* table_find_string(struct hash_table* t, const char* s, size_t sz, int32_t hash);
 
 void table_free(struct hash_table* t);
 

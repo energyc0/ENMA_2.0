@@ -93,6 +93,8 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_OR: return simple_instruction_debug("OP_OR",chunk, offset);
         case OP_XOR: return simple_instruction_debug("OP_XOR",chunk, offset);
         case OP_NOT: return simple_instruction_debug("OP_NOT",chunk, offset);
+        case OP_ASSIGN: return simple_instruction_debug("OP_ASSIGN",chunk, offset);
+        case OP_EQUAL: return simple_instruction_debug("OP_EQUAL",chunk, offset);
         case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
         case OP_STRING: return constant_instruction_debug("OP_STRING", chunk, offset);
@@ -122,7 +124,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
         case OP_STRING:{
             if(!IS_OBJSTRING(EXTRACTED_VALUE().obj))
                 fatal_printf("constant_instruction_debug(): extracted object is not string\n");
-            printf(" \"%s\"\n", ((obj_string_t*)(EXTRACTED_VALUE().obj))->str); break;
+            printf(" \"%s\" %p\n", ((obj_string_t*)(EXTRACTED_VALUE().obj))->str,((obj_string_t*)(EXTRACTED_VALUE().obj))->str); break;
         }
         default:
             printf(" Not implemented constant instruction :(\n");
@@ -198,6 +200,16 @@ static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
             break;
         case AST_XOR:   
             BIN_OP(OP_XOR);
+            break;
+        case AST_EQUAL:
+            BIN_OP(OP_EQUAL);
+            break;
+        case AST_NEQUAL:
+            BIN_OP(OP_EQUAL);
+            bcchunk_write_simple_op(chunk, OP_NOT);
+            break;
+        case AST_ASSIGN:
+            BIN_OP(OP_ASSIGN);
             break;
         case AST_NOT:{
             parse_ast_bin_expr(node->data.ptr, chunk);

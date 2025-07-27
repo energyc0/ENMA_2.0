@@ -1,14 +1,12 @@
 #include "symtable.h"
 #include "data_structs.h"
+#include "hash_table.h"
+#include "lang_types.h"
 #include "token.h"
-#include "utils.h"
-#include <stdlib.h>
 #include <string.h>
 
+/*
 #define TABLE_SIZE (1024)
-
-static struct trie_node* keywords = NULL;
-
 struct table{
     char** data;
     int size;
@@ -20,9 +18,13 @@ static inline void table_expand(struct table* t); //expand size
 static inline int table_add(struct table* t, char* str);
 static inline char* table_get(struct table* t, int idx);
 static inline void table_free(struct table* t); //frees 'guts' of the struc
+*/
 
-static struct table symtable;
-static struct table stringtable;
+static struct trie_node* keywords = NULL;
+static struct hash_table symtable;
+static struct hash_table stringtable;
+
+//static obj_string_t* _table_find_string(struct hash_table*t, const char* s, size_t sz, int32_t hash);
 
 void symtable_init(){
     keywords = tr_alloc();
@@ -52,30 +54,35 @@ token_type symtable_procword(char* str){
     else 
         return ptr->data;
 }
+/*
+static obj_string_t* _table_find_string(struct hash_table*t, const char* s, size_t sz, int32_t hash){
+    obj_string_t* k = table_find_string(t, s, sz, hash);
+    if(k == NULL){
+        k = mk_objstring(s, sz, hash);
+    }
+    return k;
+}
+    */
 
-int symtable_contain(char* id){
-    for(int i = 0; i < symtable.size; i++)
-        if (strcmp(id, symtable.data[i]) == 0)
-            return 1;
-    return 0;
+obj_string_t* symtable_findstr(const char* s, size_t sz, int32_t hash){
+    return table_find_string(&symtable, s, sz, hash);
+}
+obj_string_t* stringtable_findstr(const char* s, size_t sz, int32_t hash){
+    return table_find_string(&stringtable, s, sz, hash);
 }
 
-int symtable_addident(char* id){
-    return table_add(&symtable, id);
+
+bool symtable_set(obj_string_t* id, value_t val){
+    return table_set(&symtable, id, val);
+}
+bool stringtable_set(obj_string_t* str){
+    return table_set(&stringtable, str, VALUE_NULL);
 }
 
-char* symtable_getident(int idx){
-    return table_get(&symtable, idx);
+bool symtable_check(obj_string_t* id){
+    return table_check(&symtable, id, NULL);
 }
-
-int symtable_addstring(char* str){
-    return table_add(&stringtable, str);
-}
-
-char* symtable_getstring(int idx){
-    return table_get(&stringtable, idx);
-}
-
+/*
 static inline void table_init(struct table* t){
     t->capacity = TABLE_SIZE;
     t->size = 0;
@@ -104,4 +111,4 @@ static inline void table_free(struct table* t){
     t->size = 0;
     free(t->data);
     t->data = NULL;
-}
+}*/
