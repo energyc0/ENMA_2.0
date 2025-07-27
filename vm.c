@@ -134,14 +134,40 @@ static vm_execute_result interpret(){
                 stack_push(VALUE_BOOLEAN(!AS_BOOLEAN(stack_pop())));
                 break;
             case OP_EQUAL:{
-                value_t a = stack_pop();
                 value_t b = stack_pop();
+                value_t a = stack_pop();
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) == AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
                     stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) == AS_BOOLEAN(b)));
                 }else if(IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
                     stack_push(VALUE_BOOLEAN(AS_OBJSTRING(a) == AS_OBJSTRING(b)));
+                }else{
+                    compile_error_printf("Incompatible types for operation!\n");
+                }
+                break;
+            }
+            case OP_GREATER:{
+                /*TODO: add strings compare*/
+                value_t b = stack_pop();
+                value_t a = stack_pop();
+                if(IS_NUMBER(a) && IS_NUMBER(b)){
+                    stack_push(VALUE_BOOLEAN(AS_NUMBER(a) > AS_NUMBER(b)));
+                }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
+                    stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) > AS_BOOLEAN(b)));
+                }else{
+                    compile_error_printf("Incompatible types for operation!\n");
+                }
+                break;
+            }
+            case OP_LESS:{
+                /*TODO: add strings compare*/
+                value_t b = stack_pop();
+                value_t a = stack_pop();
+                if(IS_NUMBER(a) && IS_NUMBER(b)){
+                    stack_push(VALUE_BOOLEAN(AS_NUMBER(a) < AS_NUMBER(b)));
+                }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
+                    stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) < AS_BOOLEAN(b)));
                 }else{
                     compile_error_printf("Incompatible types for operation!\n");
                 }

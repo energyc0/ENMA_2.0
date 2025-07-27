@@ -155,6 +155,24 @@ int scanner_next_token(struct token* t){
             }
             break;
         }
+        case '>':{
+            if((c = _get()) == '='){
+                t->type = T_EGREATER;
+            }else{
+                t->type = T_GREATER;
+                _putback(c);
+            }
+            break;
+        }
+        case '<':{
+            if((c = _get()) == '='){
+                t->type = T_ELESS;
+            }else{
+                t->type = T_LESS;
+                _putback(c);
+            }
+            break;
+        }
         case '(': t->type = T_LPAR; break;
         case ')': t->type = T_RPAR; break;
         case ';': t->type = T_SEMI; break;
@@ -226,6 +244,10 @@ void scanner_debug_tokens(){
             case T_EQUAL: printf("'==' "); break;
             case T_NEQUAL: printf("'!=' "); break;
             case T_ASSIGN: printf("'=' "); break;
+            case T_GREATER: printf("'>' "); break;
+            case T_EGREATER: printf("'>=' "); break;
+            case T_LESS: printf("'<' "); break;
+            case T_ELESS: printf("'<=' "); break;
             case T_STRING: printf("'\"%s\"' ", ((obj_string_t*)(cur_token.data.ptr))->str); break;
             case T_IDENT: printf("'%s' ", ((obj_string_t*)cur_token.data.ptr)->str); break;
             default:

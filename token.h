@@ -14,7 +14,11 @@ typedef enum{
     T_NOT = 7,
     T_EQUAL = 8,
     T_NEQUAL = 9,
-    T_ASSIGN = 10,
+    T_GREATER = 10,
+    T_EGREATER = 11,
+    T_LESS = 12, 
+    T_ELESS = 13,
+    T_ASSIGN = 14,
     //precedence operators
     T_LPAR,
     T_RPAR,
@@ -31,7 +35,7 @@ typedef enum{
     T_EOF,
 } token_type; 
 
-#define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_XOR)
+#define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_ASSIGN)
 
 struct token{
     token_type type;

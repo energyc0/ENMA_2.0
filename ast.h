@@ -17,7 +17,11 @@ typedef enum {
     AST_NOT = 7,
     AST_EQUAL = 8,
     AST_NEQUAL = 9,
-    AST_ASSIGN = 10,
+    AST_GREATER = 10,
+    AST_EGREATER = 11,
+    AST_LESS = 12, 
+    AST_ELESS = 13,
+    AST_ASSIGN = 14,
     /*values */
     AST_NUMBER,
     AST_BOOLEAN,

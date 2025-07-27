@@ -95,6 +95,8 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_NOT: return simple_instruction_debug("OP_NOT",chunk, offset);
         case OP_ASSIGN: return simple_instruction_debug("OP_ASSIGN",chunk, offset);
         case OP_EQUAL: return simple_instruction_debug("OP_EQUAL",chunk, offset);
+        case OP_GREATER: return simple_instruction_debug("OP_GREATER",chunk, offset);
+        case OP_LESS:  return simple_instruction_debug("OP_LESS",chunk, offset);
         case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
         case OP_STRING: return constant_instruction_debug("OP_STRING", chunk, offset);
@@ -207,6 +209,20 @@ static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
         case AST_NEQUAL:
             BIN_OP(OP_EQUAL);
             bcchunk_write_simple_op(chunk, OP_NOT);
+            break;
+        case AST_EGREATER:
+            BIN_OP(OP_LESS);
+            bcchunk_write_simple_op(chunk, OP_NOT); 
+            break;
+        case AST_GREATER:
+            BIN_OP(OP_GREATER);
+            break;
+        case AST_ELESS:
+            BIN_OP(OP_GREATER);
+            bcchunk_write_simple_op(chunk, OP_NOT); 
+            break;
+        case AST_LESS:
+            BIN_OP(OP_LESS);
             break;
         case AST_ASSIGN:
             BIN_OP(OP_ASSIGN);

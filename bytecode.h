@@ -27,6 +27,8 @@ typedef enum{
     OP_XOR,
     OP_NOT,
     OP_EQUAL,
+    OP_GREATER,
+    OP_LESS,
     OP_ASSIGN
 } op_t;
 
