@@ -45,6 +45,4 @@ struct token{
     }data;
 };
 
-const char* token_to_string(token_type type);
-
 #endif

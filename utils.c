@@ -34,9 +34,9 @@ __attribute__((noreturn)) void user_error_printf(const char* fmt, ...){
     exit(1);
 }
 
-__attribute__((noreturn)) void unexpected_token(){
-    compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
-}
+//__attribute__((noreturn)) void unexpected_token(){
+//    compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
+//}
 
 void* emalloc(size_t count){
     void* ptr = malloc(count);

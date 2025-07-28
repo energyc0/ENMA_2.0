@@ -1,3 +1,7 @@
-//bober = 11;
-//suck = 123;
-//print bober + suck;
+a = "hola!";
+print a + " my friend!";
+print a == "hola! my friend!";
+
+a = a + " my friend!";
+print a;
+print a == "hola! my friend!";

@@ -12,14 +12,15 @@ otherwise return valid token_type*/
 token_type symtable_procword(char* str);
 
 //return new allocated string if there is no such, or return existing one
-obj_string_t* symtable_findstr(const char* s, size_t sz, int32_t hash);
+obj_id_t* symtable_findstr(const char* s, size_t sz, int32_t hash);
 obj_string_t* stringtable_findstr(const char* s, size_t sz, int32_t hash);
 
-bool symtable_set(obj_string_t* id, value_t val);
+bool symtable_set(obj_id_t* id, value_t val);
 bool stringtable_set(obj_string_t* str);
 
 //check if identifier exists
-bool symtable_check(obj_string_t* id);
+//if true return value
+bool symtable_get(obj_id_t* id, value_t* value);
 
 
 #endif

@@ -10,12 +10,15 @@ struct ast_node;
 typedef enum{
     //end execution
     OP_RETURN,
+    //just pop value out of stack
+    OP_POP,
     //get value from the stack and print it
     OP_PRINT,
     //read next 3 bytes and push them to the stack
     OP_NUMBER,
     OP_BOOLEAN,
     OP_STRING,
+    OP_IDENTIFIER,
     //binary ops
     OP_ADD,
     OP_SUB,

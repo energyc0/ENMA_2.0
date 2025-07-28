@@ -29,19 +29,22 @@ static inline byte_t read_byte();
 static inline int read_constant();
 //extract value from data chunk
 static inline union _inner_value_t extract_value(int offset);
+//if value is identifier, extract its value from the table,
+//otherwise return value without change
+static inline value_t extract_identifier_value(value_t value);
 
 //pops two values from the stack and pushes the result
 #define CALC_NUMERICAL_OP(return_type, op) do{ \
-        value_t b = stack_pop(); \
-        value_t a = stack_pop(); \
+        value_t b = extract_identifier_value(stack_pop()); \
+        value_t a = extract_identifier_value(stack_pop()); \
         if(!IS_NUMBER(a) || !IS_NUMBER(b)) \
             compile_error_printf("Incompatible type for operation. All operands must be numbers!\n");\
         stack_push(return_type(AS_NUMBER(a) op AS_NUMBER(b))); \
     } while(0)
 
 #define CALC_BOOLEAN_OP(op) do{ \
-        value_t b = stack_pop(); \
-        value_t a = stack_pop(); \
+        value_t b = extract_identifier_value(stack_pop()); \
+        value_t a = extract_identifier_value(stack_pop()); \
         if(!IS_BOOLEAN(a) || !IS_BOOLEAN(b)) \
             compile_error_printf("Incompatible type for operation. All operands must be booleans!\n");\
         stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) op AS_BOOLEAN(b))); \
@@ -49,12 +52,15 @@ static inline union _inner_value_t extract_value(int offset);
 
 #define CALC_VAL_OP(return_type, op)
 
-void vm_init(){}
+void vm_init(){
+    vm.code = NULL;
+    vm.ip = NULL;
+    vm.stack_top = VM_STACK_START;
+}
 
 vm_execute_result vm_execute(struct bytecode_chunk* code){
     vm.code = code;
     vm.ip = vm.code->_code.data;
-    vm.stack_top = VM_STACK_START;
 #ifdef DEBUG
     bcchunk_disassemble("Current bytecode", vm.code);
 #endif
@@ -71,18 +77,21 @@ static vm_execute_result interpret(){
             case OP_RETURN: 
                 is_done = 1;
                 break;
+            case OP_POP:
+                stack_pop();
+                break;
             case OP_NUMBER:
                 stack_push(VALUE_NUMBER(extract_value(read_constant()).number));
                 break;
             case OP_BOOLEAN:
                 stack_push(VALUE_BOOLEAN(extract_value(read_constant()).boolean));
                 break;
-            case OP_STRING:
+            case OP_STRING: case OP_IDENTIFIER:
                 stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
             case OP_ADD:{
-                value_t b = stack_pop();
-                value_t a = stack_pop();
+                value_t b = extract_identifier_value(stack_pop());
+                value_t a = extract_identifier_value(stack_pop());
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_NUMBER(AS_NUMBER(a) + AS_NUMBER(b)));
                 }else if(IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
@@ -134,8 +143,8 @@ static vm_execute_result interpret(){
                 stack_push(VALUE_BOOLEAN(!AS_BOOLEAN(stack_pop())));
                 break;
             case OP_EQUAL:{
-                value_t b = stack_pop();
-                value_t a = stack_pop();
+                value_t b = extract_identifier_value(stack_pop());
+                value_t a = extract_identifier_value(stack_pop());
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) == AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
@@ -149,8 +158,8 @@ static vm_execute_result interpret(){
             }
             case OP_GREATER:{
                 /*TODO: add strings compare*/
-                value_t b = stack_pop();
-                value_t a = stack_pop();
+                value_t b = extract_identifier_value(stack_pop());
+                value_t a = extract_identifier_value(stack_pop());
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) > AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
@@ -162,8 +171,8 @@ static vm_execute_result interpret(){
             }
             case OP_LESS:{
                 /*TODO: add strings compare*/
-                value_t b = stack_pop();
-                value_t a = stack_pop();
+                value_t b = extract_identifier_value(stack_pop());
+                value_t a = extract_identifier_value(stack_pop());
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) < AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
@@ -174,7 +183,7 @@ static vm_execute_result interpret(){
                 break;
             }
             case OP_PRINT:
-                val = stack_pop();
+                val = extract_identifier_value(stack_pop());
                 if(IS_NUMBER(val)){
                     printf("%d\n", AS_NUMBER(val));
                 }else if(IS_BOOLEAN(val)){
@@ -188,12 +197,41 @@ static vm_execute_result interpret(){
                     printf("print: Not implemented instruction :(\n");
                 }
                 break;
+            case OP_ASSIGN:{
+                value_t expr = extract_identifier_value(stack_pop());
+                value_t assignable = stack_pop();
+                if(!IS_OBJ(assignable) || !IS_OBJIDENTIFIER(AS_OBJ(assignable)))
+                    fatal_printf("Cannot assign to the left operand\n");
+                
+                //if identifier already exists
+                //check its type
+                value_t assignable_val;
+                if(symtable_get(AS_OBJSTRING(assignable), &assignable_val)){
+                    if(!IS_NULL(assignable_val) && !is_value_same_type(assignable_val, expr)){
+                        compile_error_printf("Incompatible type for assignment to '%s'\n", AS_OBJIDENTIFIER(assignable)->str);
+                    }
+                }
+                symtable_set(AS_OBJIDENTIFIER(assignable), expr);
+                stack_push(assignable);
+                break;
+            }
             default: 
                 eprintf("Undefined instruction!\n");
                 return VME_RUNTIME_ERROR;
         }
     }
     return VME_SUCCESS;
+}
+
+static inline value_t extract_identifier_value(value_t value){
+    if(IS_OBJ(value) && IS_OBJIDENTIFIER(AS_OBJ(value))){
+        value_t val;
+        if(!symtable_get(AS_OBJIDENTIFIER(value), &val) || IS_NULL(val)){
+            compile_error_printf("Undefined identifier '%s'\n",AS_OBJIDENTIFIER(value)->str);
+        }
+        return val;
+    }
+    return value;
 }
 
 static inline byte_t read_byte(){
@@ -236,7 +274,7 @@ static inline value_t stack_pop(){
 
 #ifdef DEBUG
 static char* examine_value(value_t val){
-    static char buf[16];
+    static char buf[1024];
     switch (val.type) {
         case VT_NUMBER: 
             sprintf(buf, "%d", AS_NUMBER(val));
@@ -246,6 +284,10 @@ static char* examine_value(value_t val){
         case VT_OBJ:{
             switch (AS_OBJ(val)->type) {
                 case OBJ_STRING: return AS_OBJSTRING(val)->str;
+                case OBJ_IDENTIFIER:{
+                    sprintf(buf, "{%.*s}",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
+                    return buf;
+                }
                 default: 
                     fatal_printf("Undefined object type in examine_value()\n");
             }

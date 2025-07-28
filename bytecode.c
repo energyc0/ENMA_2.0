@@ -17,7 +17,7 @@ static inline void print_instruction_debug(const char* name, size_t offset);
 static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 static inline size_t constant_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 
-static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk);
+static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk);
 
 static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset);
 
@@ -100,7 +100,9 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
         case OP_STRING: return constant_instruction_debug("OP_STRING", chunk, offset);
+        case OP_IDENTIFIER: return constant_instruction_debug("OP_IDENTIFIER", chunk, offset);
         case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk, offset);
+        case OP_POP: return simple_instruction_debug("OP_POP", chunk, offset);
         default:
             fatal_printf("Undefined instruction!\n");
     }
@@ -113,20 +115,32 @@ static inline void print_instruction_debug(const char* name, size_t offset){
 
 static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset){
     print_instruction_debug(name, offset);
-    printf(" 0x%02X\n", chunk->_code.data[0]);
+    printf(" 0x%02X\n", chunk->_code.data[offset]);
     return offset+1;
 }
 static inline size_t constant_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset){
-    #define EXTRACTED_VALUE() ((*(union _inner_value_t*)(chunk->_data.data + (*(int*)(chunk->_code.data + offset + 1)))))
+    #define EXTRACTED_VALUE (((union _inner_value_t*)(chunk->_data.data + (*(int*)(chunk->_code.data + offset + 1)))))
 
+    union _inner_value_t* extracted_value = EXTRACTED_VALUE;
     print_instruction_debug(name, offset);
-    switch (*chunk->_code.data) {
-        case OP_NUMBER: printf(" %d\n", EXTRACTED_VALUE().number); break;
-        case OP_BOOLEAN: printf(" %s\n", EXTRACTED_VALUE().boolean ? "true" : "false"); break;
+    switch (*(chunk->_code.data + offset)) {
+        case OP_NUMBER:
+            printf(" %d\n", extracted_value->number);
+            break;
+        case OP_BOOLEAN:
+            printf(" %s\n", extracted_value->boolean ? "true" : "false");
+            break;
         case OP_STRING:{
-            if(!IS_OBJSTRING(EXTRACTED_VALUE().obj))
+            if(!IS_OBJSTRING(extracted_value->obj))
                 fatal_printf("constant_instruction_debug(): extracted object is not string\n");
-            printf(" \"%s\" %p\n", ((obj_string_t*)(EXTRACTED_VALUE().obj))->str,((obj_string_t*)(EXTRACTED_VALUE().obj))->str); break;
+            printf(" \"%s\" %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
+            break;
+        }
+        case OP_IDENTIFIER:{
+            if(!IS_OBJIDENTIFIER(extracted_value->obj))
+                fatal_printf("constant_instruction_debug(): extracted object is not identifier\n");
+            printf(" \"%s\" %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
+            break;
         }
         default:
             printf(" Not implemented constant instruction :(\n");
@@ -154,7 +168,8 @@ void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data){
     else if(IS_OBJ(data))
         switch (AS_OBJ(data)->type) {
             case OBJ_STRING: bcchunk_write_code(chunk, OP_STRING); break;
-            default: fatal_printf("Undefined obj_type on bcchunk_write_value()\n");
+            case OBJ_IDENTIFIER: bcchunk_write_code(chunk, OP_IDENTIFIER); break;
+            default: fatal_printf("Undefined obj_type in bcchunk_write_value()\n");
         }
     else 
         fatal_printf("Not implemented instruction :(\n");
@@ -168,13 +183,19 @@ void bcchunk_generate(const ast_node* root, struct bytecode_chunk* chunk){
             parse_ast_bin_expr(root->data.ptr, chunk);
             bcchunk_write_code(chunk, OP_PRINT);
             break;
+        case AST_ASSIGN:
+            parse_ast_bin_expr(root, chunk);
+            bcchunk_write_code(chunk, OP_POP);
+            break;
         default:
-            fatal_printf("Statement root expected in bcchunk_generate()!\n");
+            //just skip
+            break;
+            //fatal_printf("Statement root expected in bcchunk_generate()!\n");
     }
     bcchunk_write_simple_op(chunk, OP_RETURN);
 }
 
-static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
+static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk){
     #define BIN_OP(op) do {\
         parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->left, chunk);\
         parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->right, chunk);\
@@ -232,11 +253,11 @@ static void parse_ast_bin_expr(ast_node* node, struct bytecode_chunk* chunk){
             bcchunk_write_simple_op(chunk, OP_NOT);
             break;
         }
-        case AST_NUMBER: case AST_BOOLEAN:case AST_STRING:
+        case AST_NUMBER: case AST_BOOLEAN:case AST_STRING:case AST_IDENT:
             bcchunk_write_value(chunk, node->data.val);
             break;
         default:
-            fatal_printf("Expected expression in parse_ast_bin_expr()!\n");
+            fatal_printf("Expected expression in parse_ast_bin_expr()!\n Node type is %d\n", node->type);
     }
 
     #undef BIN_OP

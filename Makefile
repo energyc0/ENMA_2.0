@@ -3,7 +3,7 @@ INTERPRETER := result
 EXE_DIR := $(BUILD_DIR)/release
 
 CC:=gcc
-CFLAGS:=-Wall -Wextra -O2
+CFLAGS:=-Wall -Wextra -O0
 
 ifeq ($(MAKECMDGOALS), debug)
 	CFLAGS += -g -DDEBUG

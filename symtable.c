@@ -64,7 +64,7 @@ static obj_string_t* _table_find_string(struct hash_table*t, const char* s, size
 }
     */
 
-obj_string_t* symtable_findstr(const char* s, size_t sz, int32_t hash){
+obj_id_t* symtable_findstr(const char* s, size_t sz, int32_t hash){
     return table_find_string(&symtable, s, sz, hash);
 }
 obj_string_t* stringtable_findstr(const char* s, size_t sz, int32_t hash){
@@ -72,15 +72,15 @@ obj_string_t* stringtable_findstr(const char* s, size_t sz, int32_t hash){
 }
 
 
-bool symtable_set(obj_string_t* id, value_t val){
+bool symtable_set(obj_id_t* id, value_t val){
     return table_set(&symtable, id, val);
 }
 bool stringtable_set(obj_string_t* str){
     return table_set(&stringtable, str, VALUE_NULL);
 }
 
-bool symtable_check(obj_string_t* id){
-    return table_check(&symtable, id, NULL);
+bool symtable_get(obj_id_t* id, value_t* value){
+    return table_check(&symtable, id, value);
 }
 /*
 static inline void table_init(struct table* t){

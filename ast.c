@@ -20,13 +20,13 @@ ast_node* ast_mknode(ast_node_type type, ast_data data){
 
 void ast_freenode(ast_node* node){
     switch (node->type) {
-        //garbage collector is responsible for strings
-        case AST_NUMBER: case AST_BOOLEAN: case AST_STRING:
+        //garbage collector is responsible for these
+        case AST_NUMBER: case AST_BOOLEAN: case AST_STRING: case AST_IDENT:
             break;
         case AST_ADD: case AST_SUB: case AST_MUL: case AST_DIV:
         case AST_AND: case AST_OR: case AST_XOR: case AST_NEQUAL:
         case AST_EQUAL: case AST_EGREATER: case AST_GREATER: case AST_ELESS:
-        case AST_LESS:
+        case AST_LESS: case AST_ASSIGN:
             ast_freenode(((struct ast_binary*)node->data.ptr)->left);
             ast_freenode(((struct ast_binary*)node->data.ptr)->right);
             free(node->data.ptr);
@@ -75,8 +75,11 @@ ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* righ
 
 ast_node* ast_mknode_print(ast_node* expr){
     ast_node* node = ast_mknode(AST_PRINT, (ast_data){.ptr = expr});
-    if(!is_match(T_SEMI))
-        compile_error_printf("';' expected\n");
+    return node;
+}
+
+ast_node* ast_mknode_identifier(obj_string_t* id){
+    ast_node* node = ast_mknode(AST_IDENT, (ast_data){.val = VALUE_OBJ(id)});
     return node;
 }
 
@@ -93,6 +96,7 @@ void ast_debug_tree(const ast_node* node){
         case AST_NUMBER: printf("%d", AS_NUMBER(node->data.val)); break;
         case AST_BOOLEAN: printf("%s", AS_BOOLEAN(node->data.val) ? "true" : "false"); break;
         case AST_STRING: printf("\"%s\"", AS_OBJSTRING(node->data.val)->str); break;
+        case AST_IDENT: printf("%s", AS_OBJSTRING(node->data.val)->str); break; 
         case AST_ADD: DEBUG_BINARY(+); break;
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;
@@ -113,7 +117,7 @@ void ast_debug_tree(const ast_node* node){
         case AST_GREATER: DEBUG_BINARY(>); break;
         case AST_ELESS: DEBUG_BINARY(<=); break;
         case AST_LESS: DEBUG_BINARY(<); break;
-        case AST_PRINT: printf("print "); ast_debug_tree(node->data.ptr); printf(";\n"); break;
+        case AST_PRINT: printf("print "); ast_debug_tree(node->data.ptr); putchar(';'); break;
         default:
             printf("ast_debug_tree(): ");
             UNDEFINED_AST_NODE_TYPE();

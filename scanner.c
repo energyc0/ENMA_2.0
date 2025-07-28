@@ -10,12 +10,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int is_putback = 0;
 struct token cur_token;
 int line_counter = 1;
 
 #define INPUT_BUF_SZ (16)
 #define WORD_SIZE (1024)
-#define TAB_SIZE (4)
+
 static FILE* _scan_fp = NULL;
 
 struct _input_buf{
@@ -125,7 +126,19 @@ void scanner_init(FILE* fp){
     line_counter = 1;
 }
 
+void scanner_putback_token(){
+#ifdef DEBUG
+    if(is_putback)
+        fatal_printf("Token has already put back!\n");
+#endif
+    is_putback = 1;
+}
+
 int scanner_next_token(struct token* t){
+    if(is_putback){
+        is_putback = 0;
+        return 1;
+    }
     int c = _skip();
 
     switch (c) {
@@ -209,7 +222,11 @@ int scanner_next_token(struct token* t){
                 token_type tok_type = symtable_procword(word);
                 if(tok_type == T_IDENT){
                     int32_t hash = hash_string(word, len);
-                    t->data.ptr = mk_objstring(word, len, hash);
+                    t->data.ptr = symtable_findstr(word, len, hash);
+                    if(t->data.ptr == NULL){
+                        t->data.ptr = mk_objid(word, len, hash);
+                        symtable_set(t->data.ptr, VALUE_NULL);
+                    }
                 }
                 t->type = tok_type;
                 break;

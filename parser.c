@@ -88,6 +88,8 @@ static ast_node* ast_primary(){
             }else{
                 return ast_mknode_binary(AST_MUL, ast_mknode_number(-1), temp);
             }
+        case T_IDENT:
+            return ast_mknode_identifier(cur_token.data.ptr);
         default:
             compile_error_printf("Expected expression\n");
     }
@@ -112,9 +114,21 @@ ast_node* ast_generate(){
     if(!scanner_next_token(&cur_token))
         return NULL;
 
-    if(cur_token.type == T_PRINT)
-        return ast_mknode_print(ast_bin_expr(0));
-    else
-        compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
-    return NULL;
+    ast_node* res = NULL;
+    if(cur_token.type == T_PRINT){
+        res = ast_mknode_print(ast_bin_expr(0));
+    }else if(cur_token.type == T_IDENT){
+        scanner_putback_token();
+        res = ast_bin_expr(0);
+        switch(res->type){
+            case AST_ASSIGN: break;
+            default:
+                compile_error_printf("Unexpected expression\n");
+        }
+    }else
+        compile_error_printf("Unexpected token\n");
+
+    if(!is_match(T_SEMI))
+        compile_error_printf("';' expected\n");
+    return res;
 }
