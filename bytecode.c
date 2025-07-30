@@ -7,48 +7,51 @@
 #include "lang_types.h"
 #include "utils.h"
 
+static void chunk_init(struct chunk* chunk);
+static void chunk_write(struct chunk* chunk, byte_t byte);
+static void chunk_write_number(struct chunk* chunk, int number);
+static void chunk_write_value(struct chunk* chunk, value_t val);
+static void chunk_free(struct chunk* chunk);
 static inline void chunk_realloc(struct chunk* chunk, size_t newsize);
 
-static inline void bcchunk_write_code(struct bytecode_chunk* chunk, byte_t byte);
+static inline void bcchunk_write_code(struct bytecode_chunk* chunk, byte_t byte, int line);
 static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte);
 
 static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset);
-static inline void print_instruction_debug(const char* name, size_t offset);
+static inline void print_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 static inline size_t constant_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 
-static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk);
-
+static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk, int line);
 static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset);
 
-void chunk_init(struct chunk* chunk){
+static void chunk_init(struct chunk* chunk){
     chunk->size = 0;
     chunk->capacity = CHUNK_BASE_CAPACITY;
-    if((chunk->data = malloc(CHUNK_BASE_CAPACITY)) == NULL)
-        fatal_printf("malloc() returned NULL!\n");
+    chunk->data = emalloc(sizeof(chunk->data[0]) * CHUNK_BASE_CAPACITY);
 }
 
-void chunk_free(struct chunk* chunk){
+static void chunk_free(struct chunk* chunk){
     chunk->size = 0;
     chunk->capacity = 0;
     free(chunk->data);
     chunk->data = NULL;
 }
 
-void chunk_write(struct chunk* chunk, byte_t byte){
+static void chunk_write(struct chunk* chunk, byte_t byte){
     if (chunk->capacity <= chunk->size)
         chunk_realloc(chunk, chunk->capacity + CHUNK_BASE_CAPACITY);
     chunk->data[chunk->size++] = byte;
 }
 
-void chunk_write_number(struct chunk* chunk, int number){
+static void chunk_write_number(struct chunk* chunk, int number){
     if (chunk->capacity < chunk->size + sizeof(number))
         chunk_realloc(chunk, chunk->capacity + CHUNK_BASE_CAPACITY);
     *((int*)(chunk->data + chunk->size)) = number;
     chunk->size += sizeof(number);
 }
 
-void chunk_write_value(struct chunk* chunk, value_t val){
+static void chunk_write_value(struct chunk* chunk, value_t val){
     if (chunk->capacity < chunk->size + sizeof(val.as))
         chunk_realloc(chunk, chunk->capacity + CHUNK_BASE_CAPACITY);
     *((union _inner_value_t*)(chunk->data + chunk->size)) = val.as;
@@ -58,23 +61,25 @@ void chunk_write_value(struct chunk* chunk, value_t val){
 static inline void chunk_realloc(struct chunk* chunk, size_t newsize){
     if((chunk->capacity = newsize) == 0)
         fatal_printf("chunk_realloc(): newsize = 0!\n");
-    if((chunk->data = realloc(chunk->data, newsize)) == NULL)
-        fatal_printf("realloc() returned NULL!\n");
+    chunk->data = erealloc(chunk->data, newsize);
     chunk->size = chunk->size > newsize ? chunk->size : newsize;
 }
 
 void bcchunk_init(struct bytecode_chunk* chunk){
     chunk_init(&chunk->_code);
     chunk_init(&chunk->_data);
+    chunk_init(&chunk->_line_data);
 }
 
 void bcchunk_free(struct bytecode_chunk* chunk){
     chunk_free(&chunk->_code);
     chunk_free(&chunk->_data);
+    chunk_free(&chunk->_line_data);
 }
 
-static inline void bcchunk_write_code(struct bytecode_chunk* chunk, byte_t byte){
+static inline void bcchunk_write_code(struct bytecode_chunk* chunk, byte_t byte, int line){
     chunk_write(&chunk->_code, byte);
+    chunk_write_number(&chunk->_line_data, line);
 }
 
 
@@ -109,12 +114,12 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
     return -1;
 }
 
-static inline void print_instruction_debug(const char* name, size_t offset){
-    printf("%04X | %s", (unsigned)offset, name);
+static inline void print_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset){
+    printf("%10d | %04X | %s",((int*)chunk->_line_data.data)[offset], (unsigned)offset, name);
 }
 
 static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset){
-    print_instruction_debug(name, offset);
+    print_instruction_debug(name,chunk, offset);
     printf(" 0x%02X\n", chunk->_code.data[offset]);
     return offset+1;
 }
@@ -122,7 +127,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
     #define EXTRACTED_VALUE (((union _inner_value_t*)(chunk->_data.data + (*(int*)(chunk->_code.data + offset + 1)))))
 
     union _inner_value_t* extracted_value = EXTRACTED_VALUE;
-    print_instruction_debug(name, offset);
+    print_instruction_debug(name,chunk, offset);
     switch (*(chunk->_code.data + offset)) {
         case OP_NUMBER:
             printf(" %d\n", extracted_value->number);
@@ -155,51 +160,42 @@ void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* ch
         offset = instruction_debug(chunk, offset);
 }
 
-void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op){
-    bcchunk_write_code(chunk, op);
+void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line){
+    bcchunk_write_code(chunk, op, line);
 }
 
-//8 bytes in the instruction
-void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data){
+//5 bytes in the instruction
+void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data, int line){
     if(IS_NUMBER(data))
-        bcchunk_write_code(chunk, OP_NUMBER);
+        bcchunk_write_code(chunk, OP_NUMBER, line);
     else if(IS_BOOLEAN(data))
-        bcchunk_write_code(chunk, OP_BOOLEAN);
+        bcchunk_write_code(chunk, OP_BOOLEAN, line);
     else if(IS_OBJ(data))
         switch (AS_OBJ(data)->type) {
-            case OBJ_STRING: bcchunk_write_code(chunk, OP_STRING); break;
-            case OBJ_IDENTIFIER: bcchunk_write_code(chunk, OP_IDENTIFIER); break;
+            case OBJ_STRING: bcchunk_write_code(chunk, OP_STRING, line); break;
+            case OBJ_IDENTIFIER: bcchunk_write_code(chunk, OP_IDENTIFIER, line); break;
             default: fatal_printf("Undefined obj_type in bcchunk_write_value()\n");
         }
     else 
         fatal_printf("Not implemented instruction :(\n");
     chunk_write_number(&chunk->_code, chunk->_data.size);
+    for(size_t i  = 0; i < sizeof(int); i++)
+        chunk_write_number(&chunk->_line_data, line);
     chunk_write_value(&chunk->_data, data);
 }
 
-void bcchunk_generate(const ast_node* root, struct bytecode_chunk* chunk){
-    switch (root->type) {
-        case AST_PRINT: 
-            parse_ast_bin_expr(root->data.ptr, chunk);
-            bcchunk_write_code(chunk, OP_PRINT);
-            break;
-        case AST_ASSIGN:
-            parse_ast_bin_expr(root, chunk);
-            bcchunk_write_code(chunk, OP_POP);
-            break;
-        default:
-            //just skip
-            break;
-            //fatal_printf("Statement root expected in bcchunk_generate()!\n");
-    }
-    bcchunk_write_simple_op(chunk, OP_RETURN);
+void bcchunk_write_expression(const ast_node* root, struct bytecode_chunk* chunk, int line){
+#ifdef DEBUG
+    ast_debug_tree(root);
+#endif
+    parse_ast_bin_expr(root, chunk, line);
 }
 
-static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk){
+static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk, int line){
     #define BIN_OP(op) do {\
-        parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->left, chunk);\
-        parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->right, chunk);\
-        bcchunk_write_simple_op(chunk, op);\
+        parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->left, chunk, line);\
+        parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->right, chunk, line);\
+        bcchunk_write_simple_op(chunk, op, line);\
     }while(0)
 
     switch (node->type) {
@@ -229,18 +225,18 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             break;
         case AST_NEQUAL:
             BIN_OP(OP_EQUAL);
-            bcchunk_write_simple_op(chunk, OP_NOT);
+            bcchunk_write_simple_op(chunk, OP_NOT, line);
             break;
         case AST_EGREATER:
             BIN_OP(OP_LESS);
-            bcchunk_write_simple_op(chunk, OP_NOT); 
+            bcchunk_write_simple_op(chunk, OP_NOT,line); 
             break;
         case AST_GREATER:
             BIN_OP(OP_GREATER);
             break;
         case AST_ELESS:
             BIN_OP(OP_GREATER);
-            bcchunk_write_simple_op(chunk, OP_NOT); 
+            bcchunk_write_simple_op(chunk, OP_NOT, line); 
             break;
         case AST_LESS:
             BIN_OP(OP_LESS);
@@ -249,12 +245,12 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             BIN_OP(OP_ASSIGN);
             break;
         case AST_NOT:{
-            parse_ast_bin_expr(node->data.ptr, chunk);
-            bcchunk_write_simple_op(chunk, OP_NOT);
+            parse_ast_bin_expr(node->data.ptr, chunk, line);
+            bcchunk_write_simple_op(chunk, OP_NOT, line);
             break;
         }
         case AST_NUMBER: case AST_BOOLEAN:case AST_STRING:case AST_IDENT:
-            bcchunk_write_value(chunk, node->data.val);
+            bcchunk_write_value(chunk, node->data.val, line);
             break;
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n Node type is %d\n", node->type);

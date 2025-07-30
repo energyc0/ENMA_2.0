@@ -32,6 +32,8 @@ typedef enum{
     T_PRINT,
     //other
     T_SEMI,
+    T_LBRACE,
+    T_RBRACE,
     T_EOF,
 } token_type; 
 

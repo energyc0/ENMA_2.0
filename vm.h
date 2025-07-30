@@ -12,6 +12,7 @@ struct virtual_machine{
     byte_t* ip;
     value_t stack[STACK_SIZE];
     value_t* stack_top;
+    value_t* bp;
 };
 
 typedef enum{
@@ -20,8 +21,6 @@ typedef enum{
     VME_COMPILE_ERROR
 } vm_execute_result;
 
-void vm_init();
-vm_execute_result vm_execute(struct bytecode_chunk* code);
-void vm_free();
+void vm_interpret();
 
 #endif

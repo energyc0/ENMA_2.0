@@ -1,9 +1,5 @@
-#include "ast.h"
-#include "bytecode.h"
 #include "garbage_collector.h"
-#include "lang_types.h"
 #include "scanner.h"
-#include "parser.h"
 #include "symtable.h"
 #include "utils.h"
 #include "vm.h"
@@ -11,7 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include "hash_table.h"
+
 int main(int argc, char** argv){
     if(argc != 2)
         user_error_printf("Usage: %s [input file]\n", argv[0]);
@@ -21,7 +17,6 @@ int main(int argc, char** argv){
         user_error_printf("Failed to open %s: %s\n", argv[1], strerror(errno));
 
     symtable_init();
-    vm_init();
     scanner_init(fp);
 #ifdef DEBUG
     scanner_debug_tokens();
@@ -30,22 +25,8 @@ int main(int argc, char** argv){
     scanner_init(fp);
 #endif
 
-    ast_node* node;
-    struct bytecode_chunk chunk;
-    while((node = ast_generate()) != NULL){
-#ifdef DEBUG
-        printf("Parsed statement:\n");
-        ast_debug_tree(node);
-        putchar('\n');
-#endif
-        bcchunk_init(&chunk);
-        bcchunk_generate(node, &chunk);
-        vm_execute(&chunk);
-        bcchunk_free(&chunk);
-        ast_freenode(node);
-    }
+    vm_interpret();
 
-    vm_free();
     symtable_cleanup();
     gc_cleanup();
     /*/

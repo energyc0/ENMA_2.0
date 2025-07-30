@@ -18,12 +18,24 @@ __attribute__((noreturn)) void compile_error_printf(const char* fmt, ...){
     va_list ap;
     va_start(ap, fmt);
 
-    eprintf("Syntax error on line %d: ", line_counter);
+    eprintf("Syntax error at line %d: ", line_counter);
     vfprintf(stderr, fmt, ap);
 
     va_end(ap);
     exit(1);
 }
+
+__attribute__((noreturn)) void interpret_error_printf(int line, const char* fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+
+    eprintf("Error at line %d: ", line);
+    vfprintf(stderr, fmt, ap);
+
+    va_end(ap);
+    exit(1);
+}
+
 __attribute__((noreturn)) void user_error_printf(const char* fmt, ...){
     va_list ap;
     va_start(ap, fmt);

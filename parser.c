@@ -2,6 +2,7 @@
 #include "ast.h"
 #include "bytecode.h"
 #include "scanner.h"
+#include "scope.h"
 #include "symtable.h"
 #include "token.h"
 #include "utils.h"
@@ -109,26 +110,6 @@ static inline int get_op_precedence(token_type op){
     return precedence[op];
 }
 
-
-ast_node* ast_generate(){
-    if(!scanner_next_token(&cur_token))
-        return NULL;
-
-    ast_node* res = NULL;
-    if(cur_token.type == T_PRINT){
-        res = ast_mknode_print(ast_bin_expr(0));
-    }else if(cur_token.type == T_IDENT){
-        scanner_putback_token();
-        res = ast_bin_expr(0);
-        switch(res->type){
-            case AST_ASSIGN: break;
-            default:
-                compile_error_printf("Unexpected expression\n");
-        }
-    }else
-        compile_error_printf("Unexpected token\n");
-
-    if(!is_match(T_SEMI))
-        compile_error_printf("';' expected\n");
-    return res;
+ast_node* ast_process_expr(){
+    return ast_bin_expr(0);
 }

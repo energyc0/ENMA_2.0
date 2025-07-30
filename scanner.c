@@ -189,6 +189,8 @@ int scanner_next_token(struct token* t){
         case '(': t->type = T_LPAR; break;
         case ')': t->type = T_RPAR; break;
         case ';': t->type = T_SEMI; break;
+        case '{': t->type = T_LBRACE; break;
+        case '}': t->type = T_RBRACE; break;
         case '!':{
             if(_get() != '='){
                 compile_error_printf("Undefined character '!'\n");
@@ -265,6 +267,8 @@ void scanner_debug_tokens(){
             case T_EGREATER: printf("'>=' "); break;
             case T_LESS: printf("'<' "); break;
             case T_ELESS: printf("'<=' "); break;
+            case T_LBRACE: printf("'{' "); break;
+            case T_RBRACE: printf("'}' "); break;
             case T_STRING: printf("'\"%s\"' ", ((obj_string_t*)(cur_token.data.ptr))->str); break;
             case T_IDENT: printf("'%s' ", ((obj_string_t*)cur_token.data.ptr)->str); break;
             default:

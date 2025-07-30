@@ -26,9 +26,7 @@ typedef enum {
     AST_NUMBER,
     AST_BOOLEAN,
     AST_STRING,
-    AST_IDENT,
-    /*statements*/
-    AST_PRINT //ast node contains pointer to an expression node
+    AST_IDENT
 }ast_node_type;
 
 #define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_ASSIGN)
@@ -58,7 +56,6 @@ ast_node* ast_mknode_boolean(bool val);
 ast_node* ast_mknode_string(obj_string_t* str);
 ast_node* ast_mknode_identifier(obj_string_t* id);
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right);
-ast_node* ast_mknode_print(ast_node* expr);
 
 void ast_debug_tree(const ast_node* node);
 

@@ -2,9 +2,14 @@
 #include "bytecode.h"
 #include "hash_table.h"
 #include "lang_types.h"
+#include "scanner.h"
+#include "scope.h"
 #include "symtable.h"
 #include "garbage_collector.h"
+#include "token.h"
 #include "utils.h"
+#include "ast.h"
+#include "parser.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -13,6 +18,10 @@ static struct virtual_machine vm;
 #define VM_STACK_START (vm.stack)
 #define VM_STACK_END (VM_STACK_START + sizeof(vm.stack) / sizeof(vm.stack[0]))
 
+static void vm_init();
+static void vm_free();
+static bool vm_read_command(struct bytecode_chunk* chunk);
+static vm_execute_result vm_execute(struct bytecode_chunk* code);
 static vm_execute_result interpret();
 
 #ifdef DEBUG
@@ -32,13 +41,15 @@ static inline union _inner_value_t extract_value(int offset);
 //if value is identifier, extract its value from the table,
 //otherwise return value without change
 static inline value_t extract_identifier_value(value_t value);
+static inline int get_code_line();
+static inline void read_block(struct bytecode_chunk* chunk);
 
 //pops two values from the stack and pushes the result
 #define CALC_NUMERICAL_OP(return_type, op) do{ \
         value_t b = extract_identifier_value(stack_pop()); \
         value_t a = extract_identifier_value(stack_pop()); \
         if(!IS_NUMBER(a) || !IS_NUMBER(b)) \
-            compile_error_printf("Incompatible type for operation. All operands must be numbers!\n");\
+            interpret_error_printf(get_code_line(), "Incompatible type for operation. All operands must be numbers!\n");\
         stack_push(return_type(AS_NUMBER(a) op AS_NUMBER(b))); \
     } while(0)
 
@@ -46,19 +57,78 @@ static inline value_t extract_identifier_value(value_t value);
         value_t b = extract_identifier_value(stack_pop()); \
         value_t a = extract_identifier_value(stack_pop()); \
         if(!IS_BOOLEAN(a) || !IS_BOOLEAN(b)) \
-            compile_error_printf("Incompatible type for operation. All operands must be booleans!\n");\
+            interpret_error_printf(get_code_line(), "Incompatible type for operation. All operands must be booleans!\n");\
         stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) op AS_BOOLEAN(b))); \
     } while(0)
 
 #define CALC_VAL_OP(return_type, op)
 
-void vm_init(){
-    vm.code = NULL;
-    vm.ip = NULL;
-    vm.stack_top = VM_STACK_START;
+void vm_interpret(){
+    vm_init();
+
+    struct bytecode_chunk chunk;
+    bcchunk_init(&chunk);
+
+    while(vm_read_command(&chunk));
+
+    vm_execute(&chunk);
+    bcchunk_free(&chunk);
+
+    vm_free();
 }
 
-vm_execute_result vm_execute(struct bytecode_chunk* code){
+static void vm_init(){
+    vm.code = NULL;
+    vm.ip = NULL;
+    vm.bp = vm.stack_top = VM_STACK_START;
+}
+
+static inline void read_block(struct bytecode_chunk* chunk){
+    while (scanner_next_token(&cur_token) && cur_token.type != T_RBRACE) {
+        scanner_putback_token();
+        if(!vm_read_command(chunk))
+            break;
+    }
+    if(cur_token.type != T_RBRACE)
+        interpret_error_printf(get_code_line(), "Unclosed statement block, '}' expected\n");
+}
+
+static bool vm_read_command(struct bytecode_chunk* chunk){
+    if(!scanner_next_token(&cur_token))
+        return false;
+
+    ast_node* node;
+    switch(cur_token.type){
+        case T_PRINT:{
+            node = ast_process_expr();
+            bcchunk_write_expression(node, chunk, line_counter);
+            bcchunk_write_simple_op(chunk, OP_PRINT, line_counter);
+            break;
+        }
+        case T_LBRACE:{
+            begin_scope();
+            read_block(chunk);
+            end_scope();
+            return true;
+        }
+        //it is an expression statement
+        default:{
+            scanner_putback_token();
+            node = ast_process_expr();
+            bcchunk_write_expression(node, chunk, line_counter);
+            bcchunk_write_simple_op(chunk, OP_POP, line_counter);
+            break;
+        }
+    }
+    if(!is_match(T_SEMI)) 
+        interpret_error_printf(get_code_line(), "Expected ';'\n");
+    return true;
+}
+
+static vm_execute_result vm_execute(struct bytecode_chunk* code){
+    //to leave at the end
+    bcchunk_write_simple_op(code, OP_RETURN, line_counter);
+
     vm.code = code;
     vm.ip = vm.code->_code.data;
 #ifdef DEBUG
@@ -67,7 +137,7 @@ vm_execute_result vm_execute(struct bytecode_chunk* code){
     return interpret();
 }
 
-void vm_free(){}
+static void vm_free(){}
 
 static vm_execute_result interpret(){
     value_t val;
@@ -117,7 +187,7 @@ static vm_execute_result interpret(){
                     }
                     stack_push(VALUE_OBJ(ptr));
                 }else{
-                    compile_error_printf("Incompatible types for operation.\n");\
+                    interpret_error_printf(get_code_line(), "Incompatible types for operation.\n");\
                 }
             }
                 break;
@@ -152,7 +222,7 @@ static vm_execute_result interpret(){
                 }else if(IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
                     stack_push(VALUE_BOOLEAN(AS_OBJSTRING(a) == AS_OBJSTRING(b)));
                 }else{
-                    compile_error_printf("Incompatible types for operation!\n");
+                    interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
                 }
                 break;
             }
@@ -165,7 +235,7 @@ static vm_execute_result interpret(){
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
                     stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) > AS_BOOLEAN(b)));
                 }else{
-                    compile_error_printf("Incompatible types for operation!\n");
+                    interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
                 }
                 break;
             }
@@ -178,7 +248,7 @@ static vm_execute_result interpret(){
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
                     stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) < AS_BOOLEAN(b)));
                 }else{
-                    compile_error_printf("Incompatible types for operation!\n");
+                    interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
                 }
                 break;
             }
@@ -208,7 +278,7 @@ static vm_execute_result interpret(){
                 value_t assignable_val;
                 if(symtable_get(AS_OBJSTRING(assignable), &assignable_val)){
                     if(!IS_NULL(assignable_val) && !is_value_same_type(assignable_val, expr)){
-                        compile_error_printf("Incompatible type for assignment to '%s'\n", AS_OBJIDENTIFIER(assignable)->str);
+                        interpret_error_printf(get_code_line(), "Incompatible type for assignment to '%s'\n", AS_OBJIDENTIFIER(assignable)->str);
                     }
                 }
                 symtable_set(AS_OBJIDENTIFIER(assignable), expr);
@@ -227,7 +297,7 @@ static inline value_t extract_identifier_value(value_t value){
     if(IS_OBJ(value) && IS_OBJIDENTIFIER(AS_OBJ(value))){
         value_t val;
         if(!symtable_get(AS_OBJIDENTIFIER(value), &val) || IS_NULL(val)){
-            compile_error_printf("Undefined identifier '%s'\n",AS_OBJIDENTIFIER(value)->str);
+            interpret_error_printf(get_code_line(), "Undefined identifier '%s'\n",AS_OBJIDENTIFIER(value)->str);
         }
         return val;
     }
@@ -270,6 +340,12 @@ static inline value_t stack_pop(){
 #endif
     }
     fatal_printf("Stack smashed!\n");
+}
+
+static inline int get_code_line(){
+    //ip is always incremented
+    //so it looks at the next instruction so we need -1
+    return ((int*)vm.code->_line_data.data)[vm.ip - vm.code->_code.data - 1];
 }
 
 #ifdef DEBUG

@@ -4,8 +4,7 @@
 #include "ast.h"
 #include "token.h"
 
-//generates one statement to interpret
-//return NULL on EOF
-ast_node* ast_generate();
+//generates expression to interpret
+ast_node* ast_process_expr();
 
 #endif

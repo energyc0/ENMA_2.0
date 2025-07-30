@@ -43,26 +43,26 @@ struct chunk{
 
 struct bytecode_chunk{
     struct chunk _code;
+    struct chunk _line_data;
     struct chunk _data;
 };
 
 //initialize chunk with base capacity
+/*
 void chunk_init(struct chunk* chunk);
 void chunk_write(struct chunk* chunk, byte_t byte);
 void chunk_write_number(struct chunk* chunk, int number);
 void chunk_write_value(struct chunk* chunk, value_t val);
 void chunk_free(struct chunk* chunk);
-
+*/
 //initialize chunks with base capacity
 void bcchunk_init(struct bytecode_chunk* chunk);
 void bcchunk_free(struct bytecode_chunk* chunk);
-void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op);
-
-void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data);
+void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line);
+void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data, int line);
+void bcchunk_write_expression(const struct ast_node* root, struct bytecode_chunk* chunk, int line);
 
 //for debug purposes
 void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* chunk);
-
-void bcchunk_generate(const struct ast_node* root, struct bytecode_chunk* chunk);
 
 #endif
