@@ -12,13 +12,15 @@ typedef enum{
     OP_RETURN,
     //just pop value out of stack
     OP_POP,
+    OP_DEFINE_VAR,
+    OP_SET_VAR,
+    OP_GET_VAR,
     //get value from the stack and print it
     OP_PRINT,
     //read next 3 bytes and push them to the stack
     OP_NUMBER,
     OP_BOOLEAN,
     OP_STRING,
-    OP_IDENTIFIER,
     //binary ops
     OP_ADD,
     OP_SUB,
@@ -32,7 +34,11 @@ typedef enum{
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,
-    OP_ASSIGN
+
+    OP_PUSH_BP,
+    OP_POP_BP,
+    OP_BP_AS_SP,    //BP = SP
+    OP_SP_AS_BP     //SP = BP
 } op_t;
 
 struct chunk{

@@ -30,6 +30,7 @@ typedef enum{
     T_STRING,
     //keywords
     T_PRINT,
+    T_VAR,
     //other
     T_SEMI,
     T_LBRACE,

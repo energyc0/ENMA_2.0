@@ -1,4 +1,4 @@
-a = "hola!";
+var a = "hola!";
 print a + " my friend!";
 print a == "hola! my friend!";
 

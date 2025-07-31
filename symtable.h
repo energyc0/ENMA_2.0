@@ -20,7 +20,6 @@ bool stringtable_set(obj_string_t* str);
 
 //check if identifier exists
 //if true return value
-bool symtable_get(obj_id_t* id, value_t* value);
-
+bool symtable_get(const obj_id_t* id, value_t* value);
 
 #endif

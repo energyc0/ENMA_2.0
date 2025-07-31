@@ -271,6 +271,7 @@ void scanner_debug_tokens(){
             case T_RBRACE: printf("'}' "); break;
             case T_STRING: printf("'\"%s\"' ", ((obj_string_t*)(cur_token.data.ptr))->str); break;
             case T_IDENT: printf("'%s' ", ((obj_string_t*)cur_token.data.ptr)->str); break;
+            case T_VAR: printf("'var' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

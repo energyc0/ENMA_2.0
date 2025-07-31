@@ -20,7 +20,6 @@ static struct virtual_machine vm;
 
 static void vm_init();
 static void vm_free();
-static bool vm_read_command(struct bytecode_chunk* chunk);
 static vm_execute_result vm_execute(struct bytecode_chunk* code);
 static vm_execute_result interpret();
 
@@ -42,20 +41,19 @@ static inline union _inner_value_t extract_value(int offset);
 //otherwise return value without change
 static inline value_t extract_identifier_value(value_t value);
 static inline int get_code_line();
-static inline void read_block(struct bytecode_chunk* chunk);
 
 //pops two values from the stack and pushes the result
 #define CALC_NUMERICAL_OP(return_type, op) do{ \
-        value_t b = extract_identifier_value(stack_pop()); \
-        value_t a = extract_identifier_value(stack_pop()); \
+        value_t b = stack_pop(); \
+        value_t a = stack_pop(); \
         if(!IS_NUMBER(a) || !IS_NUMBER(b)) \
             interpret_error_printf(get_code_line(), "Incompatible type for operation. All operands must be numbers!\n");\
         stack_push(return_type(AS_NUMBER(a) op AS_NUMBER(b))); \
     } while(0)
 
 #define CALC_BOOLEAN_OP(op) do{ \
-        value_t b = extract_identifier_value(stack_pop()); \
-        value_t a = extract_identifier_value(stack_pop()); \
+        value_t b = stack_pop(); \
+        value_t a = stack_pop(); \
         if(!IS_BOOLEAN(a) || !IS_BOOLEAN(b)) \
             interpret_error_printf(get_code_line(), "Incompatible type for operation. All operands must be booleans!\n");\
         stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) op AS_BOOLEAN(b))); \
@@ -69,7 +67,7 @@ void vm_interpret(){
     struct bytecode_chunk chunk;
     bcchunk_init(&chunk);
 
-    while(vm_read_command(&chunk));
+    while(parse_command(&chunk));
 
     vm_execute(&chunk);
     bcchunk_free(&chunk);
@@ -80,50 +78,9 @@ void vm_interpret(){
 static void vm_init(){
     vm.code = NULL;
     vm.ip = NULL;
-    vm.bp = vm.stack_top = VM_STACK_START;
+    vm.bp = vm.sp = VM_STACK_START;
 }
 
-static inline void read_block(struct bytecode_chunk* chunk){
-    while (scanner_next_token(&cur_token) && cur_token.type != T_RBRACE) {
-        scanner_putback_token();
-        if(!vm_read_command(chunk))
-            break;
-    }
-    if(cur_token.type != T_RBRACE)
-        interpret_error_printf(get_code_line(), "Unclosed statement block, '}' expected\n");
-}
-
-static bool vm_read_command(struct bytecode_chunk* chunk){
-    if(!scanner_next_token(&cur_token))
-        return false;
-
-    ast_node* node;
-    switch(cur_token.type){
-        case T_PRINT:{
-            node = ast_process_expr();
-            bcchunk_write_expression(node, chunk, line_counter);
-            bcchunk_write_simple_op(chunk, OP_PRINT, line_counter);
-            break;
-        }
-        case T_LBRACE:{
-            begin_scope();
-            read_block(chunk);
-            end_scope();
-            return true;
-        }
-        //it is an expression statement
-        default:{
-            scanner_putback_token();
-            node = ast_process_expr();
-            bcchunk_write_expression(node, chunk, line_counter);
-            bcchunk_write_simple_op(chunk, OP_POP, line_counter);
-            break;
-        }
-    }
-    if(!is_match(T_SEMI)) 
-        interpret_error_printf(get_code_line(), "Expected ';'\n");
-    return true;
-}
 
 static vm_execute_result vm_execute(struct bytecode_chunk* code){
     //to leave at the end
@@ -147,6 +104,23 @@ static vm_execute_result interpret(){
             case OP_RETURN: 
                 is_done = 1;
                 break;
+            case OP_PUSH_BP:
+                stack_push(VALUE_NUMBER(vm.bp - vm.stack));
+                break;
+            case OP_POP_BP:
+                val = stack_pop();
+#ifdef DEBUG
+                if(!IS_NUMBER(val))
+                    fatal_printf("Stack smashed! Expected BP offset.\n");
+#endif          
+                vm.bp = &vm.stack[AS_NUMBER(val)];
+                break;
+            case OP_BP_AS_SP:
+                vm.bp = vm.sp;
+                break;
+            case OP_SP_AS_BP:
+                vm.sp = vm.bp;
+                break;
             case OP_POP:
                 stack_pop();
                 break;
@@ -156,15 +130,33 @@ static vm_execute_result interpret(){
             case OP_BOOLEAN:
                 stack_push(VALUE_BOOLEAN(extract_value(read_constant()).boolean));
                 break;
-            case OP_STRING: case OP_IDENTIFIER:
+            case OP_STRING:
                 stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
+            case OP_GET_VAR:{
+                value_t var = VALUE_OBJ(extract_value(read_constant()).obj);
+                if(!symtable_get(AS_OBJIDENTIFIER(var), &val) || val.type == VT_NULL)
+                    interpret_error_printf(get_code_line(), "Undefined identifier: '%s'\n", AS_OBJIDENTIFIER(var)->str);
+                stack_push(val);
+                break;
+            }
+            case OP_SET_VAR:{
+                value_t var = VALUE_OBJ(extract_value(read_constant()).obj);
+                if(!symtable_get(AS_OBJIDENTIFIER(var), &val) || val.type == VT_NULL)
+                    interpret_error_printf(get_code_line(), "Undefined identifier: '%s'\n", AS_OBJIDENTIFIER(var)->str);
+                value_t expr = stack_pop();
+                if(!is_value_same_type(expr, val))
+                    interpret_error_printf(get_code_line(), "Cannot assign to the '%s', inappropriate variable type.\n", AS_OBJIDENTIFIER(var)->str);
+                symtable_set(AS_OBJIDENTIFIER(var), expr);
+                stack_push(expr);
+                break;
+            }
             case OP_ADD:{
-                value_t b = extract_identifier_value(stack_pop());
-                value_t a = extract_identifier_value(stack_pop());
+                value_t b = stack_pop();
+                value_t a = stack_pop();
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_NUMBER(AS_NUMBER(a) + AS_NUMBER(b)));
-                }else if(IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
+                }else if(IS_OBJ(a) && IS_OBJ(b) && IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
                     obj_string_t* s1 = AS_OBJSTRING(a);
                     obj_string_t* s2 = AS_OBJSTRING(b);
                     size_t len = s1->len + s2->len;
@@ -213,8 +205,8 @@ static vm_execute_result interpret(){
                 stack_push(VALUE_BOOLEAN(!AS_BOOLEAN(stack_pop())));
                 break;
             case OP_EQUAL:{
-                value_t b = extract_identifier_value(stack_pop());
-                value_t a = extract_identifier_value(stack_pop());
+                value_t b = stack_pop();
+                value_t a = stack_pop();
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) == AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
@@ -228,8 +220,8 @@ static vm_execute_result interpret(){
             }
             case OP_GREATER:{
                 /*TODO: add strings compare*/
-                value_t b = extract_identifier_value(stack_pop());
-                value_t a = extract_identifier_value(stack_pop());
+                value_t b = stack_pop();
+                value_t a = stack_pop();
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) > AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
@@ -241,8 +233,8 @@ static vm_execute_result interpret(){
             }
             case OP_LESS:{
                 /*TODO: add strings compare*/
-                value_t b = extract_identifier_value(stack_pop());
-                value_t a = extract_identifier_value(stack_pop());
+                value_t b = stack_pop();
+                value_t a = stack_pop();
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) < AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
@@ -253,7 +245,7 @@ static vm_execute_result interpret(){
                 break;
             }
             case OP_PRINT:
-                val = extract_identifier_value(stack_pop());
+                val = stack_pop();
                 if(IS_NUMBER(val)){
                     printf("%d\n", AS_NUMBER(val));
                 }else if(IS_BOOLEAN(val)){
@@ -267,22 +259,12 @@ static vm_execute_result interpret(){
                     printf("print: Not implemented instruction :(\n");
                 }
                 break;
-            case OP_ASSIGN:{
-                value_t expr = extract_identifier_value(stack_pop());
-                value_t assignable = stack_pop();
-                if(!IS_OBJ(assignable) || !IS_OBJIDENTIFIER(AS_OBJ(assignable)))
-                    fatal_printf("Cannot assign to the left operand\n");
-                
-                //if identifier already exists
-                //check its type
-                value_t assignable_val;
-                if(symtable_get(AS_OBJSTRING(assignable), &assignable_val)){
-                    if(!IS_NULL(assignable_val) && !is_value_same_type(assignable_val, expr)){
-                        interpret_error_printf(get_code_line(), "Incompatible type for assignment to '%s'\n", AS_OBJIDENTIFIER(assignable)->str);
-                    }
-                }
-                symtable_set(AS_OBJIDENTIFIER(assignable), expr);
-                stack_push(assignable);
+            case OP_DEFINE_VAR:{
+                value_t expr = stack_pop();
+                obj_id_t* id = (obj_id_t*)extract_value(read_constant()).obj;
+                if(symtable_get(id, &val) && val.type != VT_NULL)
+                    interpret_error_printf(get_code_line(), "'%s' variable redefenition.\n", id->str);
+                symtable_set(id, expr);
                 break;
             }
             default: 
@@ -319,8 +301,8 @@ static inline union _inner_value_t extract_value(int offset){
 }
 
 static inline void stack_push(value_t data){
-    if(vm.stack_top < VM_STACK_END)
-        *vm.stack_top++ = data;
+    if(vm.sp < VM_STACK_END)
+        *vm.sp++ = data;
     else
         fatal_printf("Stack overflow!\n");
 #ifdef DEBUG
@@ -329,14 +311,14 @@ static inline void stack_push(value_t data){
 #endif
 }
 static inline value_t stack_pop(){
-    if(vm.stack_top > VM_STACK_START){
+    if(vm.sp > VM_STACK_START){
 #ifdef DEBUG
-        --vm.stack_top;
+        --vm.sp;
         printf("After pop:\n");
         examine_stack();
-        return *vm.stack_top;
+        return *vm.sp;
 #else
-        return *--vm.stack_top;
+        return *--vm.sp;
 #endif
     }
     fatal_printf("Stack smashed!\n");
@@ -368,6 +350,8 @@ static char* examine_value(value_t val){
                     fatal_printf("Undefined object type in examine_value()\n");
             }
         }
+        case VT_NULL:
+            return "NULL - something wrong! Check your code!";
         default: 
             fatal_printf("Undefined value in the stack! Check examine_value()\n");
     }
@@ -376,7 +360,7 @@ static char* examine_value(value_t val){
 
 static void examine_stack(){
     printf("=== Stack ===\n");
-    for(value_t* ptr = vm.stack; ptr < vm.stack_top; ptr++)
+    for(value_t* ptr = vm.stack; ptr < vm.sp; ptr++)
         printf("%04X | %s\n", (unsigned)(ptr - vm.stack), examine_value(*ptr));
 }
 #endif

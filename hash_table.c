@@ -7,7 +7,7 @@
 #define TABLE_BASE_CAPACITY (16)
 
 //find entry in the table
-static hash_entry* find_entry(struct hash_table* t, obj_string_t* key);
+static hash_entry* find_entry(struct hash_table* t, const obj_string_t* key);
 //find place in the table to insert new
 //static hash_entry* find_place(struct hash_table* t, obj_string_t* key);
 //initalize all with zeros
@@ -50,7 +50,7 @@ bool table_unset(struct hash_table* t, obj_string_t * key){
     return true;
 }
 
-bool table_check(struct hash_table* t , obj_string_t* key, value_t* value){
+bool table_check(struct hash_table* t , const obj_string_t* key, value_t* value){
     hash_entry* ptr = find_entry(t, key);
     if(ptr->key == NULL){
         return false;
@@ -66,7 +66,7 @@ void table_free(struct hash_table* t){
     free(t->entries);
 }
 
-static hash_entry* find_entry(struct hash_table* t, obj_string_t* key){
+static hash_entry* find_entry(struct hash_table* t, const obj_string_t* key){
     int32_t idx = key->hash % t->capacity;
     hash_entry* tombstone = NULL;
     for(;;){

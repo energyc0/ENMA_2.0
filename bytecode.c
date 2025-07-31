@@ -98,18 +98,23 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_OR: return simple_instruction_debug("OP_OR",chunk, offset);
         case OP_XOR: return simple_instruction_debug("OP_XOR",chunk, offset);
         case OP_NOT: return simple_instruction_debug("OP_NOT",chunk, offset);
-        case OP_ASSIGN: return simple_instruction_debug("OP_ASSIGN",chunk, offset);
         case OP_EQUAL: return simple_instruction_debug("OP_EQUAL",chunk, offset);
         case OP_GREATER: return simple_instruction_debug("OP_GREATER",chunk, offset);
         case OP_LESS:  return simple_instruction_debug("OP_LESS",chunk, offset);
         case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
         case OP_STRING: return constant_instruction_debug("OP_STRING", chunk, offset);
-        case OP_IDENTIFIER: return constant_instruction_debug("OP_IDENTIFIER", chunk, offset);
+        case OP_GET_VAR: return constant_instruction_debug("OP_GET_VAR", chunk, offset);
+        case OP_SET_VAR: return constant_instruction_debug("OP_SET_VAR", chunk, offset);
+        case OP_DEFINE_VAR: return constant_instruction_debug("OP_DEFINE_VAR", chunk, offset);
         case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk, offset);
         case OP_POP: return simple_instruction_debug("OP_POP", chunk, offset);
+        case OP_PUSH_BP: return simple_instruction_debug("OP_PUSH_BP", chunk, offset);
+        case OP_POP_BP: return simple_instruction_debug("OP_POP_BP", chunk, offset);
+        case OP_BP_AS_SP: return simple_instruction_debug("OP_BP_AS_SP", chunk, offset);
+        case OP_SP_AS_BP: return simple_instruction_debug("OP_SP_AS_BP", chunk, offset);
         default:
-            fatal_printf("Undefined instruction!\n");
+            fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
     return -1;
 }
@@ -141,7 +146,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" \"%s\" %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
             break;
         }
-        case OP_IDENTIFIER:{
+        case OP_GET_VAR: case OP_SET_VAR:case OP_DEFINE_VAR:{
             if(!IS_OBJIDENTIFIER(extracted_value->obj))
                 fatal_printf("constant_instruction_debug(): extracted object is not identifier\n");
             printf(" \"%s\" %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
@@ -166,18 +171,6 @@ void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line){
 
 //5 bytes in the instruction
 void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data, int line){
-    if(IS_NUMBER(data))
-        bcchunk_write_code(chunk, OP_NUMBER, line);
-    else if(IS_BOOLEAN(data))
-        bcchunk_write_code(chunk, OP_BOOLEAN, line);
-    else if(IS_OBJ(data))
-        switch (AS_OBJ(data)->type) {
-            case OBJ_STRING: bcchunk_write_code(chunk, OP_STRING, line); break;
-            case OBJ_IDENTIFIER: bcchunk_write_code(chunk, OP_IDENTIFIER, line); break;
-            default: fatal_printf("Undefined obj_type in bcchunk_write_value()\n");
-        }
-    else 
-        fatal_printf("Not implemented instruction :(\n");
     chunk_write_number(&chunk->_code, chunk->_data.size);
     for(size_t i  = 0; i < sizeof(int); i++)
         chunk_write_number(&chunk->_line_data, line);
@@ -241,15 +234,34 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
         case AST_LESS:
             BIN_OP(OP_LESS);
             break;
-        case AST_ASSIGN:
-            BIN_OP(OP_ASSIGN);
+        case AST_ASSIGN:{
+            struct ast_binary* temp = ((struct ast_binary*)node->data.ptr);
+            if(temp->left->type != AST_IDENT)
+                interpret_error_printf(line, "Left operand is not assignable!\n");
+            parse_ast_bin_expr(temp->right, chunk, line);
+            bcchunk_write_simple_op(chunk, OP_SET_VAR, line);
+            bcchunk_write_value(chunk, temp->left->data.val, line);
             break;
+        }
         case AST_NOT:{
             parse_ast_bin_expr(node->data.ptr, chunk, line);
             bcchunk_write_simple_op(chunk, OP_NOT, line);
             break;
         }
-        case AST_NUMBER: case AST_BOOLEAN:case AST_STRING:case AST_IDENT:
+        case AST_NUMBER:
+            bcchunk_write_code(chunk, OP_NUMBER, line);
+            bcchunk_write_value(chunk, node->data.val, line);
+            break;
+        case AST_BOOLEAN:
+            bcchunk_write_code(chunk, OP_BOOLEAN, line);
+            bcchunk_write_value(chunk, node->data.val, line);
+            break;
+        case AST_STRING:
+            bcchunk_write_code(chunk, OP_STRING, line);
+            bcchunk_write_value(chunk, node->data.val, line);
+            break;
+        case AST_IDENT:
+            bcchunk_write_simple_op(chunk, OP_GET_VAR, line);
             bcchunk_write_value(chunk, node->data.val, line);
             break;
         default:

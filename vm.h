@@ -11,7 +11,7 @@ struct virtual_machine{
     struct bytecode_chunk* code;
     byte_t* ip;
     value_t stack[STACK_SIZE];
-    value_t* stack_top;
+    value_t* sp;
     value_t* bp;
 };
 
