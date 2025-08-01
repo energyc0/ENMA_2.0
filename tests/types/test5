@@ -1,7 +1,6 @@
-var a = "hola!";
-print a + " my friend!";
-print a == "hola! my friend!";
-
-a = a + " my friend!";
-print a;
-print a == "hola! my friend!";
+print "hola!";
+print "Hola!";
+print "hola!" > "Hola!";
+print "hola!" >= "Hola!";
+print "hola!" < "Hola!";
+print "hola!" <= "hola!";

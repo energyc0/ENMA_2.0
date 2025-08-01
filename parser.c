@@ -36,6 +36,7 @@ static const int precedence[] = {
     [T_SEMI] = -1,
     [T_LBRACE] = 0,
     [T_RBRACE] = 0,
+    [T_IF] = 0,
     [T_EOF] = 0
 };
 
@@ -50,6 +51,10 @@ static ast_node* ast_primary();
 static inline void read_block(struct bytecode_chunk* chunk);
 //parse expressions after 'var'
 static void parse_var(struct bytecode_chunk* chunk);
+static void parse_print(struct bytecode_chunk* chunk);
+static void parse_simple_expression(struct bytecode_chunk* chunk);
+
+
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -104,8 +109,7 @@ static ast_node* ast_primary(){
         default:
             compile_error_printf("Expected expression\n");
     }
-    if(!is_match(T_RPAR))
-        compile_error_printf("Unclosed left parenthesis, ')' expected\n");
+    cur_expect(T_RPAR, "Unclosed left parenthesis, ')' expected\n");
 
     return temp;
 }
@@ -123,13 +127,14 @@ static inline int get_op_precedence(token_type op){
 }
 
 static inline void read_block(struct bytecode_chunk* chunk){
-    while (scanner_next_token(&cur_token) && cur_token.type != T_RBRACE) {
+    while (scanner_next_token(&cur_token) && !is_match(T_RBRACE)) {
         scanner_putback_token();
         if(!parse_command(chunk))
             break;
     }
-    if(cur_token.type != T_RBRACE)
-        compile_error_printf("Unclosed statement block, '}' expected\n");
+    cur_expect(T_RBRACE, "Unclosed statement block, '}' expected\n");
+
+    //pop locals
     int var_k = count_scope_vars();
     if(var_k == 1){
         bcchunk_write_simple_op(chunk, OP_POP, line_counter);
@@ -147,18 +152,15 @@ bool parse_command(struct bytecode_chunk* chunk){
     if(!scanner_next_token(&cur_token))
         return false;
 
-    ast_node* node;
     switch(cur_token.type){
         case T_PRINT:{
-            node = ast_process_expr();
-            bcchunk_write_expression(node, chunk, line_counter);
-            bcchunk_write_simple_op(chunk, OP_PRINT, line_counter);
+            parse_print(chunk);
             break;
         }
         case T_LBRACE:{
-            begin_scope(chunk);
+            begin_scope();
             read_block(chunk);
-            end_scope(chunk);
+            end_scope();
             return true;
         }
         case T_VAR:{
@@ -167,30 +169,40 @@ bool parse_command(struct bytecode_chunk* chunk){
         }
         //it is an expression statement
         default:{
-            scanner_putback_token();
-            node = ast_process_expr();
-            bcchunk_write_expression(node, chunk, line_counter);
-            bcchunk_write_simple_op(chunk, OP_POP, line_counter);
+            parse_simple_expression(chunk);
             break;
         }
     }
-    if(!is_match(T_SEMI)) 
-        compile_error_printf("Expected ';'\n");
     return true;
 }
 
-void parse_var(struct bytecode_chunk* chunk){
-    if(!scanner_next_token(&cur_token) || !is_match(T_IDENT))
-        compile_error_printf("Expected identifier\n");
+static void parse_var(struct bytecode_chunk* chunk){
+    next_expect(T_IDENT, "Expected identifier\n");
 
     obj_string_t* var = cur_token.data.ptr;
     if(!declare_variable(var))
         compile_error_printf("'%s' has already defined\n", var->str);
 
-    if (!scanner_next_token(&cur_token) || !is_match(T_ASSIGN))
-        compile_error_printf("Expected expression\n");
+    next_expect(T_ASSIGN, "Expected expression\n");
 
     ast_node* expr = ast_process_expr();
     if(!define_variable(var, expr, chunk))
         compile_error_printf("'%s' variable redefinition\n", var->str);
+
+    cur_expect(T_SEMI, "Expected ';'\n");
+}
+
+static void parse_print(struct bytecode_chunk* chunk){
+    ast_node* node = ast_process_expr();
+    bcchunk_write_expression(node, chunk, line_counter);
+    bcchunk_write_simple_op(chunk, OP_PRINT, line_counter);
+    cur_expect(T_SEMI, "Expected ';'\n");
+}
+
+static void parse_simple_expression(struct bytecode_chunk* chunk){
+    scanner_putback_token();
+    ast_node* node = ast_process_expr();
+    bcchunk_write_expression(node, chunk, line_counter);
+    bcchunk_write_simple_op(chunk, OP_POP, line_counter);
+    cur_expect(T_SEMI, "Expected ';'\n");
 }

@@ -119,6 +119,8 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_POP_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_BP_AS_SP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_SP_AS_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_JUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_FJUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
         default:
             fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
@@ -162,7 +164,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" stack index: %d\n", extracted_value->number);
             break;
         }
-        case OP_POPN:{
+        case OP_POPN:case OP_JUMP: case OP_FJUMP:{
             printf(" %d\n", *(int*)(chunk->_code.data + offset + 1));
             break;
         }
@@ -288,6 +290,7 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
 
     #undef BIN_OP
 }
+
 const char* op_to_string(op_t op){
     static const char* ops[] = {
         [OP_RETURN] = "OP_RETURN",
@@ -317,7 +320,9 @@ const char* op_to_string(op_t op){
         [OP_PUSH_BP] = "OP_PUSH_BP",
         [OP_POP_BP] = "OP_POP_BP",
         [OP_BP_AS_SP] = "OP_BP_AS_SP",    
-        [OP_SP_AS_BP] = "OP_SP_AS_BP"
+        [OP_SP_AS_BP] = "OP_SP_AS_BP",
+        [OP_FJUMP] = "OP_FJUMP",
+        [OP_JUMP] = "OP_JUMP"
     };
 #ifdef DEBUG 
     if(!(0 <= op && op < sizeof(ops) / sizeof(ops[0])))
@@ -325,6 +330,7 @@ const char* op_to_string(op_t op){
 #endif
     return ops[op];
 }
+
 static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset){
     #define READ_CONSTANT_INDEX() (*(int*)(chunk->_code.data + code_offset + 1))
     #define READ_INSTRUCTION_CONSTANT(type) ( ((type*)chunk->_data.data) [READ_CONSTANT_INDEX()] )

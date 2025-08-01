@@ -31,6 +31,7 @@ typedef enum{
     //keywords
     T_PRINT,
     T_VAR,
+    T_IF,
     //other
     T_SEMI,
     T_LBRACE,

@@ -15,6 +15,9 @@ typedef enum{
     //pop n values from the stack
     OP_POPN,
 
+    OP_JUMP,
+    OP_FJUMP, //jump if a top value on the stack if false
+
     OP_DEFINE_GLOBAL, //define global in the symtable
     OP_SET_GLOBAL,  //set global in the symtable
     OP_GET_GLOBAL,  //get global from the symtable

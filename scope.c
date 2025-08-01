@@ -31,7 +31,7 @@ void end_scope(){
         compile_error_printf("Extraneous closing brace ('}')\n");
     for(;_scope.locals_count > 0 && _scope.locals[_scope.locals_count-1].depth > _scope.current_depth; _scope.locals_count--);
 }
-//todo
+
 int count_scope_vars(){
     int res = 0;
     for(int i = _scope.locals_count - 1;i >= 0 && _scope.locals[i].depth == _scope.current_depth; i--){
