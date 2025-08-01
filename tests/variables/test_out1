@@ -1,2 +1,2 @@
-Error at line 4: Cannot assign to the 'c', inappropriate variable type.
+Error at line 4: Incorrect assignment type for 'c'
 12

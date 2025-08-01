@@ -1,0 +1,4 @@
+var a = 11;
+{
+    var a = a and true and false;
+}

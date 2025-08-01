@@ -12,16 +12,22 @@ typedef enum{
     OP_RETURN,
     //just pop value out of stack
     OP_POP,
-    OP_DEFINE_VAR,
-    OP_SET_VAR,
-    OP_GET_VAR,
+
+    OP_DEFINE_GLOBAL, //define global in the symtable
+    OP_SET_GLOBAL,  //set global in the symtable
+    OP_GET_GLOBAL,  //get global from the symtable
+    
+    OP_DEFINE_LOCAL,    //reserve space in the stack
+    OP_SET_LOCAL,       //assign value in the stack
+    OP_GET_LOCAL,       //get value from the stack
     //get value from the stack and print it
     OP_PRINT,
-    //read next 3 bytes and push them to the stack
+    //read (int) index and read value from _data section
     OP_NUMBER,
     OP_BOOLEAN,
     OP_STRING,
     //binary ops
+    //pop values from the stack and perform current operation
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -34,7 +40,7 @@ typedef enum{
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,
-
+    //bp and sp manipulations
     OP_PUSH_BP,
     OP_POP_BP,
     OP_BP_AS_SP,    //BP = SP

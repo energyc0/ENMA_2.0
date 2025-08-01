@@ -60,3 +60,7 @@ bool is_value_same_type(const value_t a, const value_t b){
     }
     return true;
 }
+
+bool is_equal_objstring(const obj_string_t* s1, const obj_string_t* s2){
+    return s1->len == s2->len && strncmp(s1->str, s2->str, s1->len) == 0;
+}

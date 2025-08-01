@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "ast.h"
 #include "lang_types.h"
+#include "scope.h"
 #include "utils.h"
 
 static void chunk_init(struct chunk* chunk);
@@ -104,9 +105,12 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
         case OP_STRING: return constant_instruction_debug("OP_STRING", chunk, offset);
-        case OP_GET_VAR: return constant_instruction_debug("OP_GET_VAR", chunk, offset);
-        case OP_SET_VAR: return constant_instruction_debug("OP_SET_VAR", chunk, offset);
-        case OP_DEFINE_VAR: return constant_instruction_debug("OP_DEFINE_VAR", chunk, offset);
+        case OP_DEFINE_GLOBAL: return constant_instruction_debug("OP_DEFINE_GLOBAL", chunk, offset);
+        case OP_GET_GLOBAL: return constant_instruction_debug("OP_GET_GLOBAL", chunk, offset);
+        case OP_SET_GLOBAL: return constant_instruction_debug("OP_SET_GLOBAL", chunk, offset);
+        case OP_DEFINE_LOCAL: return constant_instruction_debug("OP_DEFINE_LOCAL", chunk, offset);
+        case OP_GET_LOCAL: return constant_instruction_debug("OP_GET_LOCAL", chunk, offset);
+        case OP_SET_LOCAL: return constant_instruction_debug("OP_SET_LOCAL", chunk, offset);
         case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk, offset);
         case OP_POP: return simple_instruction_debug("OP_POP", chunk, offset);
         case OP_PUSH_BP: return simple_instruction_debug("OP_PUSH_BP", chunk, offset);
@@ -146,10 +150,14 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" \"%s\" %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
             break;
         }
-        case OP_GET_VAR: case OP_SET_VAR:case OP_DEFINE_VAR:{
+        case OP_GET_GLOBAL: case OP_SET_GLOBAL:case OP_DEFINE_GLOBAL:{
             if(!IS_OBJIDENTIFIER(extracted_value->obj))
                 fatal_printf("constant_instruction_debug(): extracted object is not identifier\n");
             printf(" \"%s\" %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
+            break;
+        }
+        case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_DEFINE_LOCAL:{
+            printf(" stack index: %d\n", extracted_value->number);
             break;
         }
         default:
@@ -239,8 +247,7 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             if(temp->left->type != AST_IDENT)
                 interpret_error_printf(line, "Left operand is not assignable!\n");
             parse_ast_bin_expr(temp->right, chunk, line);
-            bcchunk_write_simple_op(chunk, OP_SET_VAR, line);
-            bcchunk_write_value(chunk, temp->left->data.val, line);
+            write_set_var(chunk, temp->left, line);
             break;
         }
         case AST_NOT:{
@@ -261,8 +268,7 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             bcchunk_write_value(chunk, node->data.val, line);
             break;
         case AST_IDENT:
-            bcchunk_write_simple_op(chunk, OP_GET_VAR, line);
-            bcchunk_write_value(chunk, node->data.val, line);
+            write_get_var(chunk, node, line);
             break;
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n Node type is %d\n", node->type);

@@ -76,6 +76,8 @@ obj_id_t* mk_objid(const char* s, size_t len, int32_t hash);
 //allocate new string
 obj_string_t* objstring_conc(const obj_string_t* s1, const obj_string_t* s2);
 
+bool is_equal_objstring(const obj_string_t* s1, const obj_string_t* s2);
+
 bool is_value_same_type(const value_t a, const value_t b);
 
 #endif

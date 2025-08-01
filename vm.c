@@ -2,13 +2,10 @@
 #include "bytecode.h"
 #include "hash_table.h"
 #include "lang_types.h"
-#include "scanner.h"
 #include "scope.h"
 #include "symtable.h"
 #include "garbage_collector.h"
-#include "token.h"
 #include "utils.h"
-#include "ast.h"
 #include "parser.h"
 #include <stdio.h>
 #include <string.h>
@@ -37,10 +34,9 @@ static inline byte_t read_byte();
 static inline int read_constant();
 //extract value from data chunk
 static inline union _inner_value_t extract_value(int offset);
-//if value is identifier, extract its value from the table,
-//otherwise return value without change
-static inline value_t extract_identifier_value(value_t value);
 static inline int get_code_line();
+static value_t get_variable_value(obj_id_t* id);
+static void set_variable_value(obj_id_t* id, value_t value);
 
 //pops two values from the stack and pushes the result
 #define CALC_NUMERICAL_OP(return_type, op) do{ \
@@ -122,7 +118,11 @@ static vm_execute_result interpret(){
                 vm.sp = vm.bp;
                 break;
             case OP_POP:
-                stack_pop();
+                --vm.sp;
+#ifdef DEBUG
+            if(vm.stack > vm.sp)
+                fatal_printf("Stack smashed! Check OP_POP instruction.\n");
+#endif
                 break;
             case OP_NUMBER:
                 stack_push(VALUE_NUMBER(extract_value(read_constant()).number));
@@ -133,22 +133,39 @@ static vm_execute_result interpret(){
             case OP_STRING:
                 stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
-            case OP_GET_VAR:{
-                value_t var = VALUE_OBJ(extract_value(read_constant()).obj);
-                if(!symtable_get(AS_OBJIDENTIFIER(var), &val) || val.type == VT_NULL)
-                    interpret_error_printf(get_code_line(), "Undefined identifier: '%s'\n", AS_OBJIDENTIFIER(var)->str);
+            case OP_DEFINE_GLOBAL:{
+                value_t expr = stack_pop();
+                obj_id_t* id = (obj_id_t*)extract_value(read_constant()).obj;
+                if(symtable_get(id, &val) && val.type != VT_NULL)
+                    interpret_error_printf(get_code_line(), "'%s' variable redefenition.\n", id->str);
+                symtable_set(id, expr);
+                break;
+            }
+            case OP_GET_GLOBAL:{
+                obj_string_t* id = (obj_string_t*)(extract_value(read_constant()).obj);
+                val = get_variable_value(id);
                 stack_push(val);
                 break;
             }
-            case OP_SET_VAR:{
-                value_t var = VALUE_OBJ(extract_value(read_constant()).obj);
-                if(!symtable_get(AS_OBJIDENTIFIER(var), &val) || val.type == VT_NULL)
-                    interpret_error_printf(get_code_line(), "Undefined identifier: '%s'\n", AS_OBJIDENTIFIER(var)->str);
+            case OP_SET_GLOBAL:{
+                obj_string_t* id = (obj_string_t*)(extract_value(read_constant()).obj);
                 value_t expr = stack_pop();
-                if(!is_value_same_type(expr, val))
-                    interpret_error_printf(get_code_line(), "Cannot assign to the '%s', inappropriate variable type.\n", AS_OBJIDENTIFIER(var)->str);
-                symtable_set(AS_OBJIDENTIFIER(var), expr);
+                set_variable_value(id, expr);
                 stack_push(expr);
+                break;
+            }
+            case OP_DEFINE_LOCAL:{
+                fatal_printf("fuck");
+                break;
+            }
+            case OP_GET_LOCAL:{
+                int idx = extract_value(read_constant()).number;
+                stack_push(vm.bp[idx]);
+                break;
+            }
+            case OP_SET_LOCAL:{
+                int idx = extract_value(read_constant()).number;
+                vm.bp[idx] = stack_pop();
                 break;
             }
             case OP_ADD:{
@@ -259,31 +276,12 @@ static vm_execute_result interpret(){
                     printf("print: Not implemented instruction :(\n");
                 }
                 break;
-            case OP_DEFINE_VAR:{
-                value_t expr = stack_pop();
-                obj_id_t* id = (obj_id_t*)extract_value(read_constant()).obj;
-                if(symtable_get(id, &val) && val.type != VT_NULL)
-                    interpret_error_printf(get_code_line(), "'%s' variable redefenition.\n", id->str);
-                symtable_set(id, expr);
-                break;
-            }
             default: 
                 eprintf("Undefined instruction!\n");
                 return VME_RUNTIME_ERROR;
         }
     }
     return VME_SUCCESS;
-}
-
-static inline value_t extract_identifier_value(value_t value){
-    if(IS_OBJ(value) && IS_OBJIDENTIFIER(AS_OBJ(value))){
-        value_t val;
-        if(!symtable_get(AS_OBJIDENTIFIER(value), &val) || IS_NULL(val)){
-            interpret_error_printf(get_code_line(), "Undefined identifier '%s'\n",AS_OBJIDENTIFIER(value)->str);
-        }
-        return val;
-    }
-    return value;
 }
 
 static inline byte_t read_byte(){
@@ -328,6 +326,31 @@ static inline int get_code_line(){
     //ip is always incremented
     //so it looks at the next instruction so we need -1
     return ((int*)vm.code->_line_data.data)[vm.ip - vm.code->_code.data - 1];
+}
+
+
+static value_t get_variable_value(obj_id_t* id){
+    int idx = resolve_local(id);
+    if(idx != -1)
+        return vm.bp[idx];
+    value_t val;
+    if(!symtable_get(id, &val) || val.type == VT_NULL)
+        interpret_error_printf(get_code_line(), "Undefined identifier %s\n", id->str);
+    return val;
+}
+
+static void set_variable_value(obj_id_t* id, value_t value){
+    int idx = resolve_local(id);
+    if(idx != -1){
+        vm.bp[idx] = value;
+    }else {
+        value_t var_val;
+        if(!symtable_get(id, &var_val) || var_val.type == VT_NULL)  
+            interpret_error_printf(get_code_line(), "Undefined identifier %s\n", id->str);
+        if(!is_value_same_type(var_val, value))
+            interpret_error_printf(get_code_line(), "Incorrect assignment type for '%s'\n", id->str);
+        symtable_set(id, value);
+    }
 }
 
 #ifdef DEBUG

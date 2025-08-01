@@ -49,7 +49,7 @@ static ast_node* ast_primary();
 
 static inline void read_block(struct bytecode_chunk* chunk);
 //parse expressions after 'var'
-static void define_variable(struct bytecode_chunk* chunk);
+static void parse_var(struct bytecode_chunk* chunk);
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -155,7 +155,7 @@ bool parse_command(struct bytecode_chunk* chunk){
             return true;
         }
         case T_VAR:{
-            define_variable(chunk);
+            parse_var(chunk);
             break;
         }
         //it is an expression statement
@@ -172,16 +172,18 @@ bool parse_command(struct bytecode_chunk* chunk){
     return true;
 }
 
-void define_variable(struct bytecode_chunk* chunk){
+void parse_var(struct bytecode_chunk* chunk){
     if(!scanner_next_token(&cur_token) || !is_match(T_IDENT))
         compile_error_printf("Expected identifier\n");
 
-    value_t var = VALUE_OBJ(cur_token.data.ptr);
+    obj_string_t* var = cur_token.data.ptr;
+    if(!declare_variable(var))
+        compile_error_printf("'%s' has already defined\n", var->str);
+
     if (!scanner_next_token(&cur_token) || !is_match(T_ASSIGN))
         compile_error_printf("Expected expression\n");
 
     ast_node* expr = ast_process_expr();
-    bcchunk_write_expression(expr, chunk, line_counter);
-    bcchunk_write_simple_op(chunk, OP_DEFINE_VAR, line_counter);
-    bcchunk_write_value(chunk, var, line_counter);
+    if(!define_variable(var, expr, chunk))
+        compile_error_printf("'%s' variable redefinition\n", var->str);
 }
