@@ -9,34 +9,34 @@
 #include "utils.h"
 
 static const int precedence[] = {
-    8,  //T_ADD
-    8,  //T_SUB
-    9,  //T_MUL
-    9,  //T_DIV
-    5,  //T_AND
-    3,  //T_OR
-    4,  //T_XOR
-    6,  //T_NOT
-    7,  //T_EQUAL,
-    7,  //T_NEQUAL,
-    7,  //T_GREATER,
-    7,  //T_EGREATER,
-    7,  //T_LESS, 
-    7,  //T_ELESS,
-    1,  //T_ASSIGN,
-    0,  //T_LPAR
-    -1, //T_RPAR
-    0,  //T_T_INT
-    0,  //T_FALSE
-    0,  //T_TRUE
-    0,  //T_IDENT
-    0,  //T_STRING
-    0,  //T_PRINT
-    0,  //T_VAR
-    -1, //T_SEMI
-    0,  //T_LBRACE
-    0,  //T_RBRACE
-    0   //T_EOF
+    [T_ADD] = 8,
+    [T_SUB] = 8,
+    [T_MUL] = 9,
+    [T_DIV] = 9,
+    [T_AND] = 5,
+    [T_OR] = 3,
+    [T_XOR] = 4,
+    [T_NOT] = 6,
+    [T_EQUAL] = 7,
+    [T_NEQUAL] = 7,
+    [T_GREATER] = 7,
+    [T_EGREATER] = 7,
+    [T_LESS] = 7,
+    [T_ELESS] = 7,
+    [T_ASSIGN] = 1,
+    [T_LPAR] = 0,
+    [T_RPAR] = -1,
+    [T_INT] = 0,
+    [T_FALSE] = 0,
+    [T_TRUE] = 0,
+    [T_IDENT] = 0,
+    [T_STRING] = 0,
+    [T_PRINT] = 0,
+    [T_VAR] = 0,
+    [T_SEMI] = -1,
+    [T_LBRACE] = 0,
+    [T_RBRACE] = 0,
+    [T_EOF] = 0
 };
 
 #define PRECEDENCE_ARR_SIZE (sizeof(precedence) / sizeof(int))
@@ -130,6 +130,13 @@ static inline void read_block(struct bytecode_chunk* chunk){
     }
     if(cur_token.type != T_RBRACE)
         compile_error_printf("Unclosed statement block, '}' expected\n");
+    int var_k = count_scope_vars();
+    if(var_k == 1){
+        bcchunk_write_simple_op(chunk, OP_POP, line_counter);
+    }else if(var_k > 1){
+        bcchunk_write_simple_op(chunk, OP_POPN, line_counter);
+        bcchunk_write_constant(chunk, var_k, line_counter);
+    }
 }
 
 ast_node* ast_process_expr(){

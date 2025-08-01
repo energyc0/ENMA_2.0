@@ -24,7 +24,8 @@ void begin_scope();
 bool is_global_scope();
 void end_scope();
 
-bool is_variable_exist(obj_id_t* id);
+//return count of the variables in the current scope
+int count_scope_vars();
 //return false if variable exists
 bool declare_variable(obj_id_t* id);
 bool define_variable(obj_id_t* id, struct ast_node* expr, struct bytecode_chunk* chunk);

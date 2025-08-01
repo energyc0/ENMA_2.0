@@ -96,7 +96,11 @@ static vm_execute_result interpret(){
     value_t val;
     int is_done = 0;
     while (!is_done) {
-        switch (read_byte()) {
+        byte_t instruction = read_byte();
+#ifdef DEBUG
+        printf("Current instruction: %s\n", op_to_string(instruction));
+#endif
+        switch (instruction) {
             case OP_RETURN: 
                 is_done = 1;
                 break;
@@ -122,6 +126,15 @@ static vm_execute_result interpret(){
 #ifdef DEBUG
             if(vm.stack > vm.sp)
                 fatal_printf("Stack smashed! Check OP_POP instruction.\n");
+            examine_stack();
+#endif
+                break;
+            case OP_POPN:
+                vm.sp -= read_constant();
+#ifdef DEBUG
+            if(vm.stack > vm.sp)
+                fatal_printf("Stack smashed! Check OP_POPN instruction.\n");
+            examine_stack();
 #endif
                 break;
             case OP_NUMBER:
@@ -304,7 +317,6 @@ static inline void stack_push(value_t data){
     else
         fatal_printf("Stack overflow!\n");
 #ifdef DEBUG
-    printf("After push:\n");
     examine_stack();
 #endif
 }
@@ -312,7 +324,7 @@ static inline value_t stack_pop(){
     if(vm.sp > VM_STACK_START){
 #ifdef DEBUG
         --vm.sp;
-        printf("After pop:\n");
+
         examine_stack();
         return *vm.sp;
 #else
@@ -364,7 +376,10 @@ static char* examine_value(value_t val){
             return AS_BOOLEAN(val) ? "true" : "false";
         case VT_OBJ:{
             switch (AS_OBJ(val)->type) {
-                case OBJ_STRING: return AS_OBJSTRING(val)->str;
+                case OBJ_STRING:{
+                    sprintf(buf, "\"%.*s\"",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
+                    return buf;
+                }
                 case OBJ_IDENTIFIER:{
                     sprintf(buf, "{%.*s}",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
                     return buf;
@@ -382,8 +397,8 @@ static char* examine_value(value_t val){
 
 
 static void examine_stack(){
-    printf("=== Stack ===\n");
+    printf("\t=== Stack ===\n");
     for(value_t* ptr = vm.stack; ptr < vm.sp; ptr++)
-        printf("%04X | %s\n", (unsigned)(ptr - vm.stack), examine_value(*ptr));
+        printf("\t%04X | %s\n", (unsigned)(ptr - vm.stack), examine_value(*ptr));
 }
 #endif

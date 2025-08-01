@@ -12,6 +12,8 @@ typedef enum{
     OP_RETURN,
     //just pop value out of stack
     OP_POP,
+    //pop n values from the stack
+    OP_POPN,
 
     OP_DEFINE_GLOBAL, //define global in the symtable
     OP_SET_GLOBAL,  //set global in the symtable
@@ -67,10 +69,13 @@ void chunk_write_number(struct chunk* chunk, int number);
 void chunk_write_value(struct chunk* chunk, value_t val);
 void chunk_free(struct chunk* chunk);
 */
+const char* op_to_string(op_t op);
+
 //initialize chunks with base capacity
 void bcchunk_init(struct bytecode_chunk* chunk);
 void bcchunk_free(struct bytecode_chunk* chunk);
 void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line);
+void bcchunk_write_constant(struct bytecode_chunk* chunk, int num, int line);
 void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data, int line);
 void bcchunk_write_expression(const struct ast_node* root, struct bytecode_chunk* chunk, int line);
 

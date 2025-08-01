@@ -89,34 +89,36 @@ static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte)
 }
 
 static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset){
-    switch (chunk->_code.data[offset]) {
-        case OP_RETURN: return simple_instruction_debug("OP_RETURN",chunk, offset);
-        case OP_ADD: return simple_instruction_debug("OP_ADD",chunk, offset);
-        case OP_SUB: return simple_instruction_debug("OP_SUB",chunk, offset);
-        case OP_DIV: return simple_instruction_debug("OP_DIV",chunk, offset);
-        case OP_MUL: return simple_instruction_debug("OP_MUL",chunk, offset);
-        case OP_AND: return simple_instruction_debug("OP_AND",chunk, offset);
-        case OP_OR: return simple_instruction_debug("OP_OR",chunk, offset);
-        case OP_XOR: return simple_instruction_debug("OP_XOR",chunk, offset);
-        case OP_NOT: return simple_instruction_debug("OP_NOT",chunk, offset);
-        case OP_EQUAL: return simple_instruction_debug("OP_EQUAL",chunk, offset);
-        case OP_GREATER: return simple_instruction_debug("OP_GREATER",chunk, offset);
-        case OP_LESS:  return simple_instruction_debug("OP_LESS",chunk, offset);
-        case OP_NUMBER: return constant_instruction_debug("OP_NUMBER",chunk, offset);
-        case OP_BOOLEAN: return constant_instruction_debug("OP_BOOLEAN", chunk, offset);
-        case OP_STRING: return constant_instruction_debug("OP_STRING", chunk, offset);
-        case OP_DEFINE_GLOBAL: return constant_instruction_debug("OP_DEFINE_GLOBAL", chunk, offset);
-        case OP_GET_GLOBAL: return constant_instruction_debug("OP_GET_GLOBAL", chunk, offset);
-        case OP_SET_GLOBAL: return constant_instruction_debug("OP_SET_GLOBAL", chunk, offset);
-        case OP_DEFINE_LOCAL: return constant_instruction_debug("OP_DEFINE_LOCAL", chunk, offset);
-        case OP_GET_LOCAL: return constant_instruction_debug("OP_GET_LOCAL", chunk, offset);
-        case OP_SET_LOCAL: return constant_instruction_debug("OP_SET_LOCAL", chunk, offset);
-        case OP_PRINT: return simple_instruction_debug("OP_PRINT", chunk, offset);
-        case OP_POP: return simple_instruction_debug("OP_POP", chunk, offset);
-        case OP_PUSH_BP: return simple_instruction_debug("OP_PUSH_BP", chunk, offset);
-        case OP_POP_BP: return simple_instruction_debug("OP_POP_BP", chunk, offset);
-        case OP_BP_AS_SP: return simple_instruction_debug("OP_BP_AS_SP", chunk, offset);
-        case OP_SP_AS_BP: return simple_instruction_debug("OP_SP_AS_BP", chunk, offset);
+    op_t op = chunk->_code.data[offset];
+    switch (op) {
+        case OP_RETURN: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_ADD: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_SUB: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_DIV: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_MUL: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_AND: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_OR: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_XOR: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_NOT: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_EQUAL: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_GREATER: return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_LESS:  return simple_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_NUMBER: return constant_instruction_debug(op_to_string(op),chunk, offset);
+        case OP_BOOLEAN: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_STRING: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_DEFINE_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_GET_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_SET_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_DEFINE_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_GET_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_SET_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_PRINT: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_POP: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_POPN: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_PUSH_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_POP_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_BP_AS_SP: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_SP_AS_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         default:
             fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
@@ -160,6 +162,10 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" stack index: %d\n", extracted_value->number);
             break;
         }
+        case OP_POPN:{
+            printf(" %d\n", *(int*)(chunk->_code.data + offset + 1));
+            break;
+        }
         default:
             printf(" Not implemented constant instruction :(\n");
     }
@@ -175,6 +181,12 @@ void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* ch
 
 void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line){
     bcchunk_write_code(chunk, op, line);
+}
+
+void bcchunk_write_constant(struct bytecode_chunk* chunk, int num, int line){
+    chunk_write_number(&chunk->_code, num);
+    for(size_t i  = 0; i < sizeof(int); i++)
+        chunk_write_number(&chunk->_line_data, line);
 }
 
 //5 bytes in the instruction
@@ -276,7 +288,43 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
 
     #undef BIN_OP
 }
-
+const char* op_to_string(op_t op){
+    static const char* ops[] = {
+        [OP_RETURN] = "OP_RETURN",
+        [OP_ADD] = "OP_ADD",
+        [OP_SUB] = "OP_SUB",
+        [OP_DIV] = "OP_DIV",
+        [OP_MUL] = "OP_MUL",
+        [OP_AND] = "OP_AND",
+        [OP_OR] = "OP_OR",
+        [OP_XOR] = "OP_XOR",
+        [OP_NOT] = "OP_NOT",
+        [OP_EQUAL] = "OP_EQUAL",
+        [OP_GREATER] = "OP_GREATER",
+        [OP_LESS] = "OP_LESS",
+        [OP_NUMBER] = "OP_NUMBER",
+        [OP_BOOLEAN] = "OP_BOOLEAN",
+        [OP_STRING] = "OP_STRING",
+        [OP_DEFINE_GLOBAL] = "OP_DEFINE_GLOBAL",
+        [OP_GET_GLOBAL] = "OP_GET_GLOBAL",
+        [OP_SET_GLOBAL] = "OP_SET_GLOBAL",
+        [OP_DEFINE_LOCAL] = "OP_DEFINE_LOCAL",
+        [OP_GET_LOCAL] = "OP_GET_LOCAL",
+        [OP_SET_LOCAL] = "OP_SET_LOCAL",
+        [OP_PRINT] = "OP_PRINT",
+        [OP_POP] = "OP_POP",
+        [OP_POPN] = "OP_POPN",    
+        [OP_PUSH_BP] = "OP_PUSH_BP",
+        [OP_POP_BP] = "OP_POP_BP",
+        [OP_BP_AS_SP] = "OP_BP_AS_SP",    
+        [OP_SP_AS_BP] = "OP_SP_AS_BP"
+    };
+#ifdef DEBUG 
+    if(!(0 <= op && op < sizeof(ops) / sizeof(ops[0])))
+        fatal_printf("Undefined operation in op_to_string()\n");
+#endif
+    return ops[op];
+}
 static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset){
     #define READ_CONSTANT_INDEX() (*(int*)(chunk->_code.data + code_offset + 1))
     #define READ_INSTRUCTION_CONSTANT(type) ( ((type*)chunk->_data.data) [READ_CONSTANT_INDEX()] )

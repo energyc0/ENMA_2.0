@@ -1,0 +1,30 @@
+var a = "0 scope";
+{
+    var a = "1 scope";
+    {
+        var a = "2 scope";
+        {
+            var a = "3 scope";
+            print a;
+        }
+        print a;
+    }
+    print a;
+}
+print a;
+
+{
+    var a = "4 scope";
+    {
+        var a = "5 scope";
+        {
+            var a = "6 scope";
+            var somevar1 = 11;
+            var somevar2 = 11;
+            print a;
+        }
+        print a;
+    }
+    print a;
+}
+print a;
