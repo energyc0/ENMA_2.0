@@ -98,7 +98,7 @@ static vm_execute_result interpret(){
     while (!is_done) {
         byte_t instruction = read_byte();
 #ifdef DEBUG
-        printf("Current instruction: %s\n", op_to_string(instruction));
+        printf("Current instruction: %04X | %s\n",(unsigned int)(vm.ip - vm.code->_code.data - 1), op_to_string(instruction));
 #endif
         switch (instruction) {
             case OP_RETURN: 
@@ -276,7 +276,7 @@ static vm_execute_result interpret(){
                 }
                 break;
             }
-            case OP_PRINT:
+            case OP_PRINT:{
                 val = stack_pop();
                 if(IS_NUMBER(val)){
                     printf("%d\n", AS_NUMBER(val));
@@ -291,6 +291,18 @@ static vm_execute_result interpret(){
                     printf("print: Not implemented instruction :(\n");
                 }
                 break;
+            }
+            case OP_JUMP:{
+                vm.ip += read_constant();
+                break;
+            }
+            case OP_FJUMP:{
+                val = stack_pop();
+                int jump = read_constant();
+                if(!AS_BOOLEAN(val))
+                    vm.ip += jump;
+                break;
+            }
             default: 
                 eprintf("Undefined instruction!\n");
                 return VME_RUNTIME_ERROR;

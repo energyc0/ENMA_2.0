@@ -77,8 +77,10 @@ const char* op_to_string(op_t op);
 //initialize chunks with base capacity
 void bcchunk_init(struct bytecode_chunk* chunk);
 void bcchunk_free(struct bytecode_chunk* chunk);
+int bcchunk_get_codesize(struct bytecode_chunk* chunk);
 void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line);
 void bcchunk_write_constant(struct bytecode_chunk* chunk, int num, int line);
+void bcchunk_rewrite_constant(struct bytecode_chunk* chunk,int offset, int num);
 void bcchunk_write_value(struct bytecode_chunk* chunk, value_t data, int line);
 void bcchunk_write_expression(const struct ast_node* root, struct bytecode_chunk* chunk, int line);
 

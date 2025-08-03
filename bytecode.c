@@ -185,10 +185,18 @@ void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line){
     bcchunk_write_code(chunk, op, line);
 }
 
+int bcchunk_get_codesize(struct bytecode_chunk* chunk){
+    return chunk->_code.size;
+}
+
 void bcchunk_write_constant(struct bytecode_chunk* chunk, int num, int line){
     chunk_write_number(&chunk->_code, num);
     for(size_t i  = 0; i < sizeof(int); i++)
         chunk_write_number(&chunk->_line_data, line);
+}
+
+void bcchunk_rewrite_constant(struct bytecode_chunk *chunk, int offset, int num){
+    *((int*)(chunk->_code.data + offset)) = num;
 }
 
 //5 bytes in the instruction

@@ -32,10 +32,11 @@ typedef enum{
     T_PRINT,
     T_VAR,
     T_IF,
+    T_ELSE,
     //other
     T_SEMI,
-    T_LBRACE,
-    T_RBRACE,
+    T_LBRACE, // '{'
+    T_RBRACE, // '}'
     T_EOF,
 } token_type; 
 

@@ -22,6 +22,8 @@ void symtable_init(){
     tr_add(keywords, "xor", T_XOR);
     tr_add(keywords, "not", T_NOT);
     tr_add(keywords, "var", T_VAR);
+    tr_add(keywords, "if", T_IF);
+    tr_add(keywords, "else", T_ELSE);
 
     table_init(&symtable);
     table_init(&stringtable);
