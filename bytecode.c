@@ -143,21 +143,21 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
     print_instruction_debug(name,chunk, offset);
     switch (*(chunk->_code.data + offset)) {
         case OP_NUMBER:
-            printf(" %d\n", extracted_value->number);
+            printf(" [0x%X]\n", extracted_value->number);
             break;
         case OP_BOOLEAN:
-            printf(" %s\n", extracted_value->boolean ? "true" : "false");
+            printf(" [%s]\n", extracted_value->boolean ? "true" : "false");
             break;
         case OP_STRING:{
             if(!IS_OBJSTRING(extracted_value->obj))
                 fatal_printf("constant_instruction_debug(): extracted object is not string\n");
-            printf(" \"%s\" %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
+            printf(" [\"%s\"] %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
             break;
         }
         case OP_GET_GLOBAL: case OP_SET_GLOBAL:case OP_DEFINE_GLOBAL:{
             if(!IS_OBJIDENTIFIER(extracted_value->obj))
                 fatal_printf("constant_instruction_debug(): extracted object is not identifier\n");
-            printf(" \"%s\" %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
+            printf(" [\"%s\"] %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
             break;
         }
         case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_DEFINE_LOCAL:{
@@ -165,7 +165,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             break;
         }
         case OP_POPN:case OP_JUMP: case OP_FJUMP:{
-            printf(" %d\n", *(int*)(chunk->_code.data + offset + 1));
+            printf(" [0x%X]\n", *(int*)(chunk->_code.data + offset + 1));
             break;
         }
         default:

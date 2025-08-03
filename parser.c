@@ -39,6 +39,7 @@ static const int precedence[] = {
     [T_IF] = 0,
     [T_ELSE] = 0,
     [T_WHILE] = 0,
+    [T_FOR] = 0,
     [T_EOF] = 0
 };
 
@@ -51,12 +52,13 @@ static ast_node* ast_bin_expr(int prev_precedence);
 static ast_node* ast_primary();
 
 static inline void read_block(struct bytecode_chunk* chunk);
-//parse expressions after 'var'
+
+static void parse_simple_expression(struct bytecode_chunk* chunk);
 static void parse_var(struct bytecode_chunk* chunk);
 static void parse_print(struct bytecode_chunk* chunk);
-static void parse_simple_expression(struct bytecode_chunk* chunk);
 static void parse_if(struct bytecode_chunk* chunk);
 static void parse_while(struct bytecode_chunk* chunk);
+static void parse_for(struct bytecode_chunk* chunk);
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -135,15 +137,6 @@ static inline void read_block(struct bytecode_chunk* chunk){
             break;
     }
     cur_expect(T_RBRACE, "Unclosed statement block, '}' expected\n");
-
-    //pop locals
-    int var_k = count_scope_vars();
-    if(var_k == 1){
-        bcchunk_write_simple_op(chunk, OP_POP, line_counter);
-    }else if(var_k > 1){
-        bcchunk_write_simple_op(chunk, OP_POPN, line_counter);
-        bcchunk_write_constant(chunk, var_k, line_counter);
-    }
 }
 
 ast_node* ast_process_expr(){
@@ -162,7 +155,7 @@ bool parse_command(struct bytecode_chunk* chunk){
         case T_LBRACE:{
             begin_scope();
             read_block(chunk);
-            end_scope();
+            end_scope(chunk);
             break;
         }
         case T_VAR:{
@@ -175,6 +168,10 @@ bool parse_command(struct bytecode_chunk* chunk){
         }
         case T_WHILE:{
             parse_while(chunk);
+            break;
+        }
+        case T_FOR:{
+            parse_for(chunk);
             break;
         }
         //it is an expression statement
@@ -221,7 +218,7 @@ static void parse_simple_expression(struct bytecode_chunk* chunk){
         next_expect(T_LBRACE, "Expected '{'\n"); \
         begin_scope(); \
         read_block(chunk); \
-        end_scope(); \
+        end_scope(chunk); \
     }while(0)
 
 #define UPDATE_JUMP_LENGTH(chunk, offset) bcchunk_rewrite_constant(chunk, offset, bcchunk_get_codesize(chunk) - offset - sizeof(int))
@@ -273,6 +270,75 @@ static void parse_while(struct bytecode_chunk* chunk){
     bcchunk_write_constant(chunk, start - (bcchunk_get_codesize(chunk) + sizeof(int)), line_counter);
 
     UPDATE_JUMP_LENGTH(chunk, offset);
+}
+
+static void parse_for(struct bytecode_chunk* chunk){
+    begin_scope();
+    next_expect(T_LPAR, "Expected '('\n");
+    if(!scanner_next_token(&cur_token))
+        compile_error_printf("Expected expression\n");
+
+    switch(cur_token.type){
+        case T_VAR: parse_var(chunk); break;
+        case T_SEMI: break;
+        default:
+            scanner_putback_token();
+            bcchunk_write_expression(ast_process_expr(), chunk, line_counter);
+            break;
+    }
+
+    cur_expect(T_SEMI, "Expected ';'\n");
+
+    if(!scanner_next_token(&cur_token))
+        compile_error_printf("Expected expression\n");
+
+    int loop_start = bcchunk_get_codesize(chunk);
+    switch(cur_token.type){
+        case T_SEMI:
+            bcchunk_write_simple_op(chunk, OP_BOOLEAN, line_counter);
+            bcchunk_write_value(chunk, VALUE_BOOLEAN(true), line_counter);
+            break;
+        default:
+            scanner_putback_token();
+            bcchunk_write_expression(ast_process_expr(), chunk, line_counter);
+            break;
+    }
+    bcchunk_write_simple_op(chunk, OP_FJUMP, line_counter);
+    int cond_mark = bcchunk_get_codesize(chunk);
+    bcchunk_write_constant(chunk, -(int)sizeof(int), line_counter);
+
+    cur_expect(T_SEMI, "Expected ';'\n");
+
+    if(!scanner_next_token(&cur_token))
+        compile_error_printf("Expected expression\n");
+    
+    int postexpr_line = line_counter;
+    ast_node* postexpr;
+    if(is_match(T_RPAR)){
+        postexpr = NULL;
+    }else{
+        scanner_putback_token();
+        postexpr = ast_process_expr();
+    }
+
+    cur_expect(T_RPAR, "Expected ')'\n");
+
+    if(!scanner_next_token(&cur_token))
+        compile_error_printf("Expected '{' or ';'\n");
+    if(is_match(T_LBRACE))
+        read_block(chunk);
+    else
+        cur_expect(T_SEMI, "Expected '{' or ';'\n");
+
+    if(postexpr){
+        bcchunk_write_expression(postexpr, chunk, postexpr_line);
+        bcchunk_write_simple_op(chunk, OP_POP, postexpr_line);
+    }
+    bcchunk_write_simple_op(chunk, OP_JUMP, postexpr_line);
+    bcchunk_write_constant(chunk, loop_start - (bcchunk_get_codesize(chunk) + sizeof(int)), postexpr_line);
+
+    UPDATE_JUMP_LENGTH(chunk, cond_mark);
+    end_scope(chunk);
 }
 
 #undef UPDATE_JUMP_LENGTH

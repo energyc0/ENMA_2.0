@@ -22,7 +22,7 @@ struct scope{
 
 void begin_scope();
 bool is_global_scope();
-void end_scope();
+void end_scope(struct bytecode_chunk* chunk);
 int get_scope();
 
 //return count of the variables in the current scope

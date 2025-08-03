@@ -274,6 +274,7 @@ void scanner_debug_tokens(){
             case T_VAR: printf("'var' "); break;
             case T_ELSE: printf("'else' "); break;
             case T_WHILE: printf("'while' "); break;
+            case T_FOR: printf("'for' "); break;
             case T_IF: printf("'if' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");

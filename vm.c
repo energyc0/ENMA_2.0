@@ -173,12 +173,21 @@ static vm_execute_result interpret(){
             }
             case OP_GET_LOCAL:{
                 int idx = extract_value(read_constant()).number;
+#ifdef DEBUG
+                if(idx >= vm.sp - vm.stack || idx < 0)
+                    fatal_printf("Stack corrupt. OP_GET_LOCAL\n");
+#endif
                 stack_push(vm.bp[idx]);
                 break;
             }
             case OP_SET_LOCAL:{
                 int idx = extract_value(read_constant()).number;
+#ifdef DEBUG
+                if(idx >= vm.sp - vm.stack || idx < 0)
+                    fatal_printf("Stack corrupt. OP_SET_LOCAL\n");
+#endif
                 vm.bp[idx] = stack_pop();
+                stack_push(vm.bp[idx]);
                 break;
             }
             case OP_ADD:{

@@ -25,6 +25,7 @@ void symtable_init(){
     tr_add(keywords, "if", T_IF);
     tr_add(keywords, "else", T_ELSE);
     tr_add(keywords, "while", T_WHILE);
+    tr_add(keywords, "for", T_FOR);
 
     table_init(&symtable);
     table_init(&stringtable);

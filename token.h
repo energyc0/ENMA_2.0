@@ -34,6 +34,7 @@ typedef enum{
     T_IF,
     T_ELSE,
     T_WHILE,
+    T_FOR,
     //other
     T_SEMI,
     T_LBRACE, // '{'

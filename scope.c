@@ -17,6 +17,7 @@ static void define_local();
 //check if the variable has already defined in this scope
 //return true if it is defined
 static bool check_current_depth_local(obj_string_t* id);
+static inline void pop_locals(struct bytecode_chunk* chunk, int var_k);
 
 void begin_scope(){
     _scope.current_depth++;
@@ -30,10 +31,13 @@ int get_scope(){
     return _scope.current_depth;
 }
 
-void end_scope(){
+void end_scope(struct bytecode_chunk* chunk){
     if(--_scope.current_depth < 0)
         compile_error_printf("Extraneous closing brace ('}')\n");
-    for(;_scope.locals_count > 0 && _scope.locals[_scope.locals_count-1].depth > _scope.current_depth; _scope.locals_count--);
+
+    int var_k = 0;
+    for(;_scope.locals_count > 0 && _scope.locals[_scope.locals_count-1].depth > _scope.current_depth; _scope.locals_count--, var_k++);
+    pop_locals(chunk, var_k);
 }
 
 int count_scope_vars(){
@@ -66,6 +70,15 @@ bool define_variable(obj_id_t* id, struct ast_node* expr, struct bytecode_chunk*
         //bcchunk_write_simple_op(chunk, OP_DEFINE_LOCAL, line_counter);
     }
     return true;
+}
+
+static inline void pop_locals(struct bytecode_chunk* chunk, int var_k){
+    if(var_k == 1){
+        bcchunk_write_simple_op(chunk, OP_POP, line_counter);
+    }else if(var_k > 1){
+        bcchunk_write_simple_op(chunk, OP_POPN, line_counter);
+        bcchunk_write_constant(chunk, var_k, line_counter);
+    }
 }
 
 static bool check_current_depth_local(obj_string_t* id){
