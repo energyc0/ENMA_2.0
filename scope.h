@@ -23,6 +23,7 @@ struct scope{
 void begin_scope();
 bool is_global_scope();
 void end_scope();
+int get_scope();
 
 //return count of the variables in the current scope
 int count_scope_vars();

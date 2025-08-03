@@ -33,6 +33,7 @@ typedef enum{
     T_VAR,
     T_IF,
     T_ELSE,
+    T_WHILE,
     //other
     T_SEMI,
     T_LBRACE, // '{'

@@ -273,6 +273,7 @@ void scanner_debug_tokens(){
             case T_IDENT: printf("'%s' ", ((obj_string_t*)cur_token.data.ptr)->str); break;
             case T_VAR: printf("'var' "); break;
             case T_ELSE: printf("'else' "); break;
+            case T_WHILE: printf("'while' "); break;
             case T_IF: printf("'if' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");

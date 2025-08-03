@@ -38,6 +38,7 @@ static const int precedence[] = {
     [T_RBRACE] = 0,
     [T_IF] = 0,
     [T_ELSE] = 0,
+    [T_WHILE] = 0,
     [T_EOF] = 0
 };
 
@@ -55,7 +56,7 @@ static void parse_var(struct bytecode_chunk* chunk);
 static void parse_print(struct bytecode_chunk* chunk);
 static void parse_simple_expression(struct bytecode_chunk* chunk);
 static void parse_if(struct bytecode_chunk* chunk);
-
+static void parse_while(struct bytecode_chunk* chunk);
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -172,6 +173,10 @@ bool parse_command(struct bytecode_chunk* chunk){
             parse_if(chunk);
             break;
         }
+        case T_WHILE:{
+            parse_while(chunk);
+            break;
+        }
         //it is an expression statement
         default:{
             parse_simple_expression(chunk);
@@ -212,27 +217,26 @@ static void parse_simple_expression(struct bytecode_chunk* chunk){
     cur_expect(T_SEMI, "Expected ';'\n");
 }
 
-static void parse_if(struct bytecode_chunk* chunk){
-    #define UPDATE_JUMP_LENGTH(chunk, offset) bcchunk_rewrite_constant(chunk, offset, bcchunk_get_codesize(chunk) - offset - sizeof(int))
-
-    #define READ_BLOCK(chunk) do{ \
+#define READ_BLOCK(chunk) do{ \
         next_expect(T_LBRACE, "Expected '{'\n"); \
         begin_scope(); \
         read_block(chunk); \
         end_scope(); \
     }while(0)
 
+#define UPDATE_JUMP_LENGTH(chunk, offset) bcchunk_rewrite_constant(chunk, offset, bcchunk_get_codesize(chunk) - offset - sizeof(int))
 
+static void parse_if(struct bytecode_chunk* chunk){
     next_expect(T_LPAR, "Expected '('\n");
     ast_node* log_expr = ast_process_expr();
+    bcchunk_write_expression(log_expr, chunk, line_counter);
     cur_expect(T_RPAR, "Expected ')'\n");
 
-    bcchunk_write_expression(log_expr, chunk, line_counter);
     bcchunk_write_simple_op(chunk, OP_FJUMP, line_counter);
 
     int offset;
     offset = bcchunk_get_codesize(chunk); 
-    bcchunk_write_constant(chunk, 0, line_counter); 
+    bcchunk_write_constant(chunk, -(int)sizeof(int), line_counter); 
     READ_BLOCK(chunk);
 
     if(!scanner_next_token(&cur_token) || !is_match(T_ELSE)){
@@ -242,7 +246,7 @@ static void parse_if(struct bytecode_chunk* chunk){
     }
 
     bcchunk_write_simple_op(chunk, OP_JUMP, line_counter);
-    bcchunk_write_constant(chunk, 0, line_counter); 
+    bcchunk_write_constant(chunk, -(int)sizeof(int), line_counter); 
     UPDATE_JUMP_LENGTH(chunk, offset);
 
     offset = bcchunk_get_codesize(chunk) - sizeof(int); 
@@ -250,6 +254,26 @@ static void parse_if(struct bytecode_chunk* chunk){
     READ_BLOCK(chunk);
     UPDATE_JUMP_LENGTH(chunk, offset);
 
-    #undef UPDATE_JUMP_LENGTH
-    #undef READ_BLOCK
 }
+
+static void parse_while(struct bytecode_chunk* chunk){
+    next_expect(T_LPAR, "Expected '('\n");
+    int start = bcchunk_get_codesize(chunk);
+    ast_node* log_expr = ast_process_expr();
+    bcchunk_write_expression(log_expr, chunk, line_counter);
+
+    bcchunk_write_simple_op(chunk, OP_FJUMP, line_counter);
+    int offset = bcchunk_get_codesize(chunk);
+    bcchunk_write_constant(chunk, -(int)sizeof(int), line_counter);
+    cur_expect(T_RPAR, "Expected ')'\n");
+
+    READ_BLOCK(chunk);
+
+    bcchunk_write_simple_op(chunk, OP_JUMP, line_counter);
+    bcchunk_write_constant(chunk, start - (bcchunk_get_codesize(chunk) + sizeof(int)), line_counter);
+
+    UPDATE_JUMP_LENGTH(chunk, offset);
+}
+
+#undef UPDATE_JUMP_LENGTH
+#undef READ_BLOCK

@@ -26,6 +26,10 @@ bool is_global_scope(){
     return _scope.current_depth == 0;
 }
 
+int get_scope(){
+    return _scope.current_depth;
+}
+
 void end_scope(){
     if(--_scope.current_depth < 0)
         compile_error_printf("Extraneous closing brace ('}')\n");
@@ -93,27 +97,23 @@ int resolve_local(obj_id_t* id){
 }
 
 void write_set_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
-    if(is_global_scope()){
+    int idx;
+    if(!is_global_scope() && (idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val))) >= 0){
+            bcchunk_write_simple_op(chunk, OP_SET_LOCAL, line);
+            bcchunk_write_value(chunk, VALUE_NUMBER(idx), line);
+    }else{
         bcchunk_write_simple_op(chunk, OP_SET_GLOBAL, line);
         bcchunk_write_value(chunk, id_node->data.val, line);
-    }else{
-        int idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val));
-        if(idx == -1)
-            interpret_error_printf(line, "Undefined identifer '%s'\n", AS_OBJIDENTIFIER(id_node->data.val)->str);
-        bcchunk_write_simple_op(chunk, OP_SET_LOCAL, line);
-        bcchunk_write_value(chunk, VALUE_NUMBER(idx), line);
     }
 }
 
 void write_get_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
-    if(is_global_scope()){
+    int idx;
+    if(!is_global_scope() && (idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val))) >= 0){
+            bcchunk_write_simple_op(chunk, OP_GET_LOCAL, line);
+            bcchunk_write_value(chunk, VALUE_NUMBER(idx), line);
+    }else{
         bcchunk_write_simple_op(chunk, OP_GET_GLOBAL, line);
         bcchunk_write_value(chunk, id_node->data.val, line);
-    }else{
-        int idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val));
-        if(idx == -1)
-            interpret_error_printf(line, "Undefined identifer '%s'\n", AS_OBJIDENTIFIER(id_node->data.val)->str);
-        bcchunk_write_simple_op(chunk, OP_GET_LOCAL, line);
-        bcchunk_write_value(chunk, VALUE_NUMBER(idx), line);
     }
 }

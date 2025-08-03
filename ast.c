@@ -1,6 +1,7 @@
 #include "ast.h"
 #include "bytecode.h"
 #include "lang_types.h"
+#include "scope.h"
 #include "token.h"
 #include "utils.h"
 #include "scanner.h"
@@ -81,7 +82,7 @@ ast_node* ast_mknode_identifier(obj_string_t* id){
 }
 
 void ast_debug_tree(const ast_node* node){
-    printf("Parsed expression at line %d:\n", line_counter);
+    printf("Parsed expression at line %d with depth %d:\n", line_counter, get_scope());
     ast_debug_node(node);
     putchar('\n');
 }
