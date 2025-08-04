@@ -39,6 +39,7 @@ typedef enum{
     T_WHILE,
     T_FOR,
     T_BREAK,
+    T_CONTINUE,
     //other
     T_SEMI,
     T_LBRACE, // '{'

@@ -22,7 +22,7 @@ struct scope{
 };
 
 void begin_scope();
-void begin_cycle(); //calls begin_scope()
+void begin_cycle(struct bytecode_chunk* chunk); //calls begin_scope()
 
 bool is_global_scope();
 

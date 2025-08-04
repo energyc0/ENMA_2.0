@@ -295,6 +295,7 @@ void scanner_debug_tokens(){
             case T_INCR: printf("'++' "); break;
             case T_DECR: printf("'--' "); break;
             case T_BREAK: printf("'break' "); break;
+            case T_CONTINUE: printf("'continue' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

@@ -201,6 +201,13 @@ bool parse_command(struct bytecode_chunk* chunk){
             next_expect(T_SEMI, "Expected ';'\n");
             break;
         }
+        case T_CONTINUE:{
+            if(!is_cycle())
+                compile_error_printf("Cannot use 'continue' outside a loop\n");
+            parse_continue(chunk, OP_JUMP, line_counter);
+            next_expect(T_SEMI, "Expected ';'\n");
+            break;
+        }
         //it is an expression statement
         default:{
             parse_simple_expression(chunk);
@@ -284,6 +291,7 @@ static void parse_while(struct bytecode_chunk* chunk){
     next_expect(T_LPAR, "Expected '('\n");
     int start = bcchunk_get_codesize(chunk);
     ast_node* log_expr = ast_process_expr();
+    begin_cycle(chunk);
     bcchunk_write_expression(log_expr, chunk, line_counter);
 
     bcchunk_write_simple_op(chunk, OP_FJUMP, line_counter);
@@ -292,7 +300,6 @@ static void parse_while(struct bytecode_chunk* chunk){
     cur_expect(T_RPAR, "Expected ')'\n");
 
     next_expect(T_LBRACE, "Expected '{'\n");
-    begin_cycle();
     read_block(chunk);
 
     bcchunk_write_simple_op(chunk, OP_JUMP, line_counter);
@@ -303,7 +310,7 @@ static void parse_while(struct bytecode_chunk* chunk){
 }
 
 static void parse_for(struct bytecode_chunk* chunk){
-    begin_cycle();
+    begin_cycle(chunk);
     next_expect(T_LPAR, "Expected '('\n");
     if(!scanner_next_token(&cur_token))
         compile_error_printf("Expected expression\n");
@@ -360,6 +367,7 @@ static void parse_for(struct bytecode_chunk* chunk){
     else
         cur_expect(T_SEMI, "Expected '{' or ';'\n");
 
+    change_start_offset(bcchunk_get_codesize(chunk));
     if(postexpr){
         bcchunk_write_expression(postexpr, chunk, postexpr_line);
         bcchunk_write_simple_op(chunk, OP_POP, postexpr_line);

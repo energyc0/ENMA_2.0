@@ -25,8 +25,8 @@ void begin_scope(){
     _scope.current_depth++;
 }
 
-void begin_cycle(){
-    start_parse_breaks();
+void begin_cycle(struct bytecode_chunk* chunk){
+    start_parse_cycle(chunk);
     begin_scope();
 }
 
@@ -39,7 +39,7 @@ int get_scope(){
 }
 
 void end_cycle(struct bytecode_chunk* chunk){
-    end_parse_breaks(chunk);
+    end_parse_cycle(chunk);
     end_scope(chunk);
 }
 
