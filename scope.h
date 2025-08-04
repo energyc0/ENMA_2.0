@@ -1,6 +1,7 @@
 #ifndef SCOPE_H
 #define SCOPE_H
 
+#include "bytecode.h"
 #include "lang_types.h"
 #include <stdbool.h>
 
@@ -38,4 +39,9 @@ int resolve_local(obj_id_t* id);
 
 void write_set_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
 void write_get_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
+void write_postincr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
+void write_prefincr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
+void write_postdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
+void write_prefdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
+
 #endif

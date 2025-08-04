@@ -312,6 +312,88 @@ static vm_execute_result interpret(){
                     vm.ip += jump;
                 break;
             }
+
+            #define EXTRACT_GLOBAL(id, val) do{ \
+                id = (obj_id_t*)extract_value(read_constant()).obj; \
+                if(!symtable_get(id, &val)) \
+                    interpret_error_printf(get_code_line(), "Undefined identifier '%s'\n", id->str); \
+                if(!IS_NUMBER(val)) \
+                    interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n"); \
+            }while(0)
+            
+            #define PREF_OP_GLOBAL(op) do{\
+                obj_id_t* id; \
+                value_t val; \
+                EXTRACT_GLOBAL(id, val); \
+                op AS_NUMBER(val); \
+                symtable_set(id, val);\
+                stack_push(val);\
+            }while(0)
+
+            #define POST_OP_GLOBAL(op) do{\
+                obj_id_t* id; \
+                value_t val; \
+                EXTRACT_GLOBAL(id, val); \
+                stack_push(val);\
+                op AS_NUMBER(val); \
+                symtable_set(id, val);\
+            }while(0)
+
+            #define POST_OP_LOCAL(op) do{\
+                int idx = extract_value(read_constant()).number;\
+                if(!IS_NUMBER(vm.stack[idx]))\
+                    interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n");\
+                stack_push(vm.stack[idx]);\
+                op AS_NUMBER(vm.stack[idx]);\
+            }while(0)
+
+            #define PREF_OP_LOCAL(op) do{\
+                int idx = extract_value(read_constant()).number;\
+                if(!IS_NUMBER(vm.stack[idx]))\
+                    interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n");\
+                op AS_NUMBER(vm.stack[idx]);\
+                stack_push(vm.stack[idx]);\
+            }while(0)
+
+            case OP_PREFINCR_GLOBAL:{
+                PREF_OP_GLOBAL(++);
+                break;
+            }
+            case OP_POSTINCR_GLOBAL:{
+                POST_OP_GLOBAL(++);
+                break;
+            }
+            case OP_PREFDECR_GLOBAL:{
+                PREF_OP_GLOBAL(--);
+                break;
+            }
+            case OP_POSTDECR_GLOBAL:{
+                POST_OP_GLOBAL(--);
+                break;
+            }
+            case OP_POSTINCR_LOCAL:{
+                POST_OP_LOCAL(++);
+                break;
+            }
+            case OP_POSTDECR_LOCAL:{
+                POST_OP_LOCAL(--);
+                break;
+            }
+            case OP_PREFINCR_LOCAL:{
+                PREF_OP_LOCAL(++);
+                break;
+            }
+            case OP_PREFDECR_LOCAL:{
+                PREF_OP_LOCAL(--);
+                break;
+            }
+
+            #undef EXTRACT_GLOBAL
+            #undef PREF_OP_GLOBAL
+            #undef PREF_OP_LOCAL
+            #undef POST_OP_GLOBAL
+            #undef POST_OP_LOCAL
+
             default: 
                 eprintf("Undefined instruction!\n");
                 return VME_RUNTIME_ERROR;

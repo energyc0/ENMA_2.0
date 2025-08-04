@@ -18,6 +18,7 @@ static void define_local();
 //return true if it is defined
 static bool check_current_depth_local(obj_string_t* id);
 static inline void pop_locals(struct bytecode_chunk* chunk, int var_k);
+static void perform_local_global_op(struct bytecode_chunk* chunk, const ast_node* id_node, op_t local, op_t global, int line);
 
 void begin_scope(){
     _scope.current_depth++;
@@ -109,24 +110,34 @@ int resolve_local(obj_id_t* id){
     return -1;
 }
 
-void write_set_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
+static void perform_local_global_op(struct bytecode_chunk* chunk, const ast_node* id_node, op_t local, op_t global, int line){
     int idx;
     if(!is_global_scope() && (idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val))) >= 0){
-            bcchunk_write_simple_op(chunk, OP_SET_LOCAL, line);
+            bcchunk_write_simple_op(chunk, local, line);
             bcchunk_write_value(chunk, VALUE_NUMBER(idx), line);
     }else{
-        bcchunk_write_simple_op(chunk, OP_SET_GLOBAL, line);
+        bcchunk_write_simple_op(chunk, global, line);
         bcchunk_write_value(chunk, id_node->data.val, line);
     }
 }
 
+void write_set_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
+    perform_local_global_op(chunk, id_node, OP_SET_LOCAL, OP_SET_GLOBAL, line);
+}
+
 void write_get_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
-    int idx;
-    if(!is_global_scope() && (idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val))) >= 0){
-            bcchunk_write_simple_op(chunk, OP_GET_LOCAL, line);
-            bcchunk_write_value(chunk, VALUE_NUMBER(idx), line);
-    }else{
-        bcchunk_write_simple_op(chunk, OP_GET_GLOBAL, line);
-        bcchunk_write_value(chunk, id_node->data.val, line);
-    }
+    perform_local_global_op(chunk, id_node, OP_GET_LOCAL, OP_GET_GLOBAL, line);
+}
+
+void write_postincr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
+    perform_local_global_op(chunk, id_node, OP_POSTINCR_LOCAL, OP_POSTINCR_GLOBAL, line);
+}
+void write_prefincr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
+    perform_local_global_op(chunk, id_node, OP_PREFINCR_LOCAL, OP_PREFINCR_GLOBAL, line);
+}
+void write_postdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
+    perform_local_global_op(chunk, id_node, OP_POSTDECR_LOCAL, OP_POSTDECR_GLOBAL, line);
+}
+void write_prefdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
+    perform_local_global_op(chunk, id_node, OP_PREFDECR_LOCAL, OP_PREFDECR_GLOBAL, line);
 }

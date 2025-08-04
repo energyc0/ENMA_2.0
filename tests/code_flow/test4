@@ -1,0 +1,39 @@
+print "globals: ";
+var a = 0;
+print a++;
+print ++a;
+
+a = a++;
+print a;
+a = ++a;
+print a;
+
+var b = 0;
+print b--;
+print --b;
+
+b = --b;
+print b;
+b = b--;
+print b;
+
+{
+    print "locals: ";
+    var a = 0;
+    print a++;
+    print ++a;
+
+    a = a++;
+    print a;
+    a = ++a;
+    print a;
+
+    var b = 0;
+    print b--;
+    print --b;
+
+    b = --b;
+    print b;
+    b = b--;
+    print b;
+}

@@ -45,6 +45,15 @@ typedef enum{
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,
+    /*constant value may be an identifier(for globals) or an index(for locals)*/
+    OP_POSTINCR_GLOBAL,
+    OP_POSTINCR_LOCAL,
+    OP_POSTDECR_GLOBAL,
+    OP_POSTDECR_LOCAL,
+    OP_PREFINCR_GLOBAL,
+    OP_PREFINCR_LOCAL,
+    OP_PREFDECR_GLOBAL,
+    OP_PREFDECR_LOCAL,
     //bp and sp manipulations
     OP_PUSH_BP,
     OP_POP_BP,

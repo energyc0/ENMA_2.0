@@ -142,8 +142,24 @@ int scanner_next_token(struct token* t){
     int c = _skip();
 
     switch (c) {
-        case '+': t->type = T_ADD; break;
-        case '-': t->type = T_SUB; break;
+        case '+':{
+            if((c = _get()) == '+'){
+                t->type = T_INCR;
+            }else{
+                _putback(c);
+                t->type = T_ADD;
+            }
+            break;
+        }
+        case '-':{ 
+            if((c = _get()) == '-'){
+                t->type = T_DECR;
+            }else{
+                _putback(c);
+                t->type = T_SUB;
+            }
+            break;
+        }
         case '/':{
             //it is a commentary 
             if((c = _get()) == '/'){
@@ -276,6 +292,8 @@ void scanner_debug_tokens(){
             case T_WHILE: printf("'while' "); break;
             case T_FOR: printf("'for' "); break;
             case T_IF: printf("'if' "); break;
+            case T_INCR: printf("'++' "); break;
+            case T_DECR: printf("'--' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

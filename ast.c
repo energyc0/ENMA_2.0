@@ -77,7 +77,7 @@ ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* righ
 }
 
 ast_node* ast_mknode_identifier(obj_string_t* id){
-    ast_node* node = ast_mknode(AST_IDENT, (ast_data){.val = VALUE_OBJ(id)});
+    ast_node* node = ast_mknode(AST_IDENT, AST_DATA_VALUE(VALUE_OBJ(id)));
     return node;
 }
 
@@ -100,7 +100,7 @@ static void ast_debug_node(const ast_node* node){
         case AST_NUMBER: printf("%d", AS_NUMBER(node->data.val)); break;
         case AST_BOOLEAN: printf("%s", AS_BOOLEAN(node->data.val) ? "true" : "false"); break;
         case AST_STRING: printf("\"%s\"", AS_OBJSTRING(node->data.val)->str); break;
-        case AST_IDENT: printf("%s", AS_OBJSTRING(node->data.val)->str); break; 
+        case AST_IDENT: printf("%s", AS_OBJIDENTIFIER(node->data.val)->str); break; 
         case AST_ADD: DEBUG_BINARY(+); break;
         case AST_SUB: DEBUG_BINARY(-); break;
         case AST_MUL: DEBUG_BINARY(*); break;
@@ -121,6 +121,10 @@ static void ast_debug_node(const ast_node* node){
         case AST_GREATER: DEBUG_BINARY(>); break;
         case AST_ELESS: DEBUG_BINARY(<=); break;
         case AST_LESS: DEBUG_BINARY(<); break;
+        case AST_PREFDECR:  printf("--%s", AS_OBJIDENTIFIER(node->data.val)->str); break;
+        case AST_PREFINCR:  printf("++%s", AS_OBJIDENTIFIER(node->data.val)->str); break;
+        case AST_POSTDECR:  printf("%s--", AS_OBJIDENTIFIER(node->data.val)->str); break;
+        case AST_POSTINCR:  printf("%s++", AS_OBJIDENTIFIER(node->data.val)->str); break;
         default:
             printf("ast_debug_tree(): ");
             UNDEFINED_AST_NODE_TYPE();

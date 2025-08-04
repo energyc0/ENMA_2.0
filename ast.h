@@ -22,6 +22,11 @@ typedef enum {
     AST_LESS = 12, 
     AST_ELESS = 13,
     AST_ASSIGN = 14,
+
+    AST_POSTINCR,
+    AST_PREFINCR,
+    AST_POSTDECR,
+    AST_PREFDECR,
     /*values */
     AST_NUMBER,
     AST_BOOLEAN,
@@ -29,13 +34,15 @@ typedef enum {
     AST_IDENT
 }ast_node_type;
 
-#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_ASSIGN)
+#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_PREFDECR)
 
 typedef union{
     void* ptr;
     value_t val;
 }ast_data;
 
+#define AST_DATA_VALUE(value) ((ast_data){.val = (value)})
+#define AST_DATA_PTR(value) ((ast_data){.ptr = (value)})
 
 typedef struct ast_node{
     ast_node_type type;

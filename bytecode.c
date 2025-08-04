@@ -121,6 +121,14 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_SP_AS_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_JUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_FJUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_PREFINCR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_PREFINCR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_PREFDECR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_PREFDECR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_POSTINCR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_POSTINCR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_POSTDECR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_POSTDECR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         default:
             fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
@@ -154,13 +162,15 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" [\"%s\"] %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
             break;
         }
-        case OP_GET_GLOBAL: case OP_SET_GLOBAL:case OP_DEFINE_GLOBAL:{
+        case OP_GET_GLOBAL: case OP_SET_GLOBAL:case OP_DEFINE_GLOBAL:
+        case OP_PREFINCR_GLOBAL: case OP_PREFDECR_GLOBAL:case OP_POSTINCR_GLOBAL: case OP_POSTDECR_GLOBAL:{
             if(!IS_OBJIDENTIFIER(extracted_value->obj))
                 fatal_printf("constant_instruction_debug(): extracted object is not identifier\n");
             printf(" [\"%s\"] %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
             break;
         }
-        case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_DEFINE_LOCAL:{
+        case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_DEFINE_LOCAL:
+        case OP_PREFINCR_LOCAL: case OP_PREFDECR_LOCAL:case OP_POSTINCR_LOCAL: case OP_POSTDECR_LOCAL:{
             printf(" stack index: %d\n", extracted_value->number);
             break;
         }
@@ -292,6 +302,18 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
         case AST_IDENT:
             write_get_var(chunk, node, line);
             break;
+        case AST_PREFDECR:
+            write_prefdecr_var(chunk, node, line);
+            break;
+        case AST_PREFINCR:
+            write_prefincr_var(chunk,node,line);
+            break;
+        case AST_POSTDECR:
+            write_postdecr_var(chunk,node,line);
+            break;
+        case AST_POSTINCR:
+            write_postincr_var(chunk,node,line);
+            break;
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n Node type is %d\n", node->type);
     }
@@ -330,7 +352,15 @@ const char* op_to_string(op_t op){
         [OP_BP_AS_SP] = "OP_BP_AS_SP",    
         [OP_SP_AS_BP] = "OP_SP_AS_BP",
         [OP_FJUMP] = "OP_FJUMP",
-        [OP_JUMP] = "OP_JUMP"
+        [OP_JUMP] = "OP_JUMP",
+        [OP_PREFINCR_GLOBAL] = "OP_PREFINCR_GLOBAL",
+        [OP_PREFINCR_LOCAL] = "OP_PREFINCR_LOCAL",
+        [OP_PREFDECR_GLOBAL] = "OP_PREFDECR_GLOBAL",
+        [OP_PREFDECR_LOCAL] = "OP_PREFDECR_LOCAL",
+        [OP_POSTINCR_GLOBAL] = "OP_POSTINCR_GLOBAL",
+        [OP_POSTINCR_LOCAL] = "OP_POSTINCR_LOCAL",
+        [OP_POSTDECR_GLOBAL] = "OP_POSTDECR_GLOBAL",
+        [OP_POSTDECR_LOCAL] = "OP_POSTDECR_LOCAL"
     };
 #ifdef DEBUG 
     if(!(0 <= op && op < sizeof(ops) / sizeof(ops[0])))

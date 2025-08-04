@@ -18,7 +18,10 @@ typedef enum{
     T_EGREATER = 11,
     T_LESS = 12, 
     T_ELESS = 13,
+
     T_ASSIGN = 14,
+    T_INCR,
+    T_DECR,
     //precedence operators
     T_LPAR,
     T_RPAR,

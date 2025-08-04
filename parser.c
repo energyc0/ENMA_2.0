@@ -23,6 +23,8 @@ static const int precedence[] = {
     [T_EGREATER] = 7,
     [T_LESS] = 7,
     [T_ELESS] = 7,
+    [T_DECR] = 0,
+    [T_INCR] = 0,
     [T_ASSIGN] = 1,
     [T_LPAR] = 0,
     [T_RPAR] = -1,
@@ -108,8 +110,25 @@ static ast_node* ast_primary(){
             }else{
                 return ast_mknode_binary(AST_MUL, ast_mknode_number(-1), temp);
             }
-        case T_IDENT:
-            return ast_mknode_identifier(cur_token.data.ptr);
+        case T_INCR:
+            if(!scanner_next_token(&cur_token))
+                compile_error_printf("Expected identifier\n");
+            return ast_mknode(AST_PREFINCR, AST_DATA_VALUE(VALUE_OBJ(cur_token.data.ptr)));
+        case T_DECR:
+            if(!scanner_next_token(&cur_token))
+                compile_error_printf("Expected identifier\n");
+            return ast_mknode(AST_PREFDECR, AST_DATA_VALUE(VALUE_OBJ(cur_token.data.ptr)));
+        case T_IDENT:{
+            obj_id_t* id = cur_token.data.ptr;
+            scanner_next_token(&cur_token);
+            if(is_match(T_INCR))
+                return ast_mknode(AST_POSTINCR, AST_DATA_VALUE(VALUE_OBJ(id)));
+            else if(is_match(T_DECR))
+                return ast_mknode(AST_POSTDECR, AST_DATA_VALUE(VALUE_OBJ(id)));
+
+            scanner_putback_token();
+            return ast_mknode_identifier(id);
+        }
         default:
             compile_error_printf("Expected expression\n");
     }
