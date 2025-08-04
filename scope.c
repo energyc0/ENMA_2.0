@@ -1,5 +1,6 @@
 #include "scope.h"
 #include "bytecode.h"
+#include "cycler.h"
 #include "lang_types.h"
 #include "symtable.h"
 #include "utils.h"
@@ -24,12 +25,22 @@ void begin_scope(){
     _scope.current_depth++;
 }
 
+void begin_cycle(){
+    start_parse_breaks();
+    begin_scope();
+}
+
 bool is_global_scope(){
     return _scope.current_depth == 0;
 }
 
 int get_scope(){
     return _scope.current_depth;
+}
+
+void end_cycle(struct bytecode_chunk* chunk){
+    end_parse_breaks(chunk);
+    end_scope(chunk);
 }
 
 void end_scope(struct bytecode_chunk* chunk){

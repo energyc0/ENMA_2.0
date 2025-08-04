@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "bytecode.h"
+#include "cycler.h"
 #include "lang_types.h"
 #include "scanner.h"
 #include "scope.h"
@@ -193,6 +194,13 @@ bool parse_command(struct bytecode_chunk* chunk){
             parse_for(chunk);
             break;
         }
+        case T_BREAK:{
+            if(!is_cycle())
+                compile_error_printf("Cannot use 'break' outside a loop\n");
+            parse_break(chunk, OP_JUMP, line_counter);
+            next_expect(T_SEMI, "Expected ';'\n");
+            break;
+        }
         //it is an expression statement
         default:{
             parse_simple_expression(chunk);
@@ -283,16 +291,19 @@ static void parse_while(struct bytecode_chunk* chunk){
     bcchunk_write_constant(chunk, -(int)sizeof(int), line_counter);
     cur_expect(T_RPAR, "Expected ')'\n");
 
-    READ_BLOCK(chunk);
+    next_expect(T_LBRACE, "Expected '{'\n");
+    begin_cycle();
+    read_block(chunk);
 
     bcchunk_write_simple_op(chunk, OP_JUMP, line_counter);
     bcchunk_write_constant(chunk, start - (bcchunk_get_codesize(chunk) + sizeof(int)), line_counter);
 
     UPDATE_JUMP_LENGTH(chunk, offset);
+    end_cycle(chunk);
 }
 
 static void parse_for(struct bytecode_chunk* chunk){
-    begin_scope();
+    begin_cycle();
     next_expect(T_LPAR, "Expected '('\n");
     if(!scanner_next_token(&cur_token))
         compile_error_printf("Expected expression\n");
@@ -357,7 +368,7 @@ static void parse_for(struct bytecode_chunk* chunk){
     bcchunk_write_constant(chunk, loop_start - (bcchunk_get_codesize(chunk) + sizeof(int)), postexpr_line);
 
     UPDATE_JUMP_LENGTH(chunk, cond_mark);
-    end_scope(chunk);
+    end_cycle(chunk);
 }
 
 #undef UPDATE_JUMP_LENGTH
