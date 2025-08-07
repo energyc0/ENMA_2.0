@@ -1,0 +1,11 @@
+func foo();
+
+func foo(){
+    print "hello from foo!";
+}
+
+func main(){
+    print "start";
+    foo();
+    print "end";
+}

@@ -1,0 +1,13 @@
+func main();
+func foo();
+
+
+func main(){
+    foo();
+    foo();
+    foo();
+}
+
+func foo(){
+    print "hi!";
+}

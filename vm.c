@@ -14,6 +14,7 @@ static struct virtual_machine vm;
 
 #define VM_STACK_START (vm.stack)
 #define VM_STACK_END (VM_STACK_START + sizeof(vm.stack) / sizeof(vm.stack[0]))
+#define ENTRY_FUNCTION_NAME "main"
 
 static void vm_init();
 static void vm_free();
@@ -21,7 +22,6 @@ static vm_execute_result vm_execute(struct bytecode_chunk* code);
 static vm_execute_result interpret();
 
 #ifdef DEBUG
-static char* examine_value(value_t val);
 static void examine_stack(); 
 #endif
 
@@ -79,14 +79,23 @@ static void vm_init(){
 
 
 static vm_execute_result vm_execute(struct bytecode_chunk* code){
-    //to leave at the end
-    bcchunk_write_simple_op(code, OP_RETURN, line_counter);
-
     vm.code = code;
-    vm.ip = vm.code->_code.data;
 #ifdef DEBUG
+    stringtable_debug();
+    symtable_debug();
     bcchunk_disassemble("Current bytecode", vm.code);
+    
 #endif
+
+    const char* entry = ENTRY_FUNCTION_NAME;
+    obj_id_t* ptr = symtable_findstr(entry, strlen(entry), hash_string(entry, strlen(entry)));
+    value_t func;
+    if(ptr == NULL || !symtable_get(ptr,&func) || !IS_OBJFUNCTION(func))
+        user_error_printf("Failed to find '%s' entry function\n", entry);
+    if(AS_OBJFUNCTION(func)->entry_offset < 0)
+        user_error_printf("Function '%s' is declared but not defined\n", entry);
+    vm.ip = &vm.code->_code.data[AS_OBJFUNCTION(func)->entry_offset];
+
     return interpret();
 }
 
@@ -99,11 +108,23 @@ static vm_execute_result interpret(){
         byte_t instruction = read_byte();
 #ifdef DEBUG
         printf("Current instruction: %04X | %s\n",(unsigned int)(vm.ip - vm.code->_code.data - 1), op_to_string(instruction));
+        printf("BP = 0x%lX SP = 0x%lX\n", vm.bp - vm.stack, vm.sp - vm.stack);
 #endif
         switch (instruction) {
-            case OP_RETURN: 
-                is_done = 1;
+            case OP_RETURN:{
+                if(vm.bp == &vm.stack[0])
+                    is_done = 1;
+                else{
+                value_t ret_val = stack_pop();
+                value_t ret_ip = stack_pop();
+#ifdef DEBUG
+
+#endif          
+                vm.ip = &vm.code->_code.data[AS_NUMBER(ret_ip)];
+                stack_push(ret_val);
+                }
                 break;
+            }
             case OP_PUSH_BP:
                 stack_push(VALUE_NUMBER(vm.bp - vm.stack));
                 break;
@@ -145,6 +166,9 @@ static vm_execute_result interpret(){
                 break;
             case OP_STRING:
                 stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
+                break;
+            case OP_NULL:
+                stack_push(VALUE_NULL);
                 break;
             case OP_DEFINE_GLOBAL:{
                 value_t expr = stack_pop();
@@ -195,7 +219,7 @@ static vm_execute_result interpret(){
                 value_t a = stack_pop();
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_NUMBER(AS_NUMBER(a) + AS_NUMBER(b)));
-                }else if(IS_OBJ(a) && IS_OBJ(b) && IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
+                }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     obj_string_t* s1 = AS_OBJSTRING(a);
                     obj_string_t* s2 = AS_OBJSTRING(b);
                     size_t len = s1->len + s2->len;
@@ -250,7 +274,7 @@ static vm_execute_result interpret(){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) == AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
                     stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) == AS_BOOLEAN(b)));
-                }else if(IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
+                }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     stack_push(VALUE_BOOLEAN(AS_OBJSTRING(a) == AS_OBJSTRING(b)));
                 }else{
                     interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
@@ -264,7 +288,7 @@ static vm_execute_result interpret(){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) > AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
                     stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) > AS_BOOLEAN(b)));
-                }else if(IS_OBJ(a) && IS_OBJ(b) && IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
+                }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     stack_push(VALUE_BOOLEAN(strcmp(AS_OBJSTRING(a)->str, AS_OBJSTRING(b)->str) > 0));
                 }else{
                     interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
@@ -278,7 +302,7 @@ static vm_execute_result interpret(){
                     stack_push(VALUE_BOOLEAN(AS_NUMBER(a) < AS_NUMBER(b)));
                 }else if(IS_BOOLEAN(a) && IS_BOOLEAN(b)){
                     stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) < AS_BOOLEAN(b)));
-                }else if(IS_OBJ(a) && IS_OBJ(b) && IS_OBJSTRING(AS_OBJ(a)) && IS_OBJSTRING(AS_OBJ(b))){
+                }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     stack_push(VALUE_BOOLEAN(strcmp(AS_OBJSTRING(a)->str, AS_OBJSTRING(b)->str) < 0));
                 }else{
                     interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
@@ -393,7 +417,14 @@ static vm_execute_result interpret(){
             #undef PREF_OP_LOCAL
             #undef POST_OP_GLOBAL
             #undef POST_OP_LOCAL
-
+            case OP_CALL:{
+                obj_function_t* func = (obj_function_t*)extract_value(read_constant()).obj;
+                if(func->entry_offset < 0)
+                    interpret_error_printf(get_code_line(), "Function '%s' is declared but not defined\n", func->name->str);
+                stack_push(VALUE_NUMBER(vm.ip - vm.code->_code.data));
+                vm.ip = &vm.code->_code.data[func->entry_offset];
+                break;
+            }
             default: 
                 eprintf("Undefined instruction!\n");
                 return VME_RUNTIME_ERROR;
@@ -471,36 +502,6 @@ static void set_variable_value(obj_id_t* id, value_t value){
 }
 
 #ifdef DEBUG
-static char* examine_value(value_t val){
-    static char buf[1024];
-    switch (val.type) {
-        case VT_NUMBER: 
-            sprintf(buf, "%d", AS_NUMBER(val));
-            return buf;
-        case VT_BOOL: 
-            return AS_BOOLEAN(val) ? "true" : "false";
-        case VT_OBJ:{
-            switch (AS_OBJ(val)->type) {
-                case OBJ_STRING:{
-                    sprintf(buf, "\"%.*s\"",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
-                    return buf;
-                }
-                case OBJ_IDENTIFIER:{
-                    sprintf(buf, "{%.*s}",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
-                    return buf;
-                }
-                default: 
-                    fatal_printf("Undefined object type in examine_value()\n");
-            }
-        }
-        case VT_NULL:
-            return "NULL - something wrong! Check your code!";
-        default: 
-            fatal_printf("Undefined value in the stack! Check examine_value()\n");
-    }
-}
-
-
 static void examine_stack(){
     printf("\t=== Stack ===\n");
     for(value_t* ptr = vm.stack; ptr < vm.sp; ptr++)

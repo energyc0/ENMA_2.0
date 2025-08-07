@@ -32,4 +32,6 @@ void table_free(struct hash_table* t);
 
 int32_t hash_string(const char* str, size_t len);
 
+
+void table_debug(const struct hash_table* t);
 #endif

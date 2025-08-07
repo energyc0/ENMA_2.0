@@ -4,7 +4,7 @@
 #include "lang_types.h"
 #include "token.h"
 #include <string.h>
-
+#include <stdio.h>
 
 
 static struct trie_node* keywords = NULL;
@@ -28,6 +28,7 @@ void symtable_init(){
     tr_add(keywords, "for", T_FOR);
     tr_add(keywords, "break", T_BREAK);
     tr_add(keywords, "continue", T_CONTINUE);
+    tr_add(keywords, "func", T_FUNC);
 
     table_init(&symtable);
     table_init(&stringtable);
@@ -54,7 +55,6 @@ obj_string_t* stringtable_findstr(const char* s, size_t sz, int32_t hash){
     return table_find_string(&stringtable, s, sz, hash);
 }
 
-
 bool symtable_set(obj_id_t* id, value_t val){
     return table_set(&symtable, id, val);
 }
@@ -65,3 +65,16 @@ bool stringtable_set(obj_string_t* str){
 bool symtable_get(const obj_id_t* id, value_t* value){
     return table_check(&symtable, id, value);
 }
+
+#ifdef DEBUG
+void symtable_debug(){
+    printf("Symtable with ");
+    table_debug(&symtable);
+}
+
+void stringtable_debug(){
+    printf("Stringtable with ");
+    table_debug(&stringtable);
+}
+
+#endif

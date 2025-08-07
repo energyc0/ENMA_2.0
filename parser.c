@@ -43,6 +43,8 @@ static const int precedence[] = {
     [T_ELSE] = 0,
     [T_WHILE] = 0,
     [T_FOR] = 0,
+    [T_FUNC] = 0,
+    [T_COMMA] = -1,
     [T_EOF] = 0
 };
 
@@ -53,6 +55,7 @@ extern struct token cur_token;
 static inline int get_op_precedence(token_type op);
 static ast_node* ast_bin_expr(int prev_precedence);
 static ast_node* ast_primary();
+static ast_node* ast_call(obj_id_t* id);
 
 static inline void read_block(struct bytecode_chunk* chunk);
 
@@ -62,6 +65,11 @@ static void parse_print(struct bytecode_chunk* chunk);
 static void parse_if(struct bytecode_chunk* chunk);
 static void parse_while(struct bytecode_chunk* chunk);
 static void parse_for(struct bytecode_chunk* chunk);
+
+static void parse_func(struct bytecode_chunk* chunk);
+static void parse_func_args(obj_function_t* func);
+static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* func);
+static void parse_func_declaration(obj_function_t* func);
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -126,7 +134,8 @@ static ast_node* ast_primary(){
                 return ast_mknode(AST_POSTINCR, AST_DATA_VALUE(VALUE_OBJ(id)));
             else if(is_match(T_DECR))
                 return ast_mknode(AST_POSTDECR, AST_DATA_VALUE(VALUE_OBJ(id)));
-
+            else if(is_match(T_LPAR))
+                return ast_call(id);
             scanner_putback_token();
             return ast_mknode_identifier(id);
         }
@@ -208,6 +217,12 @@ bool parse_command(struct bytecode_chunk* chunk){
             next_expect(T_SEMI, "Expected ';'\n");
             break;
         }
+        case T_FUNC:{
+            if(!is_global_scope())
+                compile_error_printf("Function declaration expected in the global scope\n");
+            parse_func(chunk);
+            break;
+        }
         //it is an expression statement
         default:{
             parse_simple_expression(chunk);
@@ -231,6 +246,7 @@ static void parse_var(struct bytecode_chunk* chunk){
         compile_error_printf("'%s' variable redefinition\n", var->str);
 
     cur_expect(T_SEMI, "Expected ';'\n");
+    ast_freenode(expr);
 }
 
 static void parse_print(struct bytecode_chunk* chunk){
@@ -238,6 +254,7 @@ static void parse_print(struct bytecode_chunk* chunk){
     bcchunk_write_expression(node, chunk, line_counter);
     bcchunk_write_simple_op(chunk, OP_PRINT, line_counter);
     cur_expect(T_SEMI, "Expected ';'\n");
+    ast_freenode(node);
 }
 
 static void parse_simple_expression(struct bytecode_chunk* chunk){
@@ -246,6 +263,7 @@ static void parse_simple_expression(struct bytecode_chunk* chunk){
     bcchunk_write_expression(node, chunk, line_counter);
     bcchunk_write_simple_op(chunk, OP_POP, line_counter);
     cur_expect(T_SEMI, "Expected ';'\n");
+    ast_freenode(node);
 }
 
 #define READ_BLOCK(chunk) do{ \
@@ -379,5 +397,88 @@ static void parse_for(struct bytecode_chunk* chunk){
     end_cycle(chunk);
 }
 
+static void parse_func(struct bytecode_chunk* chunk){
+    next_expect(T_IDENT, "Expected identifier\n");
+    obj_function_t* p = mk_objfunc(cur_token.data.ptr);
+
+    next_expect(T_LPAR, "Expected '('\n");
+    parse_func_args(p);
+    cur_expect(T_RPAR, "Expected ')'\n");
+
+    scanner_next_token(&cur_token);
+    if(is_match(T_LBRACE)){
+        parse_func_definition(chunk, p);
+    }else{
+        parse_func_declaration(p);
+    }
+
+
+}
+
+static void parse_func_args(obj_function_t* func){
+    scanner_next_token(&cur_token);
+    if(!is_match(T_RPAR)){
+        do{
+            func->args_count++;
+        }while(is_match(T_COMMA));
+        cur_expect(T_RPAR, "Expected ')'");
+    }
+}
+
+static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* func){
+    value_t val;
+    if(symtable_get(func->name, &val) && !IS_NULL(val)){
+        if(!IS_OBJFUNCTION(val))
+            compile_error_printf("'%s' has already defined\n", func->name);
+        if(AS_OBJFUNCTION(val)->args_count != func->args_count)
+            compile_error_printf("Conflicting with a declaration of '%s' function\n");
+        func = AS_OBJFUNCTION(val);
+    }
+    func->entry_offset = bcchunk_get_codesize(chunk);
+    symtable_set(func->name, VALUE_OBJ(func));
+    //preamble
+    bcchunk_write_simple_op(chunk, OP_PUSH_BP, line_counter);
+    bcchunk_write_simple_op(chunk, OP_BP_AS_SP, line_counter);
+    begin_scope();
+    read_block(chunk);
+    end_scope(chunk);
+    //postamble
+    bcchunk_write_simple_op(chunk, OP_SP_AS_BP, line_counter);
+    bcchunk_write_simple_op(chunk, OP_POP_BP, line_counter);
+    bcchunk_write_simple_op(chunk, OP_NULL, line_counter);
+    bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
+}
+
+static void parse_func_declaration(obj_function_t* func){
+    cur_expect(T_SEMI, "Expected ';' or '{'\n");
+    func->entry_offset = -1;
+    value_t val;
+    if(symtable_get(func->name, &val) && !IS_NULL(val)){
+        if(!IS_OBJFUNCTION(val))
+            compile_error_printf("'%s' has already defined\n", func->name);
+        compile_error_printf("'%s' function redefinition\n");
+    }
+    symtable_set(func->name, VALUE_OBJ(func));
+
+}
+
+static ast_node* ast_call(obj_id_t* id){
+    scanner_next_token(&cur_token);
+    value_t instance;
+    if(!symtable_get(id, &instance))
+        compile_error_printf("Undefined identifier '%s'\n", id->str);
+    if(!IS_OBJFUNCTION(instance))
+        compile_error_printf("'%s' is not a function\n", id->str);
+
+    if(is_match(T_RPAR)){
+        return ast_mknode_func(NULL, AS_OBJFUNCTION(instance));
+    }else{
+        fatal_printf("Unexpected\n");
+        do{
+
+        }while(is_match(T_RPAR));   
+    }
+}
+//0x5555555700d0
 #undef UPDATE_JUMP_LENGTH
 #undef READ_BLOCK

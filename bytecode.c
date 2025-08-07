@@ -18,13 +18,15 @@ static inline void chunk_realloc(struct chunk* chunk, size_t newsize);
 static inline void bcchunk_write_code(struct bytecode_chunk* chunk, byte_t byte, int line);
 static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte);
 
+static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk, int line);
+static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset);
+
+#ifdef DEBUG
 static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset);
 static inline void print_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 static inline size_t constant_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
-
-static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk, int line);
-static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset);
+#endif
 
 static void chunk_init(struct chunk* chunk){
     chunk->size = 0;
@@ -88,6 +90,7 @@ static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte)
     chunk_write(&chunk->_data, byte);
 }
 
+#ifdef DEBUG
 static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset){
     op_t op = chunk->_code.data[offset];
     switch (op) {
@@ -121,6 +124,7 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_SP_AS_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_JUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_FJUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_CALL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_PREFINCR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_PREFINCR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_PREFDECR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
@@ -129,6 +133,7 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_POSTINCR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POSTDECR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POSTDECR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_NULL: return simple_instruction_debug(op_to_string(op), chunk, offset);
         default:
             fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
@@ -157,14 +162,15 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" [%s]\n", extracted_value->boolean ? "true" : "false");
             break;
         case OP_STRING:{
-            if(!IS_OBJSTRING(extracted_value->obj))
-                fatal_printf("constant_instruction_debug(): extracted object is not string\n");
+            if(!(extracted_value->obj->type == OBJ_STRING))
+                fatal_printf("constant_instruction_debug(): extracted object is not string\n"
+            "Current type is '%s'\n", get_obj_name(extracted_value->obj->type));
             printf(" [\"%s\"] %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
             break;
         }
         case OP_GET_GLOBAL: case OP_SET_GLOBAL:case OP_DEFINE_GLOBAL:
         case OP_PREFINCR_GLOBAL: case OP_PREFDECR_GLOBAL:case OP_POSTINCR_GLOBAL: case OP_POSTDECR_GLOBAL:{
-            if(!IS_OBJIDENTIFIER(extracted_value->obj))
+            if(!(extracted_value->obj->type == OBJ_IDENTIFIER))
                 fatal_printf("constant_instruction_debug(): extracted object is not identifier\n");
             printf(" [\"%s\"] %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
             break;
@@ -176,6 +182,11 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
         }
         case OP_POPN:case OP_JUMP: case OP_FJUMP:{
             printf(" [0x%X]\n", *(int*)(chunk->_code.data + offset + 1));
+            break;
+        }
+        case OP_CALL:{
+            obj_function_t* ptr = (obj_function_t*)extracted_value->obj;
+            printf(" %p %s(args count: %d) with offset %d[0x%X]\n", ptr, ptr->name->str, ptr->args_count, ptr->entry_offset,ptr->entry_offset);
             break;
         }
         default:
@@ -191,6 +202,7 @@ void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* ch
         offset = instruction_debug(chunk, offset);
 }
 
+#endif
 void bcchunk_write_simple_op(struct bytecode_chunk* chunk, op_t op, int line){
     bcchunk_write_code(chunk, op, line);
 }
@@ -314,6 +326,17 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
         case AST_POSTINCR:
             write_postincr_var(chunk,node,line);
             break;
+        case AST_CALL:{
+            struct ast_func_info* info = node->data.ptr;
+            struct ast_func_arg* p = info->args;
+            while(p){
+                parse_ast_bin_expr(p->arg, chunk, line);
+                p = p->next;
+            }
+            bcchunk_write_simple_op(chunk, OP_CALL, line);
+            bcchunk_write_value(chunk, VALUE_OBJ(info->func), line);
+            break;
+        }
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n Node type is %d\n", node->type);
     }
@@ -338,6 +361,7 @@ const char* op_to_string(op_t op){
         [OP_NUMBER] = "OP_NUMBER",
         [OP_BOOLEAN] = "OP_BOOLEAN",
         [OP_STRING] = "OP_STRING",
+        [OP_NULL] = "OP_NULL",
         [OP_DEFINE_GLOBAL] = "OP_DEFINE_GLOBAL",
         [OP_GET_GLOBAL] = "OP_GET_GLOBAL",
         [OP_SET_GLOBAL] = "OP_SET_GLOBAL",
@@ -353,6 +377,7 @@ const char* op_to_string(op_t op){
         [OP_SP_AS_BP] = "OP_SP_AS_BP",
         [OP_FJUMP] = "OP_FJUMP",
         [OP_JUMP] = "OP_JUMP",
+        [OP_CALL] = "OP_CALL",
         [OP_PREFINCR_GLOBAL] = "OP_PREFINCR_GLOBAL",
         [OP_PREFINCR_LOCAL] = "OP_PREFINCR_LOCAL",
         [OP_PREFDECR_GLOBAL] = "OP_PREFDECR_GLOBAL",

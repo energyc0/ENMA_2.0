@@ -10,7 +10,7 @@
 
 extern struct token cur_token;
 
-#define UNDEFINED_AST_NODE_TYPE() fatal_printf("Undefined ast_node_type!\n")
+#define UNDEFINED_AST_NODE_TYPE(node) fatal_printf("Undefined ast_node_type! type number: %d\n", node->type)
 
 static void ast_debug_node(const ast_node* node);
 
@@ -25,6 +25,7 @@ void ast_freenode(ast_node* node){
     switch (node->type) {
         //garbage collector is responsible for these
         case AST_NUMBER: case AST_BOOLEAN: case AST_STRING: case AST_IDENT:
+        case AST_POSTDECR: case AST_POSTINCR: case AST_PREFINCR: case AST_PREFDECR:
             break;
         case AST_ADD: case AST_SUB: case AST_MUL: case AST_DIV:
         case AST_AND: case AST_OR: case AST_XOR: case AST_NEQUAL:
@@ -37,9 +38,21 @@ void ast_freenode(ast_node* node){
         case AST_NOT:
             ast_freenode(node->data.ptr);
             break;
+        case AST_CALL:{
+            struct ast_func_info* ptr = node->data.ptr;
+            struct ast_func_arg* p = ptr->args;
+            while(p){
+                struct ast_func_arg* temp = p->next;
+                ast_freenode(p->arg);
+                free(p);
+                p = temp;
+            }
+            free(ptr);
+            break;
+        }
         default:
             eprintf("ast_freenode() ");
-            UNDEFINED_AST_NODE_TYPE();
+            UNDEFINED_AST_NODE_TYPE(node);
             break;
     }
     free(node);
@@ -125,9 +138,38 @@ static void ast_debug_node(const ast_node* node){
         case AST_PREFINCR:  printf("++%s", AS_OBJIDENTIFIER(node->data.val)->str); break;
         case AST_POSTDECR:  printf("%s--", AS_OBJIDENTIFIER(node->data.val)->str); break;
         case AST_POSTINCR:  printf("%s++", AS_OBJIDENTIFIER(node->data.val)->str); break;
+        case AST_CALL:{
+            printf("%s(", ((struct ast_func_info*)node->data.ptr)->func->name->str);
+            struct ast_func_arg* ptr = ((struct ast_func_info*)node->data.ptr)->args;
+            while(ptr){
+                ast_debug_node(ptr->arg);
+                if(ptr->next)
+                    printf(", ");
+                ptr = ptr->next;
+            }
+            putchar(')');
+            break;
+        }
         default:
             printf("ast_debug_tree(): ");
-            UNDEFINED_AST_NODE_TYPE();
+            UNDEFINED_AST_NODE_TYPE(node);
     }
 }
 
+struct ast_func_info* ast_mknode_func_info(obj_function_t* func, struct ast_func_arg* args){
+    struct ast_func_info* ptr = emalloc(sizeof(struct ast_func_info));
+    ptr->args = args;
+    ptr->func = func;
+    return ptr;
+}
+
+ast_node* ast_mknode_func(struct ast_func_arg* args, obj_function_t* func){
+    return ast_mknode(AST_CALL, AST_DATA_PTR(ast_mknode_func_info(func, args)));
+}
+
+struct ast_func_arg* ast_mknode_func_arg(ast_node* node){
+    struct ast_func_arg* ptr = emalloc(sizeof(struct ast_func_arg));
+    ptr->next = NULL;
+    ptr->arg = node;
+    return ptr;
+}

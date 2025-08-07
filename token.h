@@ -40,8 +40,10 @@ typedef enum{
     T_FOR,
     T_BREAK,
     T_CONTINUE,
+    T_FUNC,
     //other
     T_SEMI,
+    T_COMMA,
     T_LBRACE, // '{'
     T_RBRACE, // '}'
     T_EOF,

@@ -30,6 +30,7 @@ int main(int argc, char** argv){
     symtable_cleanup();
     gc_cleanup();
     
+    fclose(fp);
     return 0;
 
 }

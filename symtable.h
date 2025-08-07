@@ -22,4 +22,9 @@ bool stringtable_set(obj_string_t* str);
 //if true return value
 bool symtable_get(const obj_id_t* id, value_t* value);
 
+#ifdef DEBUG
+void symtable_debug();
+void stringtable_debug();
+#endif
+
 #endif

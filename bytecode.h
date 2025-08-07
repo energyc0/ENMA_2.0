@@ -15,6 +15,10 @@ typedef enum{
     //pop n values from the stack
     OP_POPN,
 
+    //read next 4 bytes and get obj_function_t* instance
+    //place return ip on the stack
+    OP_CALL,
+
     OP_JUMP,
     OP_FJUMP, //jump if a top value on the stack if false
 
@@ -31,6 +35,7 @@ typedef enum{
     OP_NUMBER,
     OP_BOOLEAN,
     OP_STRING,
+    OP_NULL, //it is a simple op, just push NULL on the stack
     //binary ops
     //pop values from the stack and perform current operation
     OP_ADD,

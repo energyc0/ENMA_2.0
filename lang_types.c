@@ -27,6 +27,17 @@ obj_id_t* mk_objid(const char* s, size_t len, int32_t hash){
     return init_objstr(s, len, hash, OBJ_IDENTIFIER);
 }
 
+obj_function_t* mk_objfunc(obj_string_t* name){
+    obj_function_t* ptr = malloc(sizeof(obj_function_t));
+    ptr->name = name;
+    ptr->args_count = 0;
+    ptr->entry_offset = 0;
+    ptr->obj.type = OBJ_FUNCTION;
+    ptr->obj.next = NULL;
+    gc_add((obj_t*)ptr);
+    return ptr;
+}
+
 obj_string_t* objstring_conc(const obj_string_t* s1, const obj_string_t* s2){
     obj_string_t* ptr = emalloc(sizeof(obj_string_t));
     
@@ -46,6 +57,8 @@ void obj_free(obj_t* ptr){
         case OBJ_STRING: case OBJ_IDENTIFIER:
             free(((obj_string_t*)ptr)->str);
             break;
+        case OBJ_FUNCTION:
+            break;
         default:
             fatal_printf("Undefined obj_t in obj_free()\n");
     }
@@ -64,3 +77,58 @@ bool is_value_same_type(const value_t a, const value_t b){
 bool is_equal_objstring(const obj_string_t* s1, const obj_string_t* s2){
     return s1->len == s2->len && strncmp(s1->str, s2->str, s1->len) == 0;
 }
+
+#ifdef DEBUG
+const char* get_value_name(value_type type){
+    static const char* names[] = {
+        [VT_NULL] = "null",
+        [VT_NUMBER] = "number",
+        [VT_BOOL] = "bool",
+        [VT_OBJ] = "obj"
+    };
+    return names[type];
+}
+
+const char* get_obj_name(obj_type type){
+    static const char* names[] = {
+        [OBJ_STRING] = "string",
+        [OBJ_IDENTIFIER] = "identifier",
+        [OBJ_FUNCTION] = "function"
+    };
+    return names[type];
+}
+
+char* examine_value(value_t val){
+    static char buf[1024];
+    switch (val.type) {
+        case VT_NUMBER: 
+            sprintf(buf, "%d", AS_NUMBER(val));
+            return buf;
+        case VT_BOOL: 
+            return AS_BOOLEAN(val) ? "true" : "false";
+        case VT_OBJ:{
+            switch (AS_OBJ(val)->type) {
+                case OBJ_STRING:{
+                    sprintf(buf, "\"%.*s\"",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
+                    return buf;
+                }
+                case OBJ_IDENTIFIER:{
+                    sprintf(buf, "{%.*s}",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
+                    return buf;
+                }
+                case OBJ_FUNCTION:{
+                    sprintf(buf, "%p %.*s(%d arguments) [0x%X]",
+                         AS_OBJFUNCTION(val), (int)(sizeof(buf) - 64), AS_OBJFUNCTION(val)->name->str,AS_OBJFUNCTION(val)->args_count, AS_OBJFUNCTION(val)->entry_offset);
+                         return buf;
+                }
+                default: 
+                    fatal_printf("Undefined object type in examine_value()\n");
+            }
+        }
+        case VT_NULL:
+            return "NULL";
+        default: 
+            fatal_printf("Undefined value in the stack! Check examine_value()\n");
+    }
+}
+#endif
