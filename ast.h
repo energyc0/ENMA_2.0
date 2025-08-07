@@ -81,6 +81,8 @@ ast_node* ast_mknode_func(struct ast_func_arg*, obj_function_t*);
 struct ast_func_arg* ast_mknode_func_arg(ast_node* node);
 struct ast_func_info* ast_mknode_func_info(obj_function_t*, struct ast_func_arg*);
 
+value_t ast_eval(ast_node* root);
+
 void ast_debug_tree(const ast_node* node);
 
 #endif

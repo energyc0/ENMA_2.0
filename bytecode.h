@@ -22,11 +22,9 @@ typedef enum{
     OP_JUMP,
     OP_FJUMP, //jump if a top value on the stack if false
 
-    OP_DEFINE_GLOBAL, //define global in the symtable
     OP_SET_GLOBAL,  //set global in the symtable
     OP_GET_GLOBAL,  //get global from the symtable
     
-    OP_DEFINE_LOCAL,    //reserve space in the stack
     OP_SET_LOCAL,       //assign value in the stack
     OP_GET_LOCAL,       //get value from the stack
     //get value from the stack and print it

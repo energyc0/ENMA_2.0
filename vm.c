@@ -170,14 +170,6 @@ static vm_execute_result interpret(){
             case OP_NULL:
                 stack_push(VALUE_NULL);
                 break;
-            case OP_DEFINE_GLOBAL:{
-                value_t expr = stack_pop();
-                obj_id_t* id = (obj_id_t*)extract_value(read_constant()).obj;
-                if(symtable_get(id, &val) && val.type != VT_NULL)
-                    interpret_error_printf(get_code_line(), "'%s' variable redefenition.\n", id->str);
-                symtable_set(id, expr);
-                break;
-            }
             case OP_GET_GLOBAL:{
                 obj_string_t* id = (obj_string_t*)(extract_value(read_constant()).obj);
                 val = get_variable_value(id);
@@ -189,10 +181,6 @@ static vm_execute_result interpret(){
                 value_t expr = stack_pop();
                 set_variable_value(id, expr);
                 stack_push(expr);
-                break;
-            }
-            case OP_DEFINE_LOCAL:{
-                fatal_printf("fuck");
                 break;
             }
             case OP_GET_LOCAL:{
@@ -209,8 +197,11 @@ static vm_execute_result interpret(){
 #ifdef DEBUG
                 if(idx >= vm.sp - vm.stack || idx < 0)
                     fatal_printf("Stack corrupt. OP_SET_LOCAL\n");
-#endif
-                vm.bp[idx] = stack_pop();
+#endif  
+                value_t val = stack_pop();
+                if(!is_value_same_type(val, vm.bp[idx]))
+                    interpret_error_printf(get_code_line(), "Incorrect assignment type\n");
+                vm.bp[idx] = val;
                 stack_push(vm.bp[idx]);
                 break;
             }
@@ -220,27 +211,7 @@ static vm_execute_result interpret(){
                 if(IS_NUMBER(a) && IS_NUMBER(b)){
                     stack_push(VALUE_NUMBER(AS_NUMBER(a) + AS_NUMBER(b)));
                 }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
-                    obj_string_t* s1 = AS_OBJSTRING(a);
-                    obj_string_t* s2 = AS_OBJSTRING(b);
-                    size_t len = s1->len + s2->len;
-                    char* s = emalloc(len + 1);
-                    strncpy(s, s1->str, s1->len);
-                    strncpy(s + s1->len, s2->str, s2->len);
-                    s[len] = '\0';
-                    int32_t hash = hash_string(s, len);
-
-                    obj_string_t*ptr = stringtable_findstr(s, len, hash);
-                    if(ptr == NULL){
-                        ptr = emalloc(sizeof(obj_string_t));
-                        ptr->obj.type = OBJ_STRING;
-                        ptr->obj.next = NULL;
-                        ptr->hash = hash;
-                        ptr->len = len;
-                        ptr->str = s;
-                        //add it to the garbage collector
-                        gc_add((obj_t*)ptr);
-                    }
-                    stack_push(VALUE_OBJ(ptr));
+                    stack_push(VALUE_OBJ(objstring_conc(a,b)));
                 }else{
                     interpret_error_printf(get_code_line(), "Incompatible types for operation.\n");\
                 }
@@ -365,18 +336,18 @@ static vm_execute_result interpret(){
 
             #define POST_OP_LOCAL(op) do{\
                 int idx = extract_value(read_constant()).number;\
-                if(!IS_NUMBER(vm.stack[idx]))\
+                if(!IS_NUMBER(vm.bp[idx]))\
                     interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n");\
-                stack_push(vm.stack[idx]);\
-                op AS_NUMBER(vm.stack[idx]);\
+                stack_push(vm.bp[idx]);\
+                op AS_NUMBER(vm.bp[idx]);\
             }while(0)
 
             #define PREF_OP_LOCAL(op) do{\
                 int idx = extract_value(read_constant()).number;\
-                if(!IS_NUMBER(vm.stack[idx]))\
+                if(!IS_NUMBER(vm.bp[idx]))\
                     interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n");\
-                op AS_NUMBER(vm.stack[idx]);\
-                stack_push(vm.stack[idx]);\
+                op AS_NUMBER(vm.bp[idx]);\
+                stack_push(vm.bp[idx]);\
             }while(0)
 
             case OP_PREFINCR_GLOBAL:{
@@ -490,6 +461,8 @@ static value_t get_variable_value(obj_id_t* id){
 static void set_variable_value(obj_id_t* id, value_t value){
     int idx = resolve_local(id);
     if(idx != -1){
+        if(!is_value_same_type(value, vm.bp[idx]))
+            interpret_error_printf(get_code_line(), "Incorrect assignment type for '%s'\n", id->str);
         vm.bp[idx] = value;
     }else {
         value_t var_val;

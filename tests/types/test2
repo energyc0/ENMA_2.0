@@ -1,2 +1,4 @@
-print not false and true;
-print not true and true ;
+func main(){
+    print not false and true;
+    print not true and true ;
+}

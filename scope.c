@@ -72,11 +72,15 @@ bool declare_variable(obj_id_t* id){
 }
 
 bool define_variable(obj_id_t* id, struct ast_node* expr, struct bytecode_chunk* chunk){
-    bcchunk_write_expression(expr, chunk, line_counter);
     if(is_global_scope()){
-        bcchunk_write_simple_op(chunk, OP_DEFINE_GLOBAL, line_counter);
-        bcchunk_write_value(chunk, VALUE_OBJ(id), line_counter);
+        value_t val;
+        if(!symtable_get(id, &val))
+            compile_error_printf("Identifier '%s' is not in symtable! Some shit has occured!\n", id->str);
+        if(!IS_NULL(val))
+            compile_error_printf("'%s' variable redefenition.\n", id->str);
+        symtable_set(id, ast_eval(expr));
     }else{
+        bcchunk_write_expression(expr, chunk, line_counter);
         define_local();
         //local is just on the stack
         //bcchunk_write_simple_op(chunk, OP_DEFINE_LOCAL, line_counter);

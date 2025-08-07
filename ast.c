@@ -173,3 +173,43 @@ struct ast_func_arg* ast_mknode_func_arg(ast_node* node){
     ptr->arg = node;
     return ptr;
 }
+
+//TODO ALL OPERATIONS
+value_t ast_eval(ast_node* root){
+    #define EXTRACT_OPERANDS(a,b)do{\
+        struct ast_binary* p = root->data.ptr;\
+        a = ast_eval(p->left); b = ast_eval(p->right); \
+    }while(0)
+
+    #define NUMERICAL_OP(op, ret_type)do{ \
+        value_t a; value_t b;\
+        EXTRACT_OPERANDS(a, b);\
+        if(!(IS_NUMBER(a) && IS_NUMBER(b))) \
+            compile_error_printf("Incompatible types for operation.\n"); \
+        return ret_type (AS_NUMBER(a) op AS_NUMBER(b));\
+    }while(0)
+
+    switch(root->type){
+        case AST_NUMBER: case AST_BOOLEAN: case AST_STRING:
+            return root->data.val;
+        case AST_SUB:
+            NUMERICAL_OP(-, VALUE_NUMBER);
+        case AST_DIV:
+            NUMERICAL_OP(/, VALUE_NUMBER);
+        case AST_MUL:
+            NUMERICAL_OP(*, VALUE_NUMBER);
+        case AST_ADD:{
+                value_t a; value_t b;
+                EXTRACT_OPERANDS(a, b);
+                if(IS_NUMBER(a) && IS_NUMBER(b)){
+                    return VALUE_NUMBER(AS_NUMBER(a) + AS_NUMBER(b));
+                }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
+                    return VALUE_OBJ(objstring_conc(a,b));
+                }else{
+                    compile_error_printf("Incompatible types for operation.\n");\
+                }
+        }
+        default:
+            fatal_printf("Undefined ast_type in ast_eval()!\nast_type = %d\n", root->type);
+    }
+}

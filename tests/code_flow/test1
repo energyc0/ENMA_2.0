@@ -1,21 +1,23 @@
-if (true and true){
-    print "good";
-}
-if(false){
-    print "bad";
-}
+func main(){
+    if (true and true){
+        print "good";
+    }
+    if(false){
+        print "bad";
+    }
 
-var a = 11;
-if(a > 10){
-    print "a is greater than 10";
-}else{
-    print "a is not greater than 10";
-}
+    var a = 11;
+    if(a > 10){
+        print "a is greater than 10";
+    }else{
+        print "a is not greater than 10";
+    }
 
-if(a > 100){
-    print "a is greater than 100";
-}else{
-    print "a is not greater than 100";
-}
+    if(a > 100){
+        print "a is greater than 100";
+    }else{
+        print "a is not greater than 100";
+    }
 
-print "end";
+    print "end";
+}

@@ -109,10 +109,8 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_NUMBER: return constant_instruction_debug(op_to_string(op),chunk, offset);
         case OP_BOOLEAN: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_STRING: return constant_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_DEFINE_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_GET_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_SET_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_DEFINE_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_GET_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_SET_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_PRINT: return simple_instruction_debug(op_to_string(op), chunk, offset);
@@ -168,14 +166,14 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" [\"%s\"] %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
             break;
         }
-        case OP_GET_GLOBAL: case OP_SET_GLOBAL:case OP_DEFINE_GLOBAL:
+        case OP_GET_GLOBAL: case OP_SET_GLOBAL:
         case OP_PREFINCR_GLOBAL: case OP_PREFDECR_GLOBAL:case OP_POSTINCR_GLOBAL: case OP_POSTDECR_GLOBAL:{
             if(!(extracted_value->obj->type == OBJ_IDENTIFIER))
                 fatal_printf("constant_instruction_debug(): extracted object is not identifier\n");
             printf(" [\"%s\"] %p\n", ((obj_id_t*)(extracted_value->obj))->str,((obj_id_t*)(extracted_value->obj))->str);
             break;
         }
-        case OP_GET_LOCAL: case OP_SET_LOCAL: case OP_DEFINE_LOCAL:
+        case OP_GET_LOCAL: case OP_SET_LOCAL:
         case OP_PREFINCR_LOCAL: case OP_PREFDECR_LOCAL:case OP_POSTINCR_LOCAL: case OP_POSTDECR_LOCAL:{
             printf(" stack index: %d\n", extracted_value->number);
             break;
@@ -362,10 +360,8 @@ const char* op_to_string(op_t op){
         [OP_BOOLEAN] = "OP_BOOLEAN",
         [OP_STRING] = "OP_STRING",
         [OP_NULL] = "OP_NULL",
-        [OP_DEFINE_GLOBAL] = "OP_DEFINE_GLOBAL",
         [OP_GET_GLOBAL] = "OP_GET_GLOBAL",
         [OP_SET_GLOBAL] = "OP_SET_GLOBAL",
-        [OP_DEFINE_LOCAL] = "OP_DEFINE_LOCAL",
         [OP_GET_LOCAL] = "OP_GET_LOCAL",
         [OP_SET_LOCAL] = "OP_SET_LOCAL",
         [OP_PRINT] = "OP_PRINT",

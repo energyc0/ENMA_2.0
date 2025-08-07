@@ -85,8 +85,8 @@ void obj_free(obj_t* ptr);
 obj_string_t* mk_objstring(const char* s, size_t len, int32_t hash);
 obj_id_t* mk_objid(const char* s, size_t len, int32_t hash);
 obj_function_t* mk_objfunc(obj_string_t* name);
-//allocate new string
-obj_string_t* objstring_conc(const obj_string_t* s1, const obj_string_t* s2);
+
+obj_string_t* objstring_conc(value_t a, value_t b);
 
 bool is_equal_objstring(const obj_string_t* s1, const obj_string_t* s2);
 

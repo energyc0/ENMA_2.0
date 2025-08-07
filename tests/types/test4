@@ -1,6 +1,8 @@
-print 11 > 2;
-print 11 < 2;
-print 11 <= 10 + 1 and true;
-print 11 + 3 >= 12;
-print -21 == 99+1234;
-print not (-11 != -(100 - 89));
+func main(){
+    print 11 > 2;
+    print 11 < 2;
+    print 11 <= 10 + 1 and true;
+    print 11 + 3 >= 12;
+    print -21 == 99+1234;
+    print not (-11 != -(100 - 89));
+}

@@ -3,10 +3,12 @@
 #include <stdint.h>
 #include <string.h>
 #include "garbage_collector.h"
+#include "symtable.h"
+#include "hash_table.h"
 
 static inline obj_string_t* init_objstr(const char* s, size_t len, int32_t hash, obj_type type){
     obj_string_t* ptr = emalloc(sizeof(obj_string_t));
-    
+
     ptr->obj.type = type;
     ptr->obj.next = NULL;
     ptr->hash = hash;
@@ -38,18 +40,20 @@ obj_function_t* mk_objfunc(obj_string_t* name){
     return ptr;
 }
 
-obj_string_t* objstring_conc(const obj_string_t* s1, const obj_string_t* s2){
-    obj_string_t* ptr = emalloc(sizeof(obj_string_t));
+obj_string_t* objstring_conc(value_t a, value_t b){
+    obj_string_t* s1 = AS_OBJSTRING(a);
+    obj_string_t* s2 = AS_OBJSTRING(b);
+    size_t len = s1->len + s2->len;
+    char* s = emalloc(len + 1);
+    strncpy(s, s1->str, s1->len);
+    strncpy(s + s1->len, s2->str, s2->len);
+    s[len] = '\0';
+    int32_t hash = hash_string(s, len);
+
+    obj_string_t* ptr = stringtable_findstr(s, len, hash);
+    if(ptr == NULL)
+        ptr = init_objstr(s, len, hash, OBJ_STRING);
     
-    ptr->obj.type = OBJ_STRING;
-    ptr->obj.next = NULL;
-    ptr->len = s1->len + s2->len;
-    ptr->str = emalloc(ptr->len + 1);
-    strncpy(ptr->str, s1->str, s1->len);
-    strncpy(ptr->str + s1->len, s2->str, s2->len);
-    ptr->str[ptr->len]='\0';
-    //add it to the garbage collector
-    gc_add((obj_t*)ptr);
     return ptr;
 }
 void obj_free(obj_t* ptr){

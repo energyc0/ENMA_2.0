@@ -173,15 +173,22 @@ ast_node* ast_process_expr(){
 }
 
 bool parse_command(struct bytecode_chunk* chunk){
+    #define IS_GLOBAL_SCOPE(...) do{\
+        if(is_global_scope())   \
+            compile_error_printf(__VA_ARGS__);\
+    }while(0)
+
     if(!scanner_next_token(&cur_token))
         return false;
 
     switch(cur_token.type){
         case T_PRINT:{
+            IS_GLOBAL_SCOPE("Statement is not expected in global scope.\n");
             parse_print(chunk);
             break;
         }
         case T_LBRACE:{
+            IS_GLOBAL_SCOPE("Create new scope is not expected in global scope.\n");
             begin_scope();
             read_block(chunk);
             end_scope(chunk);
@@ -192,14 +199,17 @@ bool parse_command(struct bytecode_chunk* chunk){
             break;
         }
         case T_IF:{
+            IS_GLOBAL_SCOPE("Statement is not expected in global scope.\n");
             parse_if(chunk);
             break;
         }
         case T_WHILE:{
+            IS_GLOBAL_SCOPE("Statement is not expected in global scope.\n");
             parse_while(chunk);
             break;
         }
         case T_FOR:{
+            IS_GLOBAL_SCOPE("Statement is not expected in global scope.\n");
             parse_for(chunk);
             break;
         }
@@ -225,11 +235,13 @@ bool parse_command(struct bytecode_chunk* chunk){
         }
         //it is an expression statement
         default:{
+            IS_GLOBAL_SCOPE("Expression is not expected in global scope.\n");
             parse_simple_expression(chunk);
             break;
         }
     }
     return true;
+    #undef IS_GLOBAL_SCOPE
 }
 
 static void parse_var(struct bytecode_chunk* chunk){

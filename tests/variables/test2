@@ -1,12 +1,14 @@
 var a = "Hello";
-print a;
-{
-    var a = 11 + 11 * 2;
+func main(){
     print a;
     {
-        var a =true;
+        var a = 11 + 11 * 2;
+        print a;
+        {
+            var a =true;
+            print a;
+        }
         print a;
     }
     print a;
 }
-print a;
