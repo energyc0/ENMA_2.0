@@ -108,7 +108,7 @@ static ast_node* ast_primary(){
             temp = ast_bin_expr(0);
             break;
         case T_NOT:
-            return ast_mknode(AST_NOT, (ast_data){.ptr = ast_primary()});
+            return ast_mknode(AST_NOT, AST_DATA_PTR(ast_primary()));
         case T_STRING:
             return ast_mknode_string(cur_token.data.ptr);
         case T_SUB:

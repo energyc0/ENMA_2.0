@@ -1,7 +1,11 @@
+var a = true and not false or true;
+var b = (true or false) and (false xor true);
+var c = true or true and false;
+
 func main(){
-    print true and not false or true;
-    print (true or false) and (false xor true);
-    print true or true and false;
+    print a;
+    print b;
+    print c;
     print not not true;
     print true and (false or true);
     print false or (true and (false xor true));

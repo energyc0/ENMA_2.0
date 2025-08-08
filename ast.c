@@ -1,10 +1,10 @@
 #include "ast.h"
-#include "bytecode.h"
 #include "lang_types.h"
 #include "scope.h"
 #include "token.h"
 #include "utils.h"
-#include "scanner.h"
+#include "symtable.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -188,10 +188,51 @@ value_t ast_eval(ast_node* root){
             compile_error_printf("Incompatible types for operation.\n"); \
         return ret_type (AS_NUMBER(a) op AS_NUMBER(b));\
     }while(0)
+    
+    #define BOOLEAN_OP(op)do{\
+        value_t a; value_t b;\
+        EXTRACT_OPERANDS(a, b);\
+        if(!(IS_BOOLEAN(a) && IS_BOOLEAN(b))) \
+            compile_error_printf("Incompatible types for operation.\n"); \
+        return VALUE_BOOLEAN(AS_BOOLEAN(a) op AS_BOOLEAN(b));\
+    }while(0)
+
+    #define EXTRACT_IDENTIFIER(val)do{\
+        if(!symtable_get(AS_OBJIDENTIFIER(root->data.val), &val) || IS_NULL(val))\
+            compile_error_printf("Undefined identifier %s\n", AS_OBJIDENTIFIER(root->data.val)->str);\
+    }while(0)
+
+    #define EXTRACT_NUMBER_INDENTIFIER(val)do{\
+        EXTRACT_IDENTIFIER(val);\
+        if(!IS_NUMBER(val))\
+            compile_error_printf("Incompatible types for operation.\n");\
+    }while(0)
+
+    #define POST_OP(op) do{\
+        value_t val;\
+        EXTRACT_NUMBER_INDENTIFIER(val);\
+        value_t temp = val;\
+        op AS_NUMBER(val);\
+        symtable_set(AS_OBJIDENTIFIER(root->data.val), val); \
+        return temp;\
+    }while(0)
+
+    #define PREF_OP(op) do{\
+        value_t val;\
+        EXTRACT_NUMBER_INDENTIFIER(val);\
+        op AS_NUMBER(val);\
+        symtable_set(AS_OBJIDENTIFIER(root->data.val), val); \
+        return val;\
+    }while(0)
 
     switch(root->type){
         case AST_NUMBER: case AST_BOOLEAN: case AST_STRING:
             return root->data.val;
+        case AST_IDENT:{
+            value_t val;
+            EXTRACT_IDENTIFIER(val);
+            return val;
+        }
         case AST_SUB:
             NUMERICAL_OP(-, VALUE_NUMBER);
         case AST_DIV:
@@ -209,6 +250,51 @@ value_t ast_eval(ast_node* root){
                     compile_error_printf("Incompatible types for operation.\n");\
                 }
         }
+        case AST_AND:
+            BOOLEAN_OP(&&);
+        case AST_OR:
+            BOOLEAN_OP(||);
+        case AST_XOR:
+            BOOLEAN_OP(^);
+        case AST_NOT:{
+            value_t val = ast_eval(root->data.ptr);
+            if(!IS_BOOLEAN(val))
+                compile_error_printf("Incompatible type for operation\n");
+            return VALUE_BOOLEAN(!AS_BOOLEAN(val));
+        }
+        case AST_EQUAL:
+            NUMERICAL_OP(==, VALUE_BOOLEAN);
+        case AST_NEQUAL:
+            NUMERICAL_OP(!=, VALUE_BOOLEAN);
+        case AST_GREATER:
+            NUMERICAL_OP(>, VALUE_BOOLEAN);
+        case AST_EGREATER:
+            NUMERICAL_OP(>=, VALUE_BOOLEAN);
+        case AST_LESS:
+            NUMERICAL_OP(<, VALUE_BOOLEAN);
+        case AST_ELESS:
+            NUMERICAL_OP(<=, VALUE_BOOLEAN);
+        case AST_ASSIGN:{
+            value_t a; value_t b;
+            EXTRACT_OPERANDS(a,b);
+            if(!IS_OBJIDENTIFIER(a))
+                compile_error_printf("Left value is not assignable\n");
+            value_t val;
+            if(!symtable_get(AS_OBJIDENTIFIER(a), &val) || IS_NULL(val))
+                compile_error_printf("Undefined identifier '%s'\n", AS_OBJIDENTIFIER(a)->str);
+            if(!is_value_same_type(b,val))
+                compile_error_printf("Incorrect type for assignment\n");
+            symtable_set(AS_OBJIDENTIFIER(a), b);
+            return b;
+        }
+        case AST_POSTINCR:
+            POST_OP(++);
+        case AST_PREFINCR:
+            PREF_OP(++);
+        case AST_POSTDECR:
+            POST_OP(--);
+        case AST_PREFDECR:
+            PREF_OP(--);
         default:
             fatal_printf("Undefined ast_type in ast_eval()!\nast_type = %d\n", root->type);
     }

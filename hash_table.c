@@ -115,14 +115,16 @@ static void entries_init(hash_entry* entries, size_t count){
 
 static void table_grow(struct hash_table*t){
     hash_entry* entries = t->entries;
-    t->entries = emalloc(t->capacity * 2 * sizeof(t->entries[0]));
-    entries_init(t->entries, t->capacity*2);
-    for(size_t i = 0; i < t->capacity; i++){
+    size_t old_capacity = t->capacity;
+    t->capacity <<=1;
+    t->entries = emalloc(t->capacity * sizeof(t->entries[0]));
+    entries_init(t->entries, t->capacity);
+    for(size_t i = 0; i < old_capacity; i++){
         if (entries[i].key != NULL) {
             table_set(t, entries[i].key, entries[i].value);
         }
     }
-    t->capacity *= 2;
+    free(entries);
 }
 
 #ifdef DEBUG
