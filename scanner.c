@@ -297,6 +297,7 @@ void scanner_debug_tokens(){
             case T_BREAK: printf("'break' "); break;
             case T_CONTINUE: printf("'continue' "); break;
             case T_FUNC: printf("'func' "); break;
+            case T_RETURN: printf("'return' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

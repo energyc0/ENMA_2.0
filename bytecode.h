@@ -57,11 +57,6 @@ typedef enum{
     OP_PREFINCR_LOCAL,
     OP_PREFDECR_GLOBAL,
     OP_PREFDECR_LOCAL,
-    //bp and sp manipulations
-    OP_PUSH_BP,
-    OP_POP_BP,
-    OP_BP_AS_SP,    //BP = SP
-    OP_SP_AS_BP     //SP = BP
 } op_t;
 
 struct chunk{

@@ -4,7 +4,6 @@
 #include "lang_types.h"
 #include "scope.h"
 #include "symtable.h"
-#include "garbage_collector.h"
 #include "utils.h"
 #include "parser.h"
 #include <stdio.h>
@@ -37,6 +36,9 @@ static inline union _inner_value_t extract_value(int offset);
 static inline int get_code_line();
 static value_t get_variable_value(obj_id_t* id);
 static void set_variable_value(obj_id_t* id, value_t value);
+
+static void preamble();
+static void epilogue();
 
 //pops two values from the stack and pushes the result
 #define CALC_NUMERICAL_OP(return_type, op) do{ \
@@ -94,6 +96,8 @@ static vm_execute_result vm_execute(struct bytecode_chunk* code){
         user_error_printf("Failed to find '%s' entry function\n", entry);
     if(AS_OBJFUNCTION(func)->entry_offset < 0)
         user_error_printf("Function '%s' is declared but not defined\n", entry);
+    if(AS_OBJFUNCTION(func)->args_count != 0)
+        user_error_printf("Function '%s' must not have any arguments\n");
     vm.ip = &vm.code->_code.data[AS_OBJFUNCTION(func)->entry_offset];
 
     return interpret();
@@ -116,6 +120,7 @@ static vm_execute_result interpret(){
                     is_done = 1;
                 else{
                 value_t ret_val = stack_pop();
+                epilogue();
                 value_t ret_ip = stack_pop();
 #ifdef DEBUG
 
@@ -125,23 +130,6 @@ static vm_execute_result interpret(){
                 }
                 break;
             }
-            case OP_PUSH_BP:
-                stack_push(VALUE_NUMBER(vm.bp - vm.stack));
-                break;
-            case OP_POP_BP:
-                val = stack_pop();
-#ifdef DEBUG
-                if(!IS_NUMBER(val))
-                    fatal_printf("Stack smashed! Expected BP offset.\n");
-#endif          
-                vm.bp = &vm.stack[AS_NUMBER(val)];
-                break;
-            case OP_BP_AS_SP:
-                vm.bp = vm.sp;
-                break;
-            case OP_SP_AS_BP:
-                vm.sp = vm.bp;
-                break;
             case OP_POP:
                 --vm.sp;
 #ifdef DEBUG
@@ -291,6 +279,8 @@ static vm_execute_result interpret(){
                         case OBJ_STRING: printf("%s\n", AS_OBJSTRING(val)->str); break;
                         default: fatal_printf("Undefined obj_type in interpret()!\n");
                     }
+                }else if (IS_NULL(val)){
+                    interpret_error_printf(get_code_line(), "Cannot print this expression!\n");
                 }else{
                     printf("print: Not implemented instruction :(\n");
                 }
@@ -394,6 +384,7 @@ static vm_execute_result interpret(){
                     interpret_error_printf(get_code_line(), "Function '%s' is declared but not defined\n", func->name->str);
                 stack_push(VALUE_NUMBER(vm.ip - vm.code->_code.data));
                 vm.ip = &vm.code->_code.data[func->entry_offset];
+                preamble();
                 break;
             }
             default: 
@@ -472,6 +463,21 @@ static void set_variable_value(obj_id_t* id, value_t value){
             interpret_error_printf(get_code_line(), "Incorrect assignment type for '%s'\n", id->str);
         symtable_set(id, value);
     }
+}
+
+static void preamble(){
+    stack_push(VALUE_NUMBER(vm.bp - vm.stack));
+    vm.bp = vm.sp;
+}
+
+static void epilogue(){
+    vm.sp = vm.bp;
+    value_t val = stack_pop();
+#ifdef DEBUG
+    if(!IS_NUMBER(val))
+        fatal_printf("Stack smashed! Expected BP offset.\n");
+#endif          
+    vm.bp = &vm.stack[AS_NUMBER(val)];
 }
 
 #ifdef DEBUG

@@ -45,6 +45,7 @@ static const int precedence[] = {
     [T_FOR] = 0,
     [T_FUNC] = 0,
     [T_COMMA] = -1,
+    [T_RETURN] = 0,
     [T_EOF] = 0
 };
 
@@ -65,6 +66,7 @@ static void parse_print(struct bytecode_chunk* chunk);
 static void parse_if(struct bytecode_chunk* chunk);
 static void parse_while(struct bytecode_chunk* chunk);
 static void parse_for(struct bytecode_chunk* chunk);
+static void parse_return(struct bytecode_chunk* chunk);
 
 static void parse_func(struct bytecode_chunk* chunk);
 static void parse_func_args(obj_function_t* func);
@@ -231,6 +233,12 @@ bool parse_command(struct bytecode_chunk* chunk){
             if(!is_global_scope())
                 compile_error_printf("Function declaration expected in the global scope\n");
             parse_func(chunk);
+            break;
+        }
+        case T_RETURN:{
+            if(is_global_scope())
+                compile_error_printf("'return' must be used only in functions\n");
+            parse_return(chunk);
             break;
         }
         //it is an expression statement
@@ -448,15 +456,9 @@ static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* 
     }
     func->entry_offset = bcchunk_get_codesize(chunk);
     symtable_set(func->name, VALUE_OBJ(func));
-    //preamble
-    bcchunk_write_simple_op(chunk, OP_PUSH_BP, line_counter);
-    bcchunk_write_simple_op(chunk, OP_BP_AS_SP, line_counter);
     begin_scope();
     read_block(chunk);
     end_scope(chunk);
-    //postamble
-    bcchunk_write_simple_op(chunk, OP_SP_AS_BP, line_counter);
-    bcchunk_write_simple_op(chunk, OP_POP_BP, line_counter);
     bcchunk_write_simple_op(chunk, OP_NULL, line_counter);
     bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
 }
@@ -491,6 +493,20 @@ static ast_node* ast_call(obj_id_t* id){
         }while(is_match(T_RPAR));   
     }
 }
-//0x5555555700d0
+
+static void parse_return(struct bytecode_chunk* chunk){
+    scanner_next_token(&cur_token);
+    if(is_match(T_SEMI)){
+        bcchunk_write_simple_op(chunk, OP_NULL, line_counter);
+    }else{
+        scanner_putback_token();
+        ast_node* expr = ast_process_expr();
+        bcchunk_write_expression(expr, chunk, line_counter);
+        ast_freenode(expr);
+    }
+    bcchunk_write_simple_op(chunk, OP_RETURN,line_counter);
+    cur_expect(T_SEMI, "Expected ';'\n");
+}
+
 #undef UPDATE_JUMP_LENGTH
 #undef READ_BLOCK

@@ -116,10 +116,6 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_PRINT: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POPN: return constant_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_PUSH_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_POP_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_BP_AS_SP: return simple_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_SP_AS_BP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_JUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_FJUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_CALL: return constant_instruction_debug(op_to_string(op), chunk, offset);
@@ -367,10 +363,6 @@ const char* op_to_string(op_t op){
         [OP_PRINT] = "OP_PRINT",
         [OP_POP] = "OP_POP",
         [OP_POPN] = "OP_POPN",    
-        [OP_PUSH_BP] = "OP_PUSH_BP",
-        [OP_POP_BP] = "OP_POP_BP",
-        [OP_BP_AS_SP] = "OP_BP_AS_SP",    
-        [OP_SP_AS_BP] = "OP_SP_AS_BP",
         [OP_FJUMP] = "OP_FJUMP",
         [OP_JUMP] = "OP_JUMP",
         [OP_CALL] = "OP_CALL",

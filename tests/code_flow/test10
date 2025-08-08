@@ -1,0 +1,15 @@
+var a = 0;
+
+func foo(){
+	if(a > 2){
+		return "a > 2";
+	}
+	return a++;
+}
+
+func main(){
+	for(var i = 0; i < 5; i++){
+		print foo();
+	}
+	return;
+}

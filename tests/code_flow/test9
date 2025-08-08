@@ -1,0 +1,33 @@
+func foo();
+func a();
+func b();
+func c();
+func err_func();
+
+func main(){
+	foo();
+	print a();
+	print b();
+	print c();
+	print err_func();
+}
+
+func foo(){
+	print "foo() called";
+}
+
+func a(){
+	return 1;
+}
+
+func b(){
+	return true;
+}
+
+func c(){
+	return "c() return value";
+}
+
+func err_func(){
+	return;
+}
