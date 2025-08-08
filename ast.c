@@ -13,6 +13,7 @@ extern struct token cur_token;
 #define UNDEFINED_AST_NODE_TYPE(node) fatal_printf("Undefined ast_node_type! type number: %d\n", node->type)
 
 static void ast_debug_node(const ast_node* node);
+static void ast_debug_args(struct ast_func_arg* arg);
 
 ast_node* ast_mknode(ast_node_type type, ast_data data){
     ast_node* p = emalloc(sizeof(ast_node));
@@ -141,12 +142,8 @@ static void ast_debug_node(const ast_node* node){
         case AST_CALL:{
             printf("%s(", ((struct ast_func_info*)node->data.ptr)->func->name->str);
             struct ast_func_arg* ptr = ((struct ast_func_info*)node->data.ptr)->args;
-            while(ptr){
-                ast_debug_node(ptr->arg);
-                if(ptr->next)
-                    printf(", ");
-                ptr = ptr->next;
-            }
+            if(ptr)
+                ast_debug_args(ptr);
             putchar(')');
             break;
         }
@@ -298,4 +295,12 @@ value_t ast_eval(ast_node* root){
         default:
             fatal_printf("Undefined ast_type in ast_eval()!\nast_type = %d\n", root->type);
     }
+}
+
+static void ast_debug_args(struct ast_func_arg* arg){
+    if(arg->next){
+        ast_debug_args(arg->next);
+        printf(", ");
+    }
+    ast_debug_node(arg->arg);
 }

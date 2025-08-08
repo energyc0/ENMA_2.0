@@ -14,7 +14,9 @@ typedef enum{
     OP_POP,
     //pop n values from the stack
     OP_POPN,
-
+    //clear stack from previous call
+    //reads constant number
+    OP_CLARGS,
     //read next 4 bytes and get obj_function_t* instance
     //place return ip on the stack
     OP_CALL,

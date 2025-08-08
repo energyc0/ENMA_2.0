@@ -9,6 +9,7 @@ struct bytecode_chunk;
 struct ast_node;
 
 #define LOCALS_COUNT (256)
+#define ARGUMENTS_COUNT (256)
 
 struct local{
     obj_id_t* id;
@@ -18,6 +19,10 @@ struct local{
 struct scope{
     struct local locals[LOCALS_COUNT];
     int locals_count;
+
+    obj_id_t* arguments[ARGUMENTS_COUNT];
+    int arguments_count;
+
     int current_depth;
 };
 
@@ -34,13 +39,18 @@ int get_scope();
 
 //return count of the variables in the current scope
 int count_scope_vars();
-//return false if variable exists
-bool declare_variable(obj_id_t* id);
-bool define_variable(obj_id_t* id, struct ast_node* expr, struct bytecode_chunk* chunk);
 
-//return variable index for vm.stack[]
-//return -1 if not found
+/*return false if variable exists*/
+bool declare_variable(obj_id_t* id);
+/*return false if variable exists*/
+bool define_variable(obj_id_t* id, struct ast_node* expr, struct bytecode_chunk* chunk);
+/*return false if variable exists*/
+bool declare_argument(obj_id_t* id);
+
+//return variable index for vm.bp[]
+//return -1 if not found(vm.bp[-1] is old bp and vm.bp[-2] is return address)
 //print error if try to resolve currently defining variable
+//resolve locals and arguments
 int resolve_local(obj_id_t* id);
 
 void write_set_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);

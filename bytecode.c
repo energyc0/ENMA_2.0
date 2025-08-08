@@ -128,6 +128,7 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_POSTDECR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POSTDECR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_NULL: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_CLARGS: return constant_instruction_debug(op_to_string(op), chunk, offset);
         default:
             fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
@@ -174,8 +175,9 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" stack index: %d\n", extracted_value->number);
             break;
         }
-        case OP_POPN:case OP_JUMP: case OP_FJUMP:{
-            printf(" [0x%X]\n", *(int*)(chunk->_code.data + offset + 1));
+        case OP_POPN:case OP_JUMP: case OP_FJUMP:case OP_CLARGS:{
+            int val = *(int*)(chunk->_code.data + offset + 1);
+            printf(" %d [0x%X]\n", val,val);
             break;
         }
         case OP_CALL:{
@@ -323,12 +325,18 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
         case AST_CALL:{
             struct ast_func_info* info = node->data.ptr;
             struct ast_func_arg* p = info->args;
+            int argc = 0;
             while(p){
                 parse_ast_bin_expr(p->arg, chunk, line);
                 p = p->next;
+                argc++;
             }
             bcchunk_write_simple_op(chunk, OP_CALL, line);
             bcchunk_write_value(chunk, VALUE_OBJ(info->func), line);
+            if(argc > 0){
+                bcchunk_write_simple_op(chunk,OP_CLARGS, line);
+                bcchunk_write_constant(chunk,argc,line);
+            }
             break;
         }
         default:
@@ -373,7 +381,8 @@ const char* op_to_string(op_t op){
         [OP_POSTINCR_GLOBAL] = "OP_POSTINCR_GLOBAL",
         [OP_POSTINCR_LOCAL] = "OP_POSTINCR_LOCAL",
         [OP_POSTDECR_GLOBAL] = "OP_POSTDECR_GLOBAL",
-        [OP_POSTDECR_LOCAL] = "OP_POSTDECR_LOCAL"
+        [OP_POSTDECR_LOCAL] = "OP_POSTDECR_LOCAL",
+        [OP_CLARGS] = "OP_CLARGS"
     };
 #ifdef DEBUG 
     if(!(0 <= op && op < sizeof(ops) / sizeof(ops[0])))

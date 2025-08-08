@@ -1,0 +1,33 @@
+func sum(a);
+func mid(a,b,c);
+func my_print(val);
+
+func sum(a, b){
+	return a + b;
+}
+
+func mid(a,b,c){
+	return (a + b + c) / 3;
+}
+
+func my_print(val){
+	print val;
+}
+
+var someval = 123;
+
+func main(){
+
+	print sum(1,2);
+	print mid(1,2,3);
+	print mid(3,3,6);
+	print sum(10,16);
+	my_print(true);
+	my_print(111);
+	my_print("hello!");
+
+	var temp = -23;
+	print sum(someval, temp);
+	my_print(temp + someval);
+	print sum(1+2,3+4/2);
+}

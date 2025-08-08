@@ -119,14 +119,11 @@ static vm_execute_result interpret(){
                 if(vm.bp == &vm.stack[0])
                     is_done = 1;
                 else{
-                value_t ret_val = stack_pop();
-                epilogue();
-                value_t ret_ip = stack_pop();
-#ifdef DEBUG
-
-#endif          
-                vm.ip = &vm.code->_code.data[AS_NUMBER(ret_ip)];
-                stack_push(ret_val);
+                    value_t ret_val = stack_pop();
+                    epilogue();
+                    value_t ret_ip = stack_pop();
+                    vm.ip = &vm.code->_code.data[AS_NUMBER(ret_ip)];
+                    stack_push(ret_val);
                 }
                 break;
             }
@@ -146,6 +143,12 @@ static vm_execute_result interpret(){
             examine_stack();
 #endif
                 break;
+            case OP_CLARGS:{
+                value_t temp = stack_pop();
+                vm.sp -= read_constant();
+                stack_push(temp);
+                break;
+            }
             case OP_NUMBER:
                 stack_push(VALUE_NUMBER(extract_value(read_constant()).number));
                 break;
@@ -173,19 +176,11 @@ static vm_execute_result interpret(){
             }
             case OP_GET_LOCAL:{
                 int idx = extract_value(read_constant()).number;
-#ifdef DEBUG
-                if(idx >= vm.sp - vm.stack || idx < 0)
-                    fatal_printf("Stack corrupt. OP_GET_LOCAL\n");
-#endif
                 stack_push(vm.bp[idx]);
                 break;
             }
             case OP_SET_LOCAL:{
                 int idx = extract_value(read_constant()).number;
-#ifdef DEBUG
-                if(idx >= vm.sp - vm.stack || idx < 0)
-                    fatal_printf("Stack corrupt. OP_SET_LOCAL\n");
-#endif  
                 value_t val = stack_pop();
                 if(!is_value_same_type(val, vm.bp[idx]))
                     interpret_error_printf(get_code_line(), "Incorrect assignment type\n");

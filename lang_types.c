@@ -30,7 +30,7 @@ obj_id_t* mk_objid(const char* s, size_t len, int32_t hash){
 }
 
 obj_function_t* mk_objfunc(obj_string_t* name){
-    obj_function_t* ptr = malloc(sizeof(obj_function_t));
+    obj_function_t* ptr = emalloc(sizeof(obj_function_t));
     ptr->name = name;
     ptr->args_count = 0;
     ptr->entry_offset = 0;

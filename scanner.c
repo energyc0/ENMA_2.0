@@ -207,6 +207,7 @@ int scanner_next_token(struct token* t){
         case ';': t->type = T_SEMI; break;
         case '{': t->type = T_LBRACE; break;
         case '}': t->type = T_RBRACE; break;
+        case ',': t->type = T_COMMA; break;
         case '!':{
             if(_get() != '='){
                 compile_error_printf("Undefined character '!'\n");
@@ -298,6 +299,7 @@ void scanner_debug_tokens(){
             case T_CONTINUE: printf("'continue' "); break;
             case T_FUNC: printf("'func' "); break;
             case T_RETURN: printf("'return' "); break;
+            case T_COMMA: printf("',' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

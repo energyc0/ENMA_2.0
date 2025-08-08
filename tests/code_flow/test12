@@ -1,0 +1,9 @@
+var foo = 1;
+
+func foo(){
+
+}
+
+func main(){
+    print "bad";
+}

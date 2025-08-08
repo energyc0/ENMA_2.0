@@ -21,6 +21,8 @@ static bool check_current_depth_local(obj_string_t* id);
 static inline void pop_locals(struct bytecode_chunk* chunk, int var_k);
 static void perform_local_global_op(struct bytecode_chunk* chunk, const ast_node* id_node, op_t local, op_t global, int line);
 
+static int find_argument(obj_id_t* id);
+
 void begin_scope(){
     _scope.current_depth++;
 }
@@ -46,7 +48,9 @@ void end_cycle(struct bytecode_chunk* chunk){
 void end_scope(struct bytecode_chunk* chunk){
     if(--_scope.current_depth < 0)
         compile_error_printf("Extraneous closing brace ('}')\n");
-
+    if(_scope.current_depth == 0)
+        _scope.arguments_count = 0;
+    
     int var_k = 0;
     for(;_scope.locals_count > 0 && _scope.locals[_scope.locals_count-1].depth > _scope.current_depth; _scope.locals_count--, var_k++);
     pop_locals(chunk, var_k);
@@ -106,6 +110,8 @@ static bool check_current_depth_local(obj_string_t* id){
 }
 
 static void declare_local(obj_id_t* id){
+    if(_scope.locals_count >= LOCALS_COUNT)
+        compile_error_printf("Locals number has reached limit!\n");
     _scope.locals[_scope.locals_count].depth = -1;
     _scope.locals[_scope.locals_count].id = id;
     ++_scope.locals_count;
@@ -115,7 +121,19 @@ static void define_local(){
     _scope.locals[_scope.locals_count-1].depth = _scope.current_depth;
 }
 
+bool declare_argument(obj_id_t* id){
+    if(find_argument(id) != -1)
+        return false;
+    if(_scope.arguments_count >= ARGUMENTS_COUNT)
+        compile_error_printf("Arguments number has reached limit!\n");
+    _scope.arguments[_scope.arguments_count++] = id;
+    return true;
+}
+
 int resolve_local(obj_id_t* id){
+    int idx = find_argument(id);
+    if(idx != -1)
+        return -idx - 3;
     for(int i = _scope.locals_count - 1; i >= 0; i--)
         if(is_equal_objstring(_scope.locals[i].id, id)){
             if(_scope.locals[i].depth == -1)
@@ -127,7 +145,7 @@ int resolve_local(obj_id_t* id){
 
 static void perform_local_global_op(struct bytecode_chunk* chunk, const ast_node* id_node, op_t local, op_t global, int line){
     int idx;
-    if(!is_global_scope() && (idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val))) >= 0){
+    if(!is_global_scope() && (idx = resolve_local(AS_OBJIDENTIFIER(id_node->data.val))) != -1){
             bcchunk_write_simple_op(chunk, local, line);
             bcchunk_write_value(chunk, VALUE_NUMBER(idx), line);
     }else{
@@ -155,4 +173,11 @@ void write_postdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_
 }
 void write_prefdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line){
     perform_local_global_op(chunk, id_node, OP_PREFDECR_LOCAL, OP_PREFDECR_GLOBAL, line);
+}
+
+static int find_argument(obj_id_t* id){
+    for(int i = 0; i < _scope.arguments_count; i++)
+        if(id == _scope.arguments[i])
+            return i;
+    return -1;
 }

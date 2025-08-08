@@ -1,0 +1,13 @@
+func foo(){
+	print "bad";
+}
+
+func foo(){
+	print "very bad";
+}
+
+func main(){
+	print "very very bad";
+	foo();
+	foo();
+}
