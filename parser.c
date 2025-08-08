@@ -421,7 +421,7 @@ static void parse_func(struct bytecode_chunk* chunk){
 
     next_expect(T_LPAR, "Expected '('\n");
     begin_scope();
-    int argc = parse_func_args();
+    p->args_count = parse_func_args();
     cur_expect(T_RPAR, "Expected ')'\n");
 
     scanner_next_token(&cur_token);
@@ -492,6 +492,7 @@ static ast_node* ast_call(obj_id_t* id){
         compile_error_printf("'%s' is not a function\n", id->str);
 
     struct ast_func_arg* args = NULL;
+    int argc = 0;
     if(!is_match(T_RPAR)){
         do{
             scanner_putback_token();
@@ -499,12 +500,15 @@ static ast_node* ast_call(obj_id_t* id){
             struct ast_func_arg* temp = ast_mknode_func_arg(arg);
             temp->next =args;
             args = temp;
+            argc++;
             if(!is_match(T_COMMA))
                 break;
             scanner_next_token(&cur_token);
         }while(1);
     }
     cur_expect(T_RPAR,"Expected ')'\n");
+    if(argc != AS_OBJFUNCTION(instance)->args_count)
+        compile_error_printf("Expected more arguments in function call\n");
     return ast_mknode_func(args, AS_OBJFUNCTION(instance));
 }
 

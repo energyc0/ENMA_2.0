@@ -1,4 +1,4 @@
-func sum(a);
+func sum(a,b);
 func mid(a,b,c);
 func my_print(val);
 

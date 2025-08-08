@@ -97,7 +97,7 @@ static vm_execute_result vm_execute(struct bytecode_chunk* code){
     if(AS_OBJFUNCTION(func)->entry_offset < 0)
         user_error_printf("Function '%s' is declared but not defined\n", entry);
     if(AS_OBJFUNCTION(func)->args_count != 0)
-        user_error_printf("Function '%s' must not have any arguments\n");
+        user_error_printf("Function '%s' must not have any arguments\n", entry);
     vm.ip = &vm.code->_code.data[AS_OBJFUNCTION(func)->entry_offset];
 
     return interpret();

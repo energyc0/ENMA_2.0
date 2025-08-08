@@ -118,6 +118,7 @@ static void table_grow(struct hash_table*t){
     size_t old_capacity = t->capacity;
     t->capacity <<=1;
     t->entries = emalloc(t->capacity * sizeof(t->entries[0]));
+    t->count = 0;
     entries_init(t->entries, t->capacity);
     for(size_t i = 0; i < old_capacity; i++){
         if (entries[i].key != NULL) {

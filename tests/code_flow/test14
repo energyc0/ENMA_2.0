@@ -1,0 +1,9 @@
+func foo(a,b);
+
+func foo(){
+	print "bad";
+}
+
+func main(){
+	foo();
+}
