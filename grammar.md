@@ -1,44 +1,102 @@
 # Grammar
-**statement**: print_statement ';' \
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| if_statement\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| for_statement\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| while_statement\ 
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| break_statement\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| continue_statement\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| variable_declaration\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;; 
 
-**print_statement**: 'print' expression ';' \
+## Program
+```
+<program> ::= <declarations>
 
-**if_statement**: 'if' '(' logical_expression ')' code_block
+<declarations> ::= <declaration> <declaration>*
 
-**for_statement**: 'for' '(' [variable_declaraion, expression] ';' logical_expression ';' expression ')' [code_block, ';'] 
+<declaration> ::= <function_declaration>
+| <function_definition>
+| <variable_declaration>
 
-**while_statement**: 'while' '(' logical expression ')' code_block
+<variable_declaration> ::= "var" <variable> "=" <expression> ";"
 
-**break_statement**: 'break' ';'
+<function_declaration> ::= "func" <identifier> "(" <arglist> ")" ";"
 
-**continue_statement**: 'continue' ';'
+<function_definition> ::= "func" <identifier> "(" <arglist> ")" <code_block>
+```
+## Statements
 
-**variable_declaration**: 'var' variable '=' expression ';'
+```
+<statements> ::= <statement> (<statement>)*
 
-**declaration**: \
-**expression**: logical_expression\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| logical_expression\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| string_expression\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| '(' expression ')'\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
+<statement> ::= <print_statement>
+| <if_statement>
+| <for_statement>
+| <while_statement> 
+| <break_statement>
+| <continue_statement>
+| <return_statement>
+| <variable_declaration>
+| <code_block>
+| <expression_statement>
 
+<print_statement> ::= "print" <expression> ";" 
 
-**constant_number**:  T_INT\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
+<if_statement> ::= "if" "(" <logical_expression> ")" <code_block>
 
-**constant_boolean**:  T_FALSE\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;| T_TRUE\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
+<for_statement> ::= "for" "(" (<variable_declaration> | <expression>)? ";" <logical_expression>? ";" <expression>? ")" (<code_block> | ";")
 
-**constant_string**: '"' * '"'\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
+<while_statement> ::= "while" "(" <logical_expression> ")" <code_block>
 
-**variable**:  T_IDENT\
-&ensp; &ensp; &ensp; &ensp; &ensp; &ensp; &ensp;;
+<break_statement> ::= "break" ";"
+
+<continue_statement> ::= "continue" ";"
+
+<return_statement> ::= "return" <expression>? ";"
+
+<code_block> ::= "{" <statements>? "}"
+
+<expression_statement> ::= <expression> ";"
+```
+
+## Expressions
+```
+<expression> ::= <numerical_expression>
+| <logical_expression>
+| <string_expression>
+| <assignment_expression>
+| <function_call>
+| "(" <expression> ")"
+
+<numerical_expression> ::= (<variable> | <number>) (<numerical_op> <numerical_expression>)?
+
+<logical_expression> ::= ("not " <logical_expression>) | ( (<variable> | <boolean>) (<logical_op> <logical_expression>)? )
+
+<string_expression> ::= (<variable> | <string>) (<string_op> <string_expression>)?
+
+<assignment_expression> ::= <variable> "=" <expression>
+
+<function_call> ::= <identifier> "(" <arglist> ")"
+
+<variable> ::= <identifier>
+```
+## Lexical grammar
+```
+<arglist> ::= <identifier> ("," <identifier>)*
+
+<string_op> ::= "+"
+
+<logical_op> ::= " and " | " or " | " xor " | " not "
+
+<numerical_op> ::= "+" | "-" | "/" | "*"
+
+<number> ::=  ("+" | "-")? <digits>
+
+<boolean> ::=  ("false" | "true")
+
+<string> ::=  "\"" <chars>? "\""
+
+<identifier> ::=  <alpha> (<chars>)*
+
+<chars> ::= <char> (<char>)*
+
+<char> ::= <alpha> | <digit> | "_"
+
+<digits> ::= <digit> (<digit>)*
+
+<digit> ::= [0-9]
+
+<alpha> ::= [a-z] | [A-Z]```
+```
