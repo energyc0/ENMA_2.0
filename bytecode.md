@@ -1,7 +1,36 @@
-#### Bytecode for virtual machine:
-
-1. ##### Simple instructions:
-    * OP_RETURN
-
-1. ##### Constant instructions:
-    * OP_CONSTANT
+# Bytecode for virtual machine:
+ - **OP_RETURN** - simple operation. Pops value from the stack, does epilogue, jumps to the return ip and pushes value on the stack.
+ - **OP_POP** - simple operation. Decreases sp by one.
+ - **OP_POPN** - constant operation. Decreases sp by constant.
+ - **OP_CLARGS** - constant operation. Clears arguments for previous function call, constant value is the number of arguments.
+ - **OP_CALL** - constant operation. Constant value is an index in _data section for obj_function_t* instance.
+ - **OP_JUMP** - constant operation. Constant value is added to ip.
+ - **OP_FJUMP** - constant operation. Always reads constant value. If top value on the stack is false, performs a jump to a given offset.
+ - **OP_SET_GLOBAL** - constant operation. Constant value is an index in _data section for obj_id_t* instance. Tryes to set value in the symtable.
+ - **OP_GET_GLOBAL** constant operation. Constant value is an index in _data section for obj_id_t* instance. Tryes to get value from the symtable.
+ - **OP_SET_LOCAL** - constant operation. Constant value is an index for bp pointer. Tryes to set value in the stack.
+ - **OP_GET_LOCAL** - constant operation. Constant value is an index for bp pointer. Tryes to get value from the stack.
+ - **OP_PRINT** - simple operation. Pops value from the stack and prints it.
+ - **OP_NUMBER** - constant operation. Constant value is an index in _data section for a number. Pushes data on the stack.
+ - **OP_BOOLEAN** - constant operation. Constant value is an index in _data section for a boolean. Pushes data on the stack.
+ - **OP_STRING** - constant operation. Constant value is an index in _data section for an obj_string_t* instance. Pushes data on the stack.
+ - **OP_NULL** - simple operation. Pushes NULL on the stack.
+ - **OP_ADD** - simple operation. Pops two numerical values from the stack and perform the given opertaion. The result is pushed on the stack.
+ - **OP_SUB** - simple operation. Pops two numerical values from the stack and perform the given opertaion. The result is pushed on the stack.
+ - **OP_MUL** - simple operation. Pops two numerical values from the stack and perform the given opertaion. The result is pushed on the stack.
+ - **OP_DIV** - simple operation. Pops two numerical values from the stack and perform the given opertaion. The result is pushed on the stack.
+ - **OP_AND** - simple operation. Pops two boolean values from the stack and perform the given opertaion. The result is pushed on the stack.
+ - **OP_OR** - simple operation. Pops two boolean values from the stack and perform the given opertaion. The result is pushed on the stack. 
+ - **OP_XOR** - simple operation. Pops two boolean values from the stack and perform the given opertaion. The result is pushed on the stack. 
+ - **OP_NOT** - simple operation. Pops two boolean values from the stack and perform the given opertaion. The result is pushed on the stack. 
+ - **OP_EQUAL** - simple operation. Pops two values from the stack and perform the given opertaion. The result is pushed on the stack. 
+ - **OP_GREATER** - simple operation. Pops two boolean values from the stack and perform the given opertaion. The result is pushed on the stack. 
+ - **OP_LESS** - simple operation. Pops two boolean values from the stack and perform the given opertaion. The result is pushed on the stack. 
+ - **OP_POSTINCR_GLOBAL** - constant operation. Constant value is an index in _data section for an obj_id_t* instance. Increments data and pushes it on the stack.
+ - **OP_POSTINCR_LOCAL** - constant operation. Constant value is an index for bp. Increments data and pushes it on the stack.
+ - **OP_POSTDECR_GLOBAL** - constant operation. Constant value is an index in _data section for an obj_id_t* instance. Decrements data and pushes it on the stack.
+ - **OP_POSTDECR_LOCAL** - constant operation. Constant value is an index for bp. Decrements data and pushes it on the stack.
+ - **OP_PREFINCR_GLOBAL** - constant operation. Constant value is an index in _data section for an obj_id_t* instance. Pushes data on the stack and then increments it.
+ - **OP_PREFINCR_LOCAL** - constant operation. Constant value is an index for bp. Pushes data on the stack and then increments it.
+ - **OP_PREFDECR_GLOBAL** - constant operation. Constant value is an index in _data section for an obj_id_t* instance. Pushes data on the stack and then decrements it.
+ - **OP_PREFDECR_LOCAL** - constant operation. Constant value is an index for bp. Pushes data on the stack and then decrements it.
