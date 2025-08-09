@@ -7,5 +7,42 @@ This is just a common programming language which supports variables, conditional
 ## Program structure
 Program consists of declaration which can be either a function declaration or a function definition or a variable definition. All this transforms into statements and expression. More info you can find in **grammar.md**. 
 
+Program must contain **main** function that is an entry function.
+
 ## Program execution
 Firstly, it translates user-written code into bytecode for virtual machine. Then my virtual machine executes the code. More info about bytecode you can find in **bytecode.md**.
+
+## Program example
+```
+func main();
+func sum(a,b);
+func foo();
+
+var global_var = 0;
+
+func main(){
+  for(var i = 0; i < 5; i++){
+    foo();
+  }
+
+  print sum(1+2, 5 - 6/3);
+  print "Hello" + ", " + "world!";
+
+  var a = 11;
+  if(a > 10){
+    print "a is greater than 10";
+  }else{
+    print "a is not greater than 10";
+  }
+
+  print a > 10;
+}
+
+func foo(){
+  print ++global_var;
+}
+
+func sum(a,b){
+  return a + b;
+}
+```
