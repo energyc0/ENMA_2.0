@@ -8,7 +8,7 @@
 struct ast_node;
 
 typedef enum{
-    //end execution
+    //end execution or return from function
     OP_RETURN,
     //just pop value out of stack
     OP_POP,

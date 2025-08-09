@@ -288,6 +288,8 @@ static vm_execute_result interpret(){
             case OP_FJUMP:{
                 val = stack_pop();
                 int jump = read_constant();
+                if(!IS_BOOLEAN(val))
+                    interpret_error_printf(get_code_line(), "Expected logical expression\n");
                 if(!AS_BOOLEAN(val))
                     vm.ip += jump;
                 break;

@@ -108,19 +108,17 @@ static ast_node* ast_primary(){
             return ast_mknode_boolean(true);
         case T_LPAR: 
             temp = ast_bin_expr(0);
-            break;
+            cur_expect(T_RPAR, "Unclosed left parenthesis, ')' expected\n");
+            return temp;
         case T_NOT:
             return ast_mknode(AST_NOT, AST_DATA_PTR(ast_primary()));
         case T_STRING:
             return ast_mknode_string(cur_token.data.ptr);
+        case T_ADD:
+            return ast_primary();
         case T_SUB:
             temp = ast_primary();
-            if(temp->type == AST_NUMBER){
-                AS_NUMBER(temp->data.val) *= -1; 
-                return temp;
-            }else{
-                return ast_mknode_binary(AST_MUL, ast_mknode_number(-1), temp);
-            }
+            return ast_mknode_binary(AST_MUL, ast_mknode_number(-1), temp);
         case T_INCR:
             next_expect(T_IDENT, "Expected identifier\n");
             return ast_mknode(AST_PREFINCR, AST_DATA_VALUE(VALUE_OBJ(cur_token.data.ptr)));
@@ -142,9 +140,6 @@ static ast_node* ast_primary(){
         default:
             compile_error_printf("Expected expression\n");
     }
-    cur_expect(T_RPAR, "Unclosed left parenthesis, ')' expected\n");
-
-    return temp;
 }
 
 static inline int get_op_precedence(token_type op){
