@@ -1,23 +1,23 @@
 func main(){
     if (true and true){
-        print "good";
+        println("good");
     }
     if(false){
-        print "bad";
+        println("bad");
     }
 
     var a = 11;
     if(a > 10){
-        print "a is greater than 10";
+        println("a is greater than 10");
     }else{
-        print "a is not greater than 10";
+        println("a is not greater than 10");
     }
 
     if(a > 100){
-        print "a is greater than 100";
+        println("a is greater than 100");
     }else{
-        print "a is not greater than 100";
+        println("a is not greater than 100");
     }
 
-    print "end";
+    println("end");
 }

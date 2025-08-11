@@ -11,23 +11,23 @@ func mid(a,b,c){
 }
 
 func my_print(val){
-	print val;
+	println(val);
 }
 
 var someval = 123;
 
 func main(){
 
-	print sum(1,2);
-	print mid(1,2,3);
-	print mid(3,3,6);
-	print sum(10,16);
+	println(sum(1,2));
+	println(mid(1,2,3));
+	println(mid(3,3,6));
+	println(sum(10,16));
 	my_print(true);
 	my_print(111);
 	my_print("hello!");
 
 	var temp = -23;
-	print sum(someval, temp);
+	println(sum(someval, temp));
 	my_print(temp + someval);
-	print sum(1+2,3+4/2);
+	println(sum(1+2,3+4/2));
 }

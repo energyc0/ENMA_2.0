@@ -1,11 +1,11 @@
 func foo();
 
 func foo(){
-    print "hello from foo!";
+    println("hello from foo!");
 }
 
 func main(){
-    print "start";
+    println("start");
     foo();
-    print "end";
+    println("end");
 }

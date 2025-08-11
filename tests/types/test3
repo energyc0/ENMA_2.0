@@ -1,9 +1,9 @@
 func main(){
-    print "Hello, world!";
-    print "Bye, cruel world";
-    print "123" + "456" + "789" == "123456789";
-    print "123" == "123";
-    print "alez" == "alex";
-    print "123" != "123";
-    print "alez" != "alex";
+    println("Hello, world!");
+    println("Bye, cruel world");
+    println("123" + "456" + "789" == "123456789");
+    println("123" == "123");
+    println("alez" == "alex");
+    println("123" != "123");
+    println("alez" != "alex");
 }

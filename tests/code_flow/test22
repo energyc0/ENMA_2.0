@@ -1,6 +1,6 @@
 func main(){
     var a = clock();
-	print "good";
+	println("good");
 	a = clock(1);
-	print "bad!!!";
+	println("bad!!!");
 }

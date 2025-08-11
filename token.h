@@ -32,7 +32,6 @@ typedef enum{
     T_IDENT,
     T_STRING,
     //keywords
-    T_PRINT,
     T_VAR,
     T_IF,
     T_ELSE,

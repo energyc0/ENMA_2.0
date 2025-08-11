@@ -10,5 +10,5 @@ func main(){
 }
 
 func foo(){
-    print a++;
+    println(a++);
 }

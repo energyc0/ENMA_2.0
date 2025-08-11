@@ -5,6 +5,6 @@ func fib(n) {
 
 func main(){
 	for(var i = 0; i < 10; i++){
-		print fib(i);
+		println(fib(i));
 	}
 }

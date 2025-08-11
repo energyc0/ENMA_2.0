@@ -1,7 +1,7 @@
 func foo(123){
-	print 123;
+	println(123);
 }
 
 func main(){
-	print "bad";
+	println("bad");
 }

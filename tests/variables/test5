@@ -6,13 +6,13 @@ func main(){
             var a = "2 scope";
             {
                 var a = "3 scope";
-                print a;
+                println(a);
             }
-            print a;
+            println(a);
         }
-        print a;
+        println(a);
     }
-    print a;
+    println(a);
 
     {
         var a = "4 scope";
@@ -22,11 +22,11 @@ func main(){
                 var a = "6 scope";
                 var somevar1 = 11;
                 var somevar2 = 11;
-                print a;
+                println(a);
             }
-            print a;
+            println(a);
         }
-        print a;
+        println(a);
     }
-    print a;
+    println(a);
 }

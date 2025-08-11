@@ -9,7 +9,7 @@ func foo(){
 
 func main(){
 	for(var i = 0; i < 5; i++){
-		print foo();
+		println(foo());
 	}
 	return;
 }

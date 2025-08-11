@@ -12,13 +12,13 @@ var h = --d;
 
 
 func main(){
-    print s + "!";
-    print a;
-    print b;
-    print c;
-    print d;
-    print e;
-    print f;
-    print g;
-    print h;
+    println(s + "!");
+    println(a);
+    println(b);
+    println(c);
+    println(d);
+    println(e);
+    println(f);
+    println(g);
+    println(h);
 }

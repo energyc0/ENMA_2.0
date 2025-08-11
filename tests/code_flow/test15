@@ -3,5 +3,5 @@ func foo(a,b,c){
 }
 
 func main(){
-	print foo(1,2);
+	println(foo(1,2));
 }

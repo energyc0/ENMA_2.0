@@ -3,41 +3,41 @@ var b = 0;
 
 func main(){
 
-    print "globals: ";
+    println("globals: ");
 
-    print a++;
-    print ++a;
+    println(a++);
+    println(++a);
     a = a++;
-    print a;
+    println(a);
     a = ++a;
-    print a;
+    println(a);
 
 
-    print b--;
-    print --b;
+    println(b--);
+    println(--b);
     b = --b;
-    print b;
+    println(b);
     b = b--;
-    print b;
+    println(b);
 
     {
-        print "locals: ";
+        println("locals: ");
         var a = 0;
-        print a++;
-        print ++a;
+        println(a++);
+        println(++a);
 
         a = a++;
-        print a;
+        println(a);
         a = ++a;
-        print a;
+        println(a);
 
         var b = 0;
-        print b--;
-        print --b;
+        println(b--);
+        println(--b);
 
         b = --b;
-        print b;
+        println(b);
         b = b--;
-        print b;
+        println(b);
     }
 }

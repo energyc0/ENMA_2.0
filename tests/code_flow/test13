@@ -1,13 +1,13 @@
 func foo(){
-	print "bad";
+	println("bad");
 }
 
 func foo(){
-	print "very bad";
+	println("very bad");
 }
 
 func main(){
-	print "very very bad";
+	println("very very bad");
 	foo();
 	foo();
 }

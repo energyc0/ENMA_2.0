@@ -2,15 +2,15 @@ func main(){
     var a = 0;
     for(; a < 5; a++){
         if(a > 2){
-            print "break!";
+            println("break!");
             break;
         }
-        print a;
+        println(a);
     }
 
     while(true){
-        print "sadflasdflsad";
-        print "break!";
+        println("sadflasdflsad");
+        println("break!");
         break;
     }
 
@@ -18,15 +18,15 @@ func main(){
         for(var j = 0; j < 3; j++){
             for(var k = 0; k < 3; k++){
                 
-                if(k < 1){print k + i + j;} else { print "break!";break;}
+                if(k < 1){println(k + i + j);} else { println("break!");break;}
             }
             if(j > 1){
-                print "break!";
+                println("break!");
                 break;
             }
         }
     }
 
 
-    print "end.";
+    println("end.");
 }

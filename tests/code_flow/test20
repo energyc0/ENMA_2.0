@@ -4,5 +4,5 @@ func main(){
 	while(end - start < 2){
 		end = clock();
 	}
-	print end - start;
+	println(end - start);
 }

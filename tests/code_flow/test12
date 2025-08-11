@@ -5,5 +5,5 @@ func foo(){
 }
 
 func main(){
-    print "bad";
+    println("bad");
 }

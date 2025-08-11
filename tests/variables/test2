@@ -1,14 +1,14 @@
 var a = "Hello";
 func main(){
-    print a;
+    println(a);
     {
         var a = 11 + 11 * 2;
-        print a;
+        println(a);
         {
             var a =true;
-            print a;
+            println(a);
         }
-        print a;
+        println(a);
     }
-    print a;
+    println(a);
 }

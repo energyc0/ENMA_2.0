@@ -1,13 +1,13 @@
 func main(){
     for(var a = 0; a < 2; a++){
-        print a;
+        println(a);
     }
     var a = 0;
     for(; a < 2; ++a);
-    print a;
+    println(a);
 
     var b = 1;
     for(;b<5;){
-        print b++;
+        println(b++);
     }
 }

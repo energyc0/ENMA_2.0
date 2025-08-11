@@ -38,7 +38,6 @@ static const int precedence[] = {
     [T_TRUE] = 0,
     [T_IDENT] = 0,
     [T_STRING] = 0,
-    [T_PRINT] = 0,
     [T_VAR] = 0,
     [T_SEMI] = -1,
     [T_LBRACE] = 0,
@@ -66,7 +65,6 @@ static inline void read_block(struct bytecode_chunk* chunk);
 
 static void parse_simple_expression(struct bytecode_chunk* chunk);
 static void parse_var(struct bytecode_chunk* chunk);
-static void parse_print(struct bytecode_chunk* chunk);
 static void parse_if(struct bytecode_chunk* chunk);
 static void parse_while(struct bytecode_chunk* chunk);
 static void parse_for(struct bytecode_chunk* chunk);
@@ -182,11 +180,6 @@ bool parse_command(struct bytecode_chunk* chunk){
         return false;
 
     switch(cur_token.type){
-        case T_PRINT:{
-            IS_GLOBAL_SCOPE("Statement is not expected in global scope.\n");
-            parse_print(chunk);
-            break;
-        }
         case T_LBRACE:{
             IS_GLOBAL_SCOPE("Create new scope is not expected in global scope.\n");
             begin_scope();
@@ -265,14 +258,6 @@ static void parse_var(struct bytecode_chunk* chunk){
 
     cur_expect(T_SEMI, "Expected ';'\n");
     ast_freenode(expr);
-}
-
-static void parse_print(struct bytecode_chunk* chunk){
-    ast_node* node = ast_process_expr();
-    bcchunk_write_expression(node, chunk, line_counter);
-    bcchunk_write_simple_op(chunk, OP_PRINT, line_counter);
-    cur_expect(T_SEMI, "Expected ';'\n");
-    ast_freenode(node);
 }
 
 static void parse_simple_expression(struct bytecode_chunk* chunk){

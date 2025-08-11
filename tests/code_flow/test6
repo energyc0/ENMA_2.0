@@ -1,10 +1,10 @@
 func main(){
-    print "start.";
+    println("start.");
 
     for(var i = 0; i < 3; i++){
-        print i;
+        println(i);
         continue;
-        print "bad";
+        println("bad");
     }
 
     var a = 0;
@@ -13,16 +13,16 @@ func main(){
         for(var i = 0; i < 5; i++){
             for(var j = 0; j < 10; j++){
                 continue;
-                print "bad";
+                println("bad");
             }
             continue;
-            print "bad";
+            println("bad");
         }
-        print a--;
+        println(a--);
         continue;
-        print "bad";
+        println("bad");
     }
 
 
-    print "end.";
+    println("end.");
 }

@@ -16,7 +16,6 @@ static struct hash_table stringtable;
 void symtable_init(){
     keywords = tr_alloc();
     tr_init(keywords, 0, 0);
-    tr_add(keywords, "print", T_PRINT);
     tr_add(keywords,"false", T_FALSE);
     tr_add(keywords,"true", T_TRUE);
     tr_add(keywords, "and", T_AND);
@@ -37,6 +36,8 @@ void symtable_init(){
     table_init(&stringtable);
 
     natfunc_set("clock", native_clock);
+    natfunc_set("print", native_print);
+    natfunc_set("println", native_println);
 }
 
 void symtable_cleanup(){

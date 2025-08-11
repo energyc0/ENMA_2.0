@@ -1,8 +1,8 @@
 func main(){
-    print "hola!";
-    print "Hola!";
-    print "hola!" > "Hola!";
-    print "hola!" >= "Hola!";
-    print "hola!" < "Hola!";
-    print "hola!" <= "hola!";
+    println("hola!");
+    println("Hola!");
+    println("hola!" > "Hola!");
+    println("hola!" >= "Hola!");
+    println("hola!" < "Hola!");
+    println("hola!" <= "hola!");
 }
