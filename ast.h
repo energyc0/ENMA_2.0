@@ -64,7 +64,7 @@ struct ast_func_arg{
 };
 
 struct ast_func_info{
-    obj_function_t* func;
+    struct obj_func_base_t* func;
     struct ast_func_arg* args;
 };
 
@@ -76,10 +76,10 @@ ast_node* ast_mknode_boolean(bool val);
 ast_node* ast_mknode_string(obj_string_t* str);
 ast_node* ast_mknode_identifier(obj_string_t* id);
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right);
-ast_node* ast_mknode_func(struct ast_func_arg*, obj_function_t*);
+ast_node* ast_mknode_func(struct ast_func_arg*, struct obj_func_base_t*);
 
 struct ast_func_arg* ast_mknode_func_arg(ast_node* node);
-struct ast_func_info* ast_mknode_func_info(obj_function_t*, struct ast_func_arg*);
+struct ast_func_info* ast_mknode_func_info(struct obj_func_base_t*, struct ast_func_arg*);
 
 value_t ast_eval(ast_node* root);
 

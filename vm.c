@@ -33,7 +33,6 @@ static inline byte_t read_byte();
 static inline int read_constant();
 //extract value from data chunk
 static inline union _inner_value_t extract_value(int offset);
-static inline int get_code_line();
 static value_t get_variable_value(obj_id_t* id);
 static void set_variable_value(obj_id_t* id, value_t value);
 
@@ -45,7 +44,7 @@ static void epilogue();
         value_t b = stack_pop(); \
         value_t a = stack_pop(); \
         if(!IS_NUMBER(a) || !IS_NUMBER(b)) \
-            interpret_error_printf(get_code_line(), "Incompatible type for operation. All operands must be numbers!\n");\
+            interpret_error_printf(get_vm_codeline(), "Incompatible type for operation. All operands must be numbers!\n");\
         stack_push(return_type(AS_NUMBER(a) op AS_NUMBER(b))); \
     } while(0)
 
@@ -53,7 +52,7 @@ static void epilogue();
         value_t b = stack_pop(); \
         value_t a = stack_pop(); \
         if(!IS_BOOLEAN(a) || !IS_BOOLEAN(b)) \
-            interpret_error_printf(get_code_line(), "Incompatible type for operation. All operands must be booleans!\n");\
+            interpret_error_printf(get_vm_codeline(), "Incompatible type for operation. All operands must be booleans!\n");\
         stack_push(VALUE_BOOLEAN(AS_BOOLEAN(a) op AS_BOOLEAN(b))); \
     } while(0)
 
@@ -96,7 +95,7 @@ static vm_execute_result vm_execute(struct bytecode_chunk* code){
         user_error_printf("Failed to find '%s' entry function\n", entry);
     if(AS_OBJFUNCTION(func)->entry_offset < 0)
         user_error_printf("Function '%s' is declared but not defined\n", entry);
-    if(AS_OBJFUNCTION(func)->args_count != 0)
+    if(AS_OBJFUNCTION(func)->base.argc != 0)
         user_error_printf("Function '%s' must not have any arguments\n", entry);
     vm.ip = &vm.code->_code.data[AS_OBJFUNCTION(func)->entry_offset];
 
@@ -183,7 +182,7 @@ static vm_execute_result interpret(){
                 int idx = extract_value(read_constant()).number;
                 value_t val = stack_pop();
                 if(!is_value_same_type(val, vm.bp[idx]))
-                    interpret_error_printf(get_code_line(), "Incorrect assignment type\n");
+                    interpret_error_printf(get_vm_codeline(), "Incorrect assignment type\n");
                 vm.bp[idx] = val;
                 stack_push(vm.bp[idx]);
                 break;
@@ -196,7 +195,7 @@ static vm_execute_result interpret(){
                 }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     stack_push(VALUE_OBJ(objstring_conc(a,b)));
                 }else{
-                    interpret_error_printf(get_code_line(), "Incompatible types for operation.\n");\
+                    interpret_error_printf(get_vm_codeline(), "Incompatible types for operation.\n");\
                 }
             }
                 break;
@@ -231,7 +230,7 @@ static vm_execute_result interpret(){
                 }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     stack_push(VALUE_BOOLEAN(AS_OBJSTRING(a) == AS_OBJSTRING(b)));
                 }else{
-                    interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
+                    interpret_error_printf(get_vm_codeline(), "Incompatible types for operation!\n");
                 }
                 break;
             }
@@ -245,7 +244,7 @@ static vm_execute_result interpret(){
                 }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     stack_push(VALUE_BOOLEAN(strcmp(AS_OBJSTRING(a)->str, AS_OBJSTRING(b)->str) > 0));
                 }else{
-                    interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
+                    interpret_error_printf(get_vm_codeline(), "Incompatible types for operation!\n");
                 }
                 break;
             }
@@ -259,7 +258,7 @@ static vm_execute_result interpret(){
                 }else if(IS_OBJSTRING(a) && IS_OBJSTRING(b)){
                     stack_push(VALUE_BOOLEAN(strcmp(AS_OBJSTRING(a)->str, AS_OBJSTRING(b)->str) < 0));
                 }else{
-                    interpret_error_printf(get_code_line(), "Incompatible types for operation!\n");
+                    interpret_error_printf(get_vm_codeline(), "Incompatible types for operation!\n");
                 }
                 break;
             }
@@ -275,7 +274,7 @@ static vm_execute_result interpret(){
                         default: fatal_printf("Undefined obj_type in interpret()!\n");
                     }
                 }else if (IS_NULL(val)){
-                    interpret_error_printf(get_code_line(), "Cannot print this expression!\n");
+                    interpret_error_printf(get_vm_codeline(), "Cannot print this expression!\n");
                 }else{
                     printf("print: Not implemented instruction :(\n");
                 }
@@ -289,7 +288,7 @@ static vm_execute_result interpret(){
                 val = stack_pop();
                 int jump = read_constant();
                 if(!IS_BOOLEAN(val))
-                    interpret_error_printf(get_code_line(), "Expected logical expression\n");
+                    interpret_error_printf(get_vm_codeline(), "Expected logical expression\n");
                 if(!AS_BOOLEAN(val))
                     vm.ip += jump;
                 break;
@@ -298,9 +297,9 @@ static vm_execute_result interpret(){
             #define EXTRACT_GLOBAL(id, val) do{ \
                 id = (obj_id_t*)extract_value(read_constant()).obj; \
                 if(!symtable_get(id, &val)) \
-                    interpret_error_printf(get_code_line(), "Undefined identifier '%s'\n", id->str); \
+                    interpret_error_printf(get_vm_codeline(), "Undefined identifier '%s'\n", id->str); \
                 if(!IS_NUMBER(val)) \
-                    interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n"); \
+                    interpret_error_printf(get_vm_codeline(), "Inapropriate value type for increment/decrement\n"); \
             }while(0)
             
             #define PREF_OP_GLOBAL(op) do{\
@@ -324,7 +323,7 @@ static vm_execute_result interpret(){
             #define POST_OP_LOCAL(op) do{\
                 int idx = extract_value(read_constant()).number;\
                 if(!IS_NUMBER(vm.bp[idx]))\
-                    interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n");\
+                    interpret_error_printf(get_vm_codeline(), "Inapropriate value type for increment/decrement\n");\
                 stack_push(vm.bp[idx]);\
                 op AS_NUMBER(vm.bp[idx]);\
             }while(0)
@@ -332,7 +331,7 @@ static vm_execute_result interpret(){
             #define PREF_OP_LOCAL(op) do{\
                 int idx = extract_value(read_constant()).number;\
                 if(!IS_NUMBER(vm.bp[idx]))\
-                    interpret_error_printf(get_code_line(), "Inapropriate value type for increment/decrement\n");\
+                    interpret_error_printf(get_vm_codeline(), "Inapropriate value type for increment/decrement\n");\
                 op AS_NUMBER(vm.bp[idx]);\
                 stack_push(vm.bp[idx]);\
             }while(0)
@@ -376,12 +375,18 @@ static vm_execute_result interpret(){
             #undef POST_OP_GLOBAL
             #undef POST_OP_LOCAL
             case OP_CALL:{
-                obj_function_t* func = (obj_function_t*)extract_value(read_constant()).obj;
-                if(func->entry_offset < 0)
-                    interpret_error_printf(get_code_line(), "Function '%s' is declared but not defined\n", func->name->str);
+                obj_function_t* p = (obj_function_t*)extract_value(read_constant()).obj;
+                if(p->entry_offset < 0)
+                    interpret_error_printf(get_vm_codeline(), "Function '%s' is declared but not defined\n", p->base.name->str);
                 stack_push(VALUE_NUMBER(vm.ip - vm.code->_code.data));
-                vm.ip = &vm.code->_code.data[func->entry_offset];
+                vm.ip = &vm.code->_code.data[p->entry_offset];
                 preamble();
+                break;
+            }
+            case OP_NATIVE_CALL:{
+                int argc = AS_NUMBER(stack_pop());
+                obj_natfunction_t* p = (obj_natfunction_t*)extract_value(read_constant()).obj;
+                stack_push(p->impl(argc, vm.sp - argc));
                 break;
             }
             default: 
@@ -429,12 +434,11 @@ static inline value_t stack_pop(){
     fatal_printf("Stack smashed!\n");
 }
 
-static inline int get_code_line(){
+int get_vm_codeline(){
     //ip is always incremented
     //so it looks at the next instruction so we need -1
     return ((int*)vm.code->_line_data.data)[vm.ip - vm.code->_code.data - 1];
 }
-
 
 static value_t get_variable_value(obj_id_t* id){
     int idx = resolve_local(id);
@@ -442,7 +446,7 @@ static value_t get_variable_value(obj_id_t* id){
         return vm.bp[idx];
     value_t val;
     if(!symtable_get(id, &val) || val.type == VT_NULL)
-        interpret_error_printf(get_code_line(), "Undefined identifier %s\n", id->str);
+        interpret_error_printf(get_vm_codeline(), "Undefined identifier %s\n", id->str);
     return val;
 }
 
@@ -450,14 +454,14 @@ static void set_variable_value(obj_id_t* id, value_t value){
     int idx = resolve_local(id);
     if(idx != -1){
         if(!is_value_same_type(value, vm.bp[idx]))
-            interpret_error_printf(get_code_line(), "Incorrect assignment type for '%s'\n", id->str);
+            interpret_error_printf(get_vm_codeline(), "Incorrect assignment type for '%s'\n", id->str);
         vm.bp[idx] = value;
     }else {
         value_t var_val;
         if(!symtable_get(id, &var_val) || var_val.type == VT_NULL)  
-            interpret_error_printf(get_code_line(), "Undefined identifier %s\n", id->str);
+            interpret_error_printf(get_vm_codeline(), "Undefined identifier %s\n", id->str);
         if(!is_value_same_type(var_val, value))
-            interpret_error_printf(get_code_line(), "Incorrect assignment type for '%s'\n", id->str);
+            interpret_error_printf(get_vm_codeline(), "Incorrect assignment type for '%s'\n", id->str);
         symtable_set(id, value);
     }
 }

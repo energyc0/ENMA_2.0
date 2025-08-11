@@ -1,4 +1,4 @@
-#include "data_structs.h"
+#include "trie.h"
 #include "utils.h"
 #include <stdlib.h>
 
@@ -42,7 +42,7 @@ int tr_add(struct trie_node* root, char* s, int data){
     return 1;
 }
 
-struct trie_node* tr_find(struct trie_node* root, char* s){
+struct trie_node* tr_find(struct trie_node* root, const char* s){
     for(;*s != '\0';s++){
         int idx = tr_hash_char(*s);
 #ifdef DEBUG

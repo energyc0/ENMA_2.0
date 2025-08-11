@@ -23,4 +23,5 @@ typedef enum{
 
 void vm_interpret();
 
+int get_vm_codeline();
 #endif

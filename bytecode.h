@@ -20,7 +20,8 @@ typedef enum{
     //read next 4 bytes and get obj_function_t* instance
     //place return ip on the stack
     OP_CALL,
-
+    OP_NATIVE_CALL,
+    
     OP_JUMP,
     OP_FJUMP, //jump if a top value on the stack if false
 

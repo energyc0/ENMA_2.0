@@ -1,11 +1,13 @@
 #include "symtable.h"
-#include "data_structs.h"
+#include "trie.h"
 #include "hash_table.h"
 #include "lang_types.h"
 #include "token.h"
+#include "native_functions.h"
 #include <string.h>
 #include <stdio.h>
 
+static void natfunc_set(const char* name, native_function func);
 
 static struct trie_node* keywords = NULL;
 static struct hash_table symtable;
@@ -33,6 +35,8 @@ void symtable_init(){
 
     table_init(&symtable);
     table_init(&stringtable);
+
+    natfunc_set("clock", native_clock);
 }
 
 void symtable_cleanup(){
@@ -43,10 +47,11 @@ void symtable_cleanup(){
 
 token_type symtable_procword(char* str){
     struct trie_node* ptr;
-    if((ptr = tr_find(keywords, str)) == NULL)
-        return T_IDENT;
-    else 
+    if((ptr = tr_find(keywords, str)) != NULL){
         return ptr->data;
+    }else{
+        return T_IDENT;
+    }
 }
 
 obj_id_t* symtable_findstr(const char* s, size_t sz, int32_t hash){
@@ -65,6 +70,12 @@ bool stringtable_set(obj_string_t* str){
 
 bool symtable_get(const obj_id_t* id, value_t* value){
     return table_check(&symtable, id, value);
+}
+
+static void natfunc_set(const char* name, native_function func){
+    size_t len = strlen(name);
+    obj_id_t* id = mk_objid(name, len, hash_string(name, len));
+    symtable_set(id, VALUE_OBJ(mk_objnatfunc(id, func)));
 }
 
 #ifdef DEBUG

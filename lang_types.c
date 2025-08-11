@@ -31,12 +31,22 @@ obj_id_t* mk_objid(const char* s, size_t len, int32_t hash){
 
 obj_function_t* mk_objfunc(obj_string_t* name){
     obj_function_t* ptr = emalloc(sizeof(obj_function_t));
-    ptr->name = name;
-    ptr->args_count = 0;
+    ptr->base.name = name;
+    ptr->base.argc = 0;
     ptr->entry_offset = 0;
-    ptr->obj.type = OBJ_FUNCTION;
-    ptr->obj.next = NULL;
+    ptr->base.obj.type = OBJ_FUNCTION;
+    ptr->base.obj.next = NULL;
     gc_add((obj_t*)ptr);
+    return ptr;
+}
+
+obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl){
+    obj_natfunction_t* ptr = emalloc(sizeof(obj_natfunction_t));
+    ptr->impl = impl;
+    ptr->base.argc = 0;
+    ptr->base.name = name;
+    ptr->base.obj.next = NULL;
+    ptr->base.obj.type = OBJ_NATFUNCTION;
     return ptr;
 }
 
@@ -61,7 +71,7 @@ void obj_free(obj_t* ptr){
         case OBJ_STRING: case OBJ_IDENTIFIER:
             free(((obj_string_t*)ptr)->str);
             break;
-        case OBJ_FUNCTION:
+        case OBJ_FUNCTION: case OBJ_NATFUNCTION:
             break;
         default:
             fatal_printf("Undefined obj_t in obj_free()\n");
@@ -97,7 +107,8 @@ const char* get_obj_name(obj_type type){
     static const char* names[] = {
         [OBJ_STRING] = "string",
         [OBJ_IDENTIFIER] = "identifier",
-        [OBJ_FUNCTION] = "function"
+        [OBJ_FUNCTION] = "function",
+        [OBJ_NATFUNCTION] = "native function"
     };
     return names[type];
 }
@@ -122,8 +133,15 @@ char* examine_value(value_t val){
                 }
                 case OBJ_FUNCTION:{
                     sprintf(buf, "%p %.*s(%d arguments) [0x%X]",
-                         AS_OBJFUNCTION(val), (int)(sizeof(buf) - 64), AS_OBJFUNCTION(val)->name->str,AS_OBJFUNCTION(val)->args_count, AS_OBJFUNCTION(val)->entry_offset);
+                         AS_OBJFUNCTION(val), (int)(sizeof(buf) - 64),
+                          AS_OBJFUNCTION(val)->base.name->str, AS_OBJFUNCTION(val)->base.argc, AS_OBJFUNCTION(val)->entry_offset);
                          return buf;
+                }
+                case OBJ_NATFUNCTION:{
+                    sprintf(buf, "%p %.*s(%d arguments) [native]",
+                         AS_OBJNATFUNCTION(val), (int)(sizeof(buf) - 64),
+                          AS_OBJNATFUNCTION(val)->base.name->str, AS_OBJNATFUNCTION(val)->base.argc);
+                    return buf;
                 }
                 default: 
                     fatal_printf("Undefined object type in examine_value()\n");

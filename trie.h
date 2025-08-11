@@ -1,6 +1,5 @@
-#ifndef DATA_STRUCTS_H
-#define DATA_STRUCTS_H
-
+#ifndef TRIE_H
+#define TRIE_H
 #define TRIE_MAX_NODES_SIZE (26 + 26 + 10 + 1)
 
 //for keywords and identifiers
@@ -21,7 +20,7 @@ int tr_add(struct trie_node* root, char* s, int data);
 
 //return final node if found 
 //return NULL otherwise
-struct trie_node* tr_find(struct trie_node* root, char* s);
+struct trie_node* tr_find(struct trie_node* root, const char* s);
 
 #endif
 

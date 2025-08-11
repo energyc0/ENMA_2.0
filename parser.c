@@ -9,6 +9,10 @@
 #include "token.h"
 #include "utils.h"
 
+/*
+TODO: optimisation ast_eval()
+*/
+
 static const int precedence[] = {
     [T_ADD] = 8,
     [T_SUB] = 8,
@@ -69,7 +73,8 @@ static void parse_for(struct bytecode_chunk* chunk);
 static void parse_return(struct bytecode_chunk* chunk);
 
 static void parse_func(struct bytecode_chunk* chunk);
-static int parse_func_args();//retunn count of arguments
+static int count_func_args();
+static struct ast_func_arg* parse_func_args();
 static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* func);
 static void parse_func_declaration(obj_function_t* func);
 
@@ -416,7 +421,7 @@ static void parse_func(struct bytecode_chunk* chunk){
 
     next_expect(T_LPAR, "Expected '('\n");
     begin_scope();
-    p->args_count = parse_func_args();
+    p->base.argc = count_func_args();
     cur_expect(T_RPAR, "Expected ')'\n");
 
     scanner_next_token(&cur_token);
@@ -429,7 +434,7 @@ static void parse_func(struct bytecode_chunk* chunk){
 
 }
 
-static int parse_func_args(){
+static int count_func_args(){
     int c = 0;
     scanner_next_token(&cur_token);
     if(!is_match(T_RPAR)){
@@ -447,19 +452,40 @@ static int parse_func_args(){
     return c;
 }
 
+static struct ast_func_arg* parse_func_args(){
+    struct ast_func_arg* args = NULL;
+    if(!is_match(T_RPAR)){
+        do{
+            scanner_putback_token();
+            ast_node* arg = ast_process_expr();
+            struct ast_func_arg* temp = ast_mknode_func_arg(arg);
+            temp->next = args;
+            args = temp;
+            if(!is_match(T_COMMA))
+                break;
+            scanner_next_token(&cur_token);
+        }while(1);
+    }
+    return args;
+}
+
 static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* func){
     value_t val;
-    if(symtable_get(func->name, &val) && !IS_NULL(val)){
-        if(!IS_OBJFUNCTION(val))
-            compile_error_printf("'%s' has already defined\n", func->name->str);
+    if(symtable_get(func->base.name, &val) && !IS_NULL(val)){
+        if(!IS_OBJFUNCTION(val)){
+            if(IS_OBJNATFUNCTION(val))
+                compile_error_printf("'%s' is a native function\n", func->base.name->str);
+            else
+                compile_error_printf("'%s' has already defined\n", func->base.name->str);
+        }
         if(AS_OBJFUNCTION(val)->entry_offset != -1)
-            compile_error_printf("'%s' function redefinition\n", func->name->str);
-        if(AS_OBJFUNCTION(val)->args_count != func->args_count)
-            compile_error_printf("Conflicting with a declaration of '%s' function\n", func->name->str);
+            compile_error_printf("'%s' function redefinition\n", func->base.name->str);
+        if(AS_OBJFUNCTION(val)->base.argc != func->base.argc)
+            compile_error_printf("Conflicting with a declaration of '%s' function\n", func->base.name->str);
         func = AS_OBJFUNCTION(val);
     }
     func->entry_offset = bcchunk_get_codesize(chunk);
-    symtable_set(func->name, VALUE_OBJ(func));
+    symtable_set(func->base.name, VALUE_OBJ(func));
     read_block(chunk);
     bcchunk_write_simple_op(chunk, OP_NULL, line_counter);
     bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
@@ -469,12 +495,15 @@ static void parse_func_declaration(obj_function_t* func){
     cur_expect(T_SEMI, "Expected ';' or '{'\n");
     func->entry_offset = -1;
     value_t val;
-    if(symtable_get(func->name, &val) && !IS_NULL(val)){
-        if(!IS_OBJFUNCTION(val))
-            compile_error_printf("'%s' has already defined\n", func->name->str);
-        compile_error_printf("'%s' function redefinition\n", func->name->str);
+    if(symtable_get(func->base.name, &val) && !IS_NULL(val)){
+        if(IS_OBJNATFUNCTION(val))
+            compile_error_printf("'%s' is a native function\n");
+        else if(!IS_OBJFUNCTION(val))
+            compile_error_printf("'%s' has already defined\n", func->base.name->str);
+        else
+            compile_error_printf("'%s' function redefinition\n", func->base.name->str);
     }
-    symtable_set(func->name, VALUE_OBJ(func));
+    symtable_set(func->base.name, VALUE_OBJ(func));
 
 }
 
@@ -483,28 +512,14 @@ static ast_node* ast_call(obj_id_t* id){
     value_t instance;
     if(!symtable_get(id, &instance))
         compile_error_printf("Undefined identifier '%s'\n", id->str);
-    if(!IS_OBJFUNCTION(instance))
-        compile_error_printf("'%s' is not a function\n", id->str);
 
     struct ast_func_arg* args = NULL;
-    int argc = 0;
-    if(!is_match(T_RPAR)){
-        do{
-            scanner_putback_token();
-            ast_node* arg = ast_process_expr();
-            struct ast_func_arg* temp = ast_mknode_func_arg(arg);
-            temp->next =args;
-            args = temp;
-            argc++;
-            if(!is_match(T_COMMA))
-                break;
-            scanner_next_token(&cur_token);
-        }while(1);
-    }
+    args = parse_func_args();
     cur_expect(T_RPAR,"Expected ')'\n");
-    if(argc != AS_OBJFUNCTION(instance)->args_count)
-        compile_error_printf("Expected more arguments in function call\n");
-    return ast_mknode_func(args, AS_OBJFUNCTION(instance));
+
+    if(!IS_OBJFUNC(instance))
+        compile_error_printf("'%s' is not a function\n", id->str);
+    return ast_mknode_func(args, AS_OBJFUNCBASE(instance));
 }
 
 static void parse_return(struct bytecode_chunk* chunk){

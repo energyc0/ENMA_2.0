@@ -119,6 +119,7 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_JUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_FJUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_CALL: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_NATIVE_CALL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_PREFINCR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_PREFINCR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_PREFDECR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
@@ -181,8 +182,15 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             break;
         }
         case OP_CALL:{
-            obj_function_t* ptr = (obj_function_t*)extracted_value->obj;
-            printf(" %p %s(args count: %d) with offset %d[0x%X]\n", ptr, ptr->name->str, ptr->args_count, ptr->entry_offset,ptr->entry_offset);
+            obj_function_t* p = (obj_function_t*)extracted_value->obj;
+            printf(" %p %s(args count: %d) with offset %d[0x%X]\n",
+            p, p->base.name->str, p->base.argc, p->entry_offset, p->entry_offset);
+            break;
+        }
+        case OP_NATIVE_CALL:{
+            obj_natfunction_t* p = (obj_natfunction_t*)extracted_value->obj;
+            printf(" %p %s(args count: %d) [native function]\n",
+            p, p->base.name->str, p->base.argc);
             break;
         }
         default:
@@ -331,7 +339,23 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
                 p = p->next;
                 argc++;
             }
-            bcchunk_write_simple_op(chunk, OP_CALL, line);
+            op_t op;
+            switch(info->func->obj.type){
+                case OBJ_FUNCTION:
+                    if(argc != info->func->argc)
+                        compile_error_printf("Expected %d arguments in '%s' function call, found %d\n",
+                        info->func->argc, info->func->name->str, argc);
+                    op = OP_CALL;
+                    break;
+                case OBJ_NATFUNCTION:
+                    bcchunk_write_code(chunk, OP_NUMBER, line);
+                    bcchunk_write_value(chunk, VALUE_NUMBER(argc), line);
+                    op = OP_NATIVE_CALL;
+                    break;
+                default:
+                    compile_error_printf("Undefined type of function processing AST_CALL in parse_ast_bin_expr()");
+            }
+            bcchunk_write_simple_op(chunk, op, line);
             bcchunk_write_value(chunk, VALUE_OBJ(info->func), line);
             if(argc > 0){
                 bcchunk_write_simple_op(chunk,OP_CLARGS, line);
@@ -374,6 +398,7 @@ const char* op_to_string(op_t op){
         [OP_FJUMP] = "OP_FJUMP",
         [OP_JUMP] = "OP_JUMP",
         [OP_CALL] = "OP_CALL",
+        [OP_NATIVE_CALL] = "OP_NATIVE_CALL",
         [OP_PREFINCR_GLOBAL] = "OP_PREFINCR_GLOBAL",
         [OP_PREFINCR_LOCAL] = "OP_PREFINCR_LOCAL",
         [OP_PREFDECR_GLOBAL] = "OP_PREFDECR_GLOBAL",

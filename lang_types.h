@@ -6,35 +6,7 @@
 #include <stdlib.h>
 
 typedef uint8_t byte_t;
-
-typedef enum obj_type{
-    OBJ_STRING,
-    OBJ_IDENTIFIER,
-    OBJ_FUNCTION
-}obj_type;
-
-typedef struct obj_t{
-    obj_type type;
-    struct obj_t* next; // for garbage collector
-}obj_t;
-
-struct obj_string_t{
-    obj_t obj;
-    char* str;
-    size_t len;
-    int32_t hash;
-};
-
-typedef struct obj_string_t obj_string_t;
-typedef struct obj_string_t obj_id_t;
-
-typedef struct obj_function_t{
-    obj_t obj;
-    int args_count;
-    int entry_offset;
-    obj_string_t* name;
-}obj_function_t;
-
+typedef struct obj_t obj_t;
 
 typedef enum{
     VT_NULL,
@@ -54,6 +26,46 @@ typedef struct{
     union _inner_value_t as;
 }value_t;
 
+typedef enum obj_type{
+    OBJ_STRING,
+    OBJ_IDENTIFIER,
+    OBJ_FUNCTION,
+    OBJ_NATFUNCTION //native function
+}obj_type;
+
+typedef struct obj_t{
+    obj_type type;
+    struct obj_t* next; // for garbage collector
+}obj_t;
+
+typedef struct obj_string_t{
+    obj_t obj;
+    char* str;
+    size_t len;
+    int32_t hash;
+}obj_string_t;
+
+typedef struct obj_string_t obj_id_t;
+
+typedef struct obj_func_base_t{
+    obj_t obj;
+    int argc;
+    obj_string_t* name;
+}obj_func_base_t;
+
+typedef struct obj_function_t{
+    obj_func_base_t base;
+    int entry_offset;
+}obj_function_t;
+
+//argc and argv
+typedef value_t (*native_function)(int, value_t*);
+
+typedef struct obj_natfunction_t{
+    obj_func_base_t base;
+    native_function impl;
+}obj_natfunction_t;
+
 #define VALUE_NULL ((value_t){.type = VT_NULL})
 
 #define INNERVALUE_AS_NUMBER(value) ((union _inner_value_t){.number = (value)})
@@ -69,7 +81,9 @@ typedef struct{
 #define AS_OBJ(value) ((value).as.obj)
 #define AS_OBJSTRING(value) ((obj_string_t*)AS_OBJ(value))
 #define AS_OBJIDENTIFIER(value) ((obj_id_t*)AS_OBJ(value))
+#define AS_OBJFUNCBASE(value) ((obj_func_base_t*)AS_OBJ(value))
 #define AS_OBJFUNCTION(value) ((obj_function_t*)AS_OBJ(value))
+#define AS_OBJNATFUNCTION(value) ((obj_natfunction_t*)AS_OBJ(value))
 
 #define IS_BOOLEAN(value) ((value).type == VT_BOOL)
 #define IS_NUMBER(value) ((value).type == VT_NUMBER)
@@ -78,13 +92,16 @@ typedef struct{
 
 #define IS_OBJSTRING(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_STRING)
 #define IS_OBJIDENTIFIER(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_IDENTIFIER)
+#define IS_OBJFUNC(value) (IS_OBJ(value) && (AS_OBJ(value)->type == OBJ_FUNCTION || AS_OBJ(value)->type == OBJ_NATFUNCTION))
 #define IS_OBJFUNCTION(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_FUNCTION)
+#define IS_OBJNATFUNCTION(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_NATFUNCTION)
 
 //frees obj_t internals and the pointer
 void obj_free(obj_t* ptr);
 obj_string_t* mk_objstring(const char* s, size_t len, int32_t hash);
 obj_id_t* mk_objid(const char* s, size_t len, int32_t hash);
 obj_function_t* mk_objfunc(obj_string_t* name);
+obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl);
 
 obj_string_t* objstring_conc(value_t a, value_t b);
 

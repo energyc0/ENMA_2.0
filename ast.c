@@ -153,14 +153,14 @@ static void ast_debug_node(const ast_node* node){
     }
 }
 
-struct ast_func_info* ast_mknode_func_info(obj_function_t* func, struct ast_func_arg* args){
+struct ast_func_info* ast_mknode_func_info(struct obj_func_base_t* func, struct ast_func_arg* args){
     struct ast_func_info* ptr = emalloc(sizeof(struct ast_func_info));
     ptr->args = args;
     ptr->func = func;
     return ptr;
 }
 
-ast_node* ast_mknode_func(struct ast_func_arg* args, obj_function_t* func){
+ast_node* ast_mknode_func(struct ast_func_arg* args, struct obj_func_base_t* func){
     return ast_mknode(AST_CALL, AST_DATA_PTR(ast_mknode_func_info(func, args)));
 }
 

@@ -1,0 +1,8 @@
+func clock(){
+	
+}
+
+func main(){
+	var a = clock();
+	print "bad";
+}

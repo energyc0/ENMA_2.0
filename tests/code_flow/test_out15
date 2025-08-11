@@ -1,1 +1,1 @@
-Syntax error at line 6: Expected more arguments in function call
+Syntax error at line 6: Expected 3 arguments in 'foo' function call, found 2
