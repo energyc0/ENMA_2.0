@@ -1,0 +1,11 @@
+func foo(k){
+	if(k > 3){
+		return;
+	}
+	foo(k + 1);
+	println("foo() is ", k);
+}
+
+func main(){
+	foo(0);
+}

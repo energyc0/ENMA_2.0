@@ -113,7 +113,6 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_SET_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_GET_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_SET_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_PRINT: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POP: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POPN: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_JUMP: return constant_instruction_debug(op_to_string(op), chunk, offset);
@@ -392,7 +391,6 @@ const char* op_to_string(op_t op){
         [OP_SET_GLOBAL] = "OP_SET_GLOBAL",
         [OP_GET_LOCAL] = "OP_GET_LOCAL",
         [OP_SET_LOCAL] = "OP_SET_LOCAL",
-        [OP_PRINT] = "OP_PRINT",
         [OP_POP] = "OP_POP",
         [OP_POPN] = "OP_POPN",    
         [OP_FJUMP] = "OP_FJUMP",

@@ -35,6 +35,7 @@ typedef enum obj_type{
 
 typedef struct obj_t{
     obj_type type;
+    bool is_marked;
     struct obj_t* next; // for garbage collector
 }obj_t;
 

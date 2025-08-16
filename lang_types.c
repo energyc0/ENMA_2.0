@@ -16,6 +16,7 @@ static inline obj_string_t* init_objstr(const char* s, size_t len, int32_t hash,
     ptr->str = emalloc(len + 1);
     strncpy(ptr->str, s, len);
     ptr->str[len]='\0';
+
     //add it to the garbage collector
     gc_add((obj_t*)ptr);
     return ptr;

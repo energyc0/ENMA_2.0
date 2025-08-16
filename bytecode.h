@@ -30,8 +30,6 @@ typedef enum{
     
     OP_SET_LOCAL,       //assign value in the stack
     OP_GET_LOCAL,       //get value from the stack
-    //get value from the stack and print it
-    OP_PRINT,
     //read (int) index and read value from _data section
     OP_NUMBER,
     OP_BOOLEAN,

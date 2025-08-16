@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "garbage_collector.h"
 #include "scanner.h"
 #include <stdio.h>
 #include <stdarg.h>
@@ -46,14 +47,11 @@ __attribute__((noreturn)) void user_error_printf(const char* fmt, ...){
     exit(1);
 }
 
-//__attribute__((noreturn)) void unexpected_token(){
-//    compile_error_printf("Unexpected token: '%s'\n", token_to_string(cur_token.type));
-//}
-
 void* emalloc(size_t count){
     void* ptr = malloc(count);
     if(ptr == NULL)
         fatal_printf("malloc() returned NULL!\n");
+    
     return ptr;
 }
 void* erealloc(void* ptr, size_t count){
@@ -62,5 +60,6 @@ void* erealloc(void* ptr, size_t count){
         free(ptr);
         fatal_printf("realloc() returned NULL!\n");
     }
+
     return temp;
 }

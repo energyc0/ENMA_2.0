@@ -285,7 +285,6 @@ static void parse_if(struct bytecode_chunk* chunk){
     cur_expect(T_RPAR, "Expected ')'\n");
 
     bcchunk_write_simple_op(chunk, OP_FJUMP, line_counter);
-
     int offset;
     offset = bcchunk_get_codesize(chunk); 
     bcchunk_write_constant(chunk, -(int)sizeof(int), line_counter); 

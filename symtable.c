@@ -10,7 +10,7 @@
 static void natfunc_set(const char* name, native_function func);
 
 static struct trie_node* keywords = NULL;
-static struct hash_table symtable;
+struct hash_table symtable;
 static struct hash_table stringtable;
 
 void symtable_init(){

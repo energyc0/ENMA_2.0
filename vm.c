@@ -8,8 +8,9 @@
 #include "parser.h"
 #include <stdio.h>
 #include <string.h>
+#include "garbage_collector.h"
 
-static struct virtual_machine vm;
+struct virtual_machine vm;
 
 #define VM_STACK_START (vm.stack)
 #define VM_STACK_END (VM_STACK_START + sizeof(vm.stack) / sizeof(vm.stack[0]))
@@ -259,24 +260,6 @@ static vm_execute_result interpret(){
                     stack_push(VALUE_BOOLEAN(strcmp(AS_OBJSTRING(a)->str, AS_OBJSTRING(b)->str) < 0));
                 }else{
                     interpret_error_printf(get_vm_codeline(), "Incompatible types for operation!\n");
-                }
-                break;
-            }
-            case OP_PRINT:{
-                val = stack_pop();
-                if(IS_NUMBER(val)){
-                    printf("%d\n", AS_NUMBER(val));
-                }else if(IS_BOOLEAN(val)){
-                    printf("%s\n", AS_BOOLEAN(val) ? "true" : "false");
-                }else if(IS_OBJ(val)){
-                    switch (AS_OBJ(val)->type) {
-                        case OBJ_STRING: printf("%s\n", AS_OBJSTRING(val)->str); break;
-                        default: fatal_printf("Undefined obj_type in interpret()!\n");
-                    }
-                }else if (IS_NULL(val)){
-                    interpret_error_printf(get_vm_codeline(), "Cannot print this expression!\n");
-                }else{
-                    printf("print: Not implemented instruction :(\n");
                 }
                 break;
             }

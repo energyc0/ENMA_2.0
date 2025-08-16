@@ -6,7 +6,7 @@ CC:=gcc
 CFLAGS:=-Wall -Wextra -O0
 
 ifeq ($(MAKECMDGOALS), debug)
-	CFLAGS += -g -DDEBUG
+	CFLAGS += -g -DDEBUG -DDEBUG_GC -DDEBUG_STRESS_GC
 	INTERPRETER := $(INTERPRETER).dbg
 	EXE_DIR := $(BUILD_DIR)/debug
 endif
