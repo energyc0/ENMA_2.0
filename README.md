@@ -9,6 +9,9 @@ Program consists of declaration which can be either a function declaration or a 
 
 Program must contain **main** function that is an entry function.
 
+## OOP
+Every class has its constructors, methods and fields called **properties**. You can also create constructors.
+
 ## Program execution
 Firstly, it translates user-written code into bytecode for virtual machine. Then my virtual machine executes the code. More info about bytecode you can find in **bytecode.md**.
 

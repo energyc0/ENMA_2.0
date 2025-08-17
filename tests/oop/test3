@@ -1,0 +1,22 @@
+class Foo{
+	field next;
+}
+class Foo2{
+	field xd;
+}
+
+func print_foo2(foo2){
+	println(foo2.xd);
+}
+
+
+func print_foo(foo){
+	print_foo2(foo.next);
+}
+
+func main(){
+	var a = Foo();
+	a.next = Foo2();
+	a.next.xd = "good";
+	println(a.next.xd);
+}

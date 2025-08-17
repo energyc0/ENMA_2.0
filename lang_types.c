@@ -59,6 +59,7 @@ obj_class_t* mk_objclass(obj_id_t* name){
     obj_class_t* ptr = emalloc(sizeof(obj_class_t));
     ptr->name = name;
     ptr->fields = mk_table();
+    table_init(ptr->fields);
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;
     ptr->obj.type = OBJ_CLASS;
@@ -69,6 +70,8 @@ obj_instance_t* mk_objinstance(struct ast_class_info* info){
     obj_instance_t* ptr = emalloc(sizeof(obj_instance_t));
     ptr->impl = info->cl;
     ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->fields->count);
+    for(int i = 0; i < ptr->impl->fields->count; i++)
+        ptr->data[i] = VALUE_NULL;
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;
     ptr->obj.type = OBJ_INSTANCE;

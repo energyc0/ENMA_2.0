@@ -8,6 +8,7 @@
 #include "symtable.h"
 #include "token.h"
 #include "utils.h"
+#include "hash_table.h"
 
 /*
 TODO: optimisation ast_eval()
@@ -61,6 +62,7 @@ static inline int get_op_precedence(token_type op);
 static ast_node* ast_bin_expr(int prev_precedence);
 static ast_node* ast_primary();
 static ast_node* ast_call(obj_id_t* id);
+static struct ast_property* parse_ast_property(struct ast_property* instance);
 
 static inline void read_block(struct bytecode_chunk* chunk);
 
@@ -78,6 +80,8 @@ static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* 
 static void parse_func_declaration(obj_function_t* func);
 
 static void parse_class_declaration(struct bytecode_chunk* chunk);
+static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl);
+static void parse_class_field(obj_class_t* cl);
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -134,18 +138,39 @@ static ast_node* ast_primary(){
         case T_IDENT:{
             obj_id_t* id = cur_token.data.ptr;
             scanner_next_token(&cur_token);
-            if(is_match(T_INCR))
-                return ast_mknode(AST_POSTINCR, AST_DATA_VALUE(VALUE_OBJ(id)));
-            else if(is_match(T_DECR))
-                return ast_mknode(AST_POSTDECR, AST_DATA_VALUE(VALUE_OBJ(id)));
-            else if(is_match(T_LPAR))
-                return ast_call(id);
-            scanner_putback_token();
-            return ast_mknode_identifier(id);
+            switch(cur_token.type){
+                case T_INCR: return ast_mknode(AST_POSTINCR, AST_DATA_VALUE(VALUE_OBJ(id)));
+                case T_DECR: return ast_mknode(AST_POSTDECR, AST_DATA_VALUE(VALUE_OBJ(id)));
+                case T_LPAR: return ast_call(id);
+                case T_DOT:{    
+                    struct ast_property* prop = ast_mk_property(id);
+                    prop->property = parse_ast_property(ast_mk_property(id));
+                    return ast_mknode_property(prop);
+                }
+                default:
+                    scanner_putback_token();
+                    return ast_mknode_identifier(id);
+            }
         }
         default:
             compile_error_printf("Expected expression\n");
     }
+}
+
+static struct ast_property* parse_ast_property(struct ast_property* instance){
+    next_expect(T_IDENT, "Expected property\n");
+    obj_id_t* id = cur_token.data.ptr;
+    struct ast_property* prop_inst = ast_mk_property(id);
+
+    scanner_next_token(&cur_token);
+    if(is_match(T_DOT)){
+        instance->property = prop_inst;
+        prop_inst->property = parse_ast_property(prop_inst);
+    }else{
+        scanner_putback_token();
+    }
+
+    return prop_inst;
 }
 
 static inline int get_op_precedence(token_type op){
@@ -539,8 +564,31 @@ static void parse_class_declaration(struct bytecode_chunk* chunk){
         compile_error_printf("'%s' is already defined\n", cl->name->str);
 
     next_expect(T_LBRACE, "Expected '{'\n");
-    scanner_next_token(&cur_token);
+    parse_class_inners(chunk, cl);
     cur_expect(T_RBRACE, "Expected '}'\n");
+}
+
+static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl){
+    while(1){
+        scanner_next_token(&cur_token);
+        switch(cur_token.type){
+            case T_FIELD: 
+                parse_class_field(cl);
+                break;
+            case T_EOF: case T_RBRACE:
+                return;
+            default:
+                compile_error_printf("Undefined class property\n");
+        }
+    }
+}
+
+static void parse_class_field(obj_class_t* cl){
+    next_expect(T_IDENT, "Expected identifier\n");
+
+    if(!table_set(cl->fields, cur_token.data.ptr, VALUE_NULL))
+        compile_error_printf("Field '%s' already presents in class '%s'\n", cur_token.data.ptr, cl->name->str);;
+    next_expect(T_SEMI, "Expected ';'\n");
 }
 
 #undef UPDATE_JUMP_LENGTH

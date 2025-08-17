@@ -130,6 +130,8 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_NULL: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_CLARGS: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_INSTANCE: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_GET_PROPERTY: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_SET_PROPERTY: return constant_instruction_debug(op_to_string(op), chunk, offset);
         default:
             fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
@@ -166,6 +168,10 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
         }
         case OP_INSTANCE:{
             printf(" instance of class %s\n", ((obj_instance_t*)extracted_value->obj)->impl->name->str);
+            break;
+        }
+        case OP_GET_PROPERTY: case OP_SET_PROPERTY:{
+            printf(" [%s]\n", ((obj_id_t*)extracted_value->obj)->str);
             break;
         }
         case OP_GET_GLOBAL: case OP_SET_GLOBAL:
@@ -244,6 +250,19 @@ void bcchunk_write_expression(const ast_node* root, struct bytecode_chunk* chunk
     parse_ast_bin_expr(root, chunk, line);
 }
 
+static void bcchunk_parse_property(const ast_node* node, bool to_set,struct bytecode_chunk* chunk, int line){
+    struct ast_property* p = node->data.ptr;
+    write_get_var(chunk, p->instance, line);
+    while(p->property){
+        if(to_set && p->property->property == NULL)
+            bcchunk_write_simple_op(chunk, OP_SET_PROPERTY, line);
+        else
+            bcchunk_write_simple_op(chunk, OP_GET_PROPERTY, line);
+        bcchunk_write_value(chunk, VALUE_OBJ(p->property->instance), line);
+        p = p->property;
+    }
+}
+
 static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chunk, int line){
     #define BIN_OP(op) do {\
         parse_ast_bin_expr(((struct ast_binary*)node->data.ptr)->left, chunk, line);\
@@ -296,10 +315,14 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             break;
         case AST_ASSIGN:{
             struct ast_binary* temp = ((struct ast_binary*)node->data.ptr);
-            if(temp->left->type != AST_IDENT)
-                interpret_error_printf(line, "Left operand is not assignable!\n");
             parse_ast_bin_expr(temp->right, chunk, line);
-            write_set_var(chunk, temp->left, line);
+            if(temp->left->type == AST_IDENT){
+                write_set_var(chunk, AS_OBJIDENTIFIER(temp->left->data.val), line);
+            }else if(temp->left->type == AST_PROPERTY){
+                bcchunk_parse_property(temp->left, true, chunk, line);
+            }else{
+                interpret_error_printf(line, "Left operand is not assignable!\n");
+            }
             break;
         }
         case AST_NOT:{
@@ -320,19 +343,19 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             bcchunk_write_value(chunk, node->data.val, line);
             break;
         case AST_IDENT:
-            write_get_var(chunk, node, line);
+            write_get_var(chunk, AS_OBJIDENTIFIER(node->data.val), line);
             break;
         case AST_PREFDECR:
-            write_prefdecr_var(chunk, node, line);
+            write_prefdecr_var(chunk, AS_OBJIDENTIFIER(node->data.val), line);
             break;
         case AST_PREFINCR:
-            write_prefincr_var(chunk,node,line);
+            write_prefincr_var(chunk,AS_OBJIDENTIFIER(node->data.val),line);
             break;
         case AST_POSTDECR:
-            write_postdecr_var(chunk,node,line);
+            write_postdecr_var(chunk,AS_OBJIDENTIFIER(node->data.val),line);
             break;
         case AST_POSTINCR:
-            write_postincr_var(chunk,node,line);
+            write_postincr_var(chunk,AS_OBJIDENTIFIER(node->data.val),line);
             break;
         case AST_CALL:{
             struct ast_func_info* info = node->data.ptr;
@@ -374,6 +397,10 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             bcchunk_write_value(chunk, VALUE_OBJ(instance), line);
             break;
         }
+        case AST_PROPERTY:{
+            bcchunk_parse_property(node, false, chunk, line);
+            break;
+        }
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n Node type is %d\n", node->type);
     }
@@ -403,6 +430,8 @@ const char* op_to_string(op_t op){
         [OP_SET_GLOBAL] = "OP_SET_GLOBAL",
         [OP_GET_LOCAL] = "OP_GET_LOCAL",
         [OP_SET_LOCAL] = "OP_SET_LOCAL",
+        [OP_SET_PROPERTY] = "OP_SET_PROPERTY",
+        [OP_GET_PROPERTY] = "OP_GET_PROPERTY",
         [OP_POP] = "OP_POP",
         [OP_POPN] = "OP_POPN",    
         [OP_FJUMP] = "OP_FJUMP",

@@ -11,7 +11,7 @@ Garbage collector stores pointers to obj_t and frees them periodically
 
 //stores new entity
 void gc_add(obj_t* obj);
-void gc_collect();
+//void gc_collect();
 void gc_cleanup();
 
 #ifdef DEBUG_GC

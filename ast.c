@@ -55,6 +55,15 @@ void ast_freenode(ast_node* node){
             free(ptr);
             break;
         }
+        case AST_PROPERTY:{
+            struct ast_property* ptr = node->data.ptr;
+            while(ptr){
+                struct ast_property* temp = ptr;
+                ptr=ptr->property;
+                free(temp);
+            }
+            break;
+        }
         default:
             eprintf("ast_freenode() ");
             UNDEFINED_AST_NODE_TYPE(node);
@@ -170,8 +179,18 @@ static void ast_debug_node(const ast_node* node){
             putchar(')');
             break;
         }
+        case AST_PROPERTY:{
+            struct ast_property* p = node->data.ptr;
+            while(p){
+                printf("%s", p->instance->str);
+                if(p->property)
+                    putchar('.');
+                p=p->property;
+            }
+            break;
+        }
         default:
-            printf("ast_debug_tree(): ");
+            eprintf("ast_debug_tree(): ");
             UNDEFINED_AST_NODE_TYPE(node);
     }
 }
@@ -193,6 +212,18 @@ struct ast_func_arg* ast_mknode_func_arg(ast_node* node){
     ptr->arg = node;
     return ptr;
 }
+
+struct ast_property* ast_mk_property(obj_id_t* instance){
+    struct ast_property* ptr = emalloc(sizeof(struct ast_property));
+    ptr->instance = instance;
+    ptr->property = NULL;
+    return ptr;
+}
+
+ast_node* ast_mknode_property(struct ast_property* p){
+    return ast_mknode(AST_PROPERTY, AST_DATA_PTR(p));
+}
+
 
 //TODO ALL OPERATIONS
 value_t ast_eval(ast_node* root){

@@ -51,13 +51,13 @@ bool declare_argument(obj_id_t* id);
 //return -1 if not found(vm.bp[-1] is old bp and vm.bp[-2] is return address)
 //print error if try to resolve currently defining variable
 //resolve locals and arguments
-int resolve_local(obj_id_t* id);
+int resolve_local(const obj_id_t* id);
 
-void write_set_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
-void write_get_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
-void write_postincr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
-void write_prefincr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
-void write_postdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
-void write_prefdecr_var(struct bytecode_chunk* chunk, const struct ast_node* id_node, int line);
+void write_set_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line);
+void write_get_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line);
+void write_postincr_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line);
+void write_prefincr_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line);
+void write_postdecr_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line);
+void write_prefdecr_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line);
 
 #endif

@@ -202,6 +202,7 @@ int scanner_next_token(struct token* t){
             }
             break;
         }
+        case '.': t->type = T_DOT; break;
         case '(': t->type = T_LPAR; break;
         case ')': t->type = T_RPAR; break;
         case ';': t->type = T_SEMI; break;
@@ -299,6 +300,8 @@ void scanner_debug_tokens(){
             case T_RETURN: printf("'return' "); break;
             case T_COMMA: printf("',' "); break;
             case T_CLASS: printf("'class' "); break;
+            case T_DOT: printf("'.' "); break;
+            case T_FIELD: printf("'field' ");break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

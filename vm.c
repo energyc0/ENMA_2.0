@@ -374,6 +374,43 @@ static vm_execute_result interpret(){
                 stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
             }
+            case OP_SET_PROPERTY:{
+                value_t inst = stack_pop();
+                value_t val = stack_pop();
+                obj_id_t* field = (obj_id_t*)extract_value(read_constant()).obj;
+                if(!IS_OBJINSTANCE(inst))
+                    interpret_error_printf(get_vm_codeline(), "Value is not an instance\n");
+
+                value_t field_val;
+                if(!table_check(AS_OBJINSTANCE(inst)->impl->fields, field, &field_val))
+                    interpret_error_printf(get_vm_codeline(),
+                 "Instance of class '%s' doesn't have field '%s'\n",
+                AS_OBJINSTANCE(inst)->impl->name->str, field->str);
+                int idx = AS_NUMBER(field_val);
+/*
+                if(!IS_NULL(AS_OBJINSTANCE(inst)->data[idx]) && !is_value_same_type(val, AS_OBJINSTANCE(inst)->data[idx]))
+                    interpret_error_printf(get_vm_codeline(),
+                 "Cannot assign to the field '%s' of instance of class '%s': incompatible types\n",
+                  field->str, AS_OBJINSTANCE(inst)->impl->name->str);
+                */
+                AS_OBJINSTANCE(inst)->data[idx] = val;
+                stack_push(val);
+                break;
+            }
+            case OP_GET_PROPERTY:{
+                value_t inst = stack_pop();
+                obj_id_t* field = (obj_id_t*)extract_value(read_constant()).obj;
+
+                value_t field_val;
+                if(!table_check(AS_OBJINSTANCE(inst)->impl->fields, field, &field_val))
+                    interpret_error_printf(get_vm_codeline(),
+                 "Instance of class '%s' doesn't have field '%s'\n",
+                AS_OBJINSTANCE(inst)->impl->name->str, field->str);
+                int idx = AS_NUMBER(field_val);
+
+                stack_push(AS_OBJINSTANCE(inst)->data[idx]);
+                break;
+            }
             default: 
                 eprintf("Undefined instruction!\n");
                 return VME_RUNTIME_ERROR;

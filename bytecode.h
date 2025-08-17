@@ -36,7 +36,7 @@ typedef enum{
     OP_STRING,
     OP_NULL, //it is a simple op, just push NULL on the stack
     OP_INSTANCE,
-    
+
     //binary ops
     //pop values from the stack and perform current operation
     OP_ADD,
@@ -60,6 +60,9 @@ typedef enum{
     OP_PREFINCR_LOCAL,
     OP_PREFDECR_GLOBAL,
     OP_PREFDECR_LOCAL,
+
+    OP_GET_PROPERTY,
+    OP_SET_PROPERTY
 } op_t;
 
 struct chunk{

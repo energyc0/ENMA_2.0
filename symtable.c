@@ -32,6 +32,7 @@ void symtable_init(){
     tr_add(keywords, "func", T_FUNC);
     tr_add(keywords, "return", T_RETURN);
     tr_add(keywords, "class", T_CLASS);
+    tr_add(keywords, "field", T_FIELD);
 
     table_init(&symtable);
     table_init(&stringtable);

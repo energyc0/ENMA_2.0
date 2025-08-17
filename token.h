@@ -42,11 +42,13 @@ typedef enum{
     T_FUNC,
     T_RETURN,
     T_CLASS,
+    T_FIELD,
     //other
     T_SEMI,
     T_COMMA,
     T_LBRACE, // '{'
     T_RBRACE, // '}'
+    T_DOT,
     T_EOF,
 } token_type; 
 

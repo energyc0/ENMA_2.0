@@ -21,7 +21,6 @@ static void mark_object(obj_t* obj);
 static void mark_stack();
 static void mark_stack_frame(value_t* bp, int count);
 static void mark_table(struct hash_table* t);
-static void mark_code(byte_t* p);
 
 void gc_add(obj_t* obj){
     obj->next = root;
