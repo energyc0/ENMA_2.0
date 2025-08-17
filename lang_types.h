@@ -30,7 +30,9 @@ typedef enum obj_type{
     OBJ_STRING,
     OBJ_IDENTIFIER,
     OBJ_FUNCTION,
-    OBJ_NATFUNCTION //native function
+    OBJ_NATFUNCTION, //native function
+    OBJ_CLASS,
+    OBJ_INSTANCE
 }obj_type;
 
 typedef struct obj_t{
@@ -67,6 +69,25 @@ typedef struct obj_natfunction_t{
     native_function impl;
 }obj_natfunction_t;
 
+/*
+    obj_class_t has hash_table that contains keys as fields and values as offsets in obj_instance_t
+    obj_instance_t contains data that is dynamically allocated and contains data offsets according to hash_table in obj_class_t
+*/
+typedef value_t field_t;
+struct hash_table;
+
+typedef struct obj_class_t{
+    obj_t obj;
+    obj_id_t* name;
+    struct hash_table* fields;
+}obj_class_t;
+
+typedef struct obj_instance_t{
+    obj_t obj;
+    obj_class_t* impl;
+    field_t* data;
+}obj_instance_t;
+
 #define VALUE_NULL ((value_t){.type = VT_NULL})
 
 #define INNERVALUE_AS_NUMBER(value) ((union _inner_value_t){.number = (value)})
@@ -85,6 +106,8 @@ typedef struct obj_natfunction_t{
 #define AS_OBJFUNCBASE(value) ((obj_func_base_t*)AS_OBJ(value))
 #define AS_OBJFUNCTION(value) ((obj_function_t*)AS_OBJ(value))
 #define AS_OBJNATFUNCTION(value) ((obj_natfunction_t*)AS_OBJ(value))
+#define AS_OBJCLASS(value) ((obj_class_t*)AS_OBJ(value))
+#define AS_OBJINSTANCE(value) ((obj_instance_t*)AS_OBJ(value))
 
 #define IS_BOOLEAN(value) ((value).type == VT_BOOL)
 #define IS_NUMBER(value) ((value).type == VT_NUMBER)
@@ -96,6 +119,10 @@ typedef struct obj_natfunction_t{
 #define IS_OBJFUNC(value) (IS_OBJ(value) && (AS_OBJ(value)->type == OBJ_FUNCTION || AS_OBJ(value)->type == OBJ_NATFUNCTION))
 #define IS_OBJFUNCTION(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_FUNCTION)
 #define IS_OBJNATFUNCTION(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_NATFUNCTION)
+#define IS_OBJCLASS(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_CLASS)
+#define IS_OBJINSTANCE(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_INSTANCE)
+
+struct ast_class_info;
 
 //frees obj_t internals and the pointer
 void obj_free(obj_t* ptr);
@@ -103,6 +130,8 @@ obj_string_t* mk_objstring(const char* s, size_t len, int32_t hash);
 obj_id_t* mk_objid(const char* s, size_t len, int32_t hash);
 obj_function_t* mk_objfunc(obj_string_t* name);
 obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl);
+obj_class_t* mk_objclass(obj_id_t* name);
+obj_instance_t* mk_objinstance(struct ast_class_info* info);
 
 obj_string_t* objstring_conc(value_t a, value_t b);
 

@@ -41,6 +41,7 @@ typedef enum{
     T_CONTINUE,
     T_FUNC,
     T_RETURN,
+    T_CLASS,
     //other
     T_SEMI,
     T_COMMA,

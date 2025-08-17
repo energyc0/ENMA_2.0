@@ -31,6 +31,7 @@ void symtable_init(){
     tr_add(keywords, "continue", T_CONTINUE);
     tr_add(keywords, "func", T_FUNC);
     tr_add(keywords, "return", T_RETURN);
+    tr_add(keywords, "class", T_CLASS);
 
     table_init(&symtable);
     table_init(&stringtable);

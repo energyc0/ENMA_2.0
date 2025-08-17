@@ -35,4 +35,9 @@ static inline void next_expect(token_type expect, const char* err_msg){
 void* emalloc(size_t count);
 void* erealloc(void* ptr, size_t count);
 
+#ifdef DEBUG
+    #define dprintf(...) printf(__VA_ARGS__)
+#else
+    #define dprintf(...) do {} while (0)
+#endif
 #endif

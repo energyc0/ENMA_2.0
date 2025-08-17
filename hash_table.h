@@ -4,7 +4,7 @@
 #include "lang_types.h"
 
 typedef struct hash_entry{
-    obj_string_t* key;
+    struct obj_string_t* key;
     value_t value;
 }hash_entry;
 

@@ -8,7 +8,6 @@
 #include "parser.h"
 #include <stdio.h>
 #include <string.h>
-#include "garbage_collector.h"
 
 struct virtual_machine vm;
 
@@ -110,10 +109,9 @@ static vm_execute_result interpret(){
     int is_done = 0;
     while (!is_done) {
         byte_t instruction = read_byte();
-#ifdef DEBUG
-        printf("Current instruction: %04X | %s\n",(unsigned int)(vm.ip - vm.code->_code.data - 1), op_to_string(instruction));
-        printf("BP = 0x%lX SP = 0x%lX\n", vm.bp - vm.stack, vm.sp - vm.stack);
-#endif
+
+        dprintf("Current instruction: %04X | %s\n",(unsigned int)(vm.ip - vm.code->_code.data - 1), op_to_string(instruction));
+        dprintf("BP = 0x%lX SP = 0x%lX\n", vm.bp - vm.stack, vm.sp - vm.stack);
         switch (instruction) {
             case OP_RETURN:{
                 if(vm.bp == &vm.stack[0])
@@ -370,6 +368,10 @@ static vm_execute_result interpret(){
                 int argc = AS_NUMBER(stack_pop());
                 obj_natfunction_t* p = (obj_natfunction_t*)extract_value(read_constant()).obj;
                 stack_push(p->impl(argc, vm.sp - argc));
+                break;
+            }
+            case OP_INSTANCE:{
+                stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
             }
             default: 

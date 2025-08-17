@@ -49,6 +49,7 @@ static const int precedence[] = {
     [T_FUNC] = 0,
     [T_COMMA] = -1,
     [T_RETURN] = 0,
+    [T_CLASS] = 0,
     [T_EOF] = 0
 };
 
@@ -75,6 +76,8 @@ static int count_func_args();
 static struct ast_func_arg* parse_func_args();
 static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* func);
 static void parse_func_declaration(obj_function_t* func);
+
+static void parse_class_declaration(struct bytecode_chunk* chunk);
 
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
@@ -230,6 +233,12 @@ bool parse_command(struct bytecode_chunk* chunk){
             if(is_global_scope())
                 compile_error_printf("'return' must be used only in functions\n");
             parse_return(chunk);
+            break;
+        }
+        case T_CLASS:{
+            if(!is_global_scope())
+                compile_error_printf("Class declaration cannot be in a function\n");
+            parse_class_declaration(chunk);
             break;
         }
         //it is an expression statement
@@ -501,9 +510,11 @@ static ast_node* ast_call(obj_id_t* id){
     args = parse_func_args();
     cur_expect(T_RPAR,"Expected ')'\n");
 
-    if(!IS_OBJFUNC(instance))
-        compile_error_printf("'%s' is not a function\n", id->str);
-    return ast_mknode_func(args, AS_OBJFUNCBASE(instance));
+    if(IS_OBJFUNC(instance))
+        return ast_mknode_func(args, AS_OBJFUNCBASE(instance));
+    if(IS_OBJCLASS(instance))
+        return ast_mknode_constructor(args, AS_OBJCLASS(instance));
+    compile_error_printf("'%s' is not callable\n", id->str);
 }
 
 static void parse_return(struct bytecode_chunk* chunk){
@@ -518,6 +529,18 @@ static void parse_return(struct bytecode_chunk* chunk){
     }
     bcchunk_write_simple_op(chunk, OP_RETURN,line_counter);
     cur_expect(T_SEMI, "Expected ';'\n");
+}
+
+static void parse_class_declaration(struct bytecode_chunk* chunk){
+    next_expect(T_IDENT, "Expected identifier\n");
+    obj_class_t* cl = mk_objclass(cur_token.data.ptr);
+
+    if(symtable_set(cl->name, VALUE_OBJ(cl)))
+        compile_error_printf("'%s' is already defined\n", cl->name->str);
+
+    next_expect(T_LBRACE, "Expected '{'\n");
+    scanner_next_token(&cur_token);
+    cur_expect(T_RBRACE, "Expected '}'\n");
 }
 
 #undef UPDATE_JUMP_LENGTH

@@ -129,6 +129,7 @@ static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_
         case OP_POSTDECR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_NULL: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_CLARGS: return constant_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_INSTANCE: return constant_instruction_debug(op_to_string(op), chunk, offset);
         default:
             fatal_printf("Undefined instruction! Check instruction_debug().\n");
     }
@@ -161,6 +162,10 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
                 fatal_printf("constant_instruction_debug(): extracted object is not string\n"
             "Current type is '%s'\n", get_obj_name(extracted_value->obj->type));
             printf(" [\"%s\"] %p\n", ((obj_string_t*)(extracted_value->obj))->str,((obj_string_t*)(extracted_value->obj))->str);
+            break;
+        }
+        case OP_INSTANCE:{
+            printf(" instance of class %s\n", ((obj_instance_t*)extracted_value->obj)->impl->name->str);
             break;
         }
         case OP_GET_GLOBAL: case OP_SET_GLOBAL:
@@ -362,6 +367,13 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             }
             break;
         }
+        case AST_CONSTRUCTOR:{
+            struct ast_class_info* info = node->data.ptr;
+            struct obj_instance_t* instance = mk_objinstance(info);
+            bcchunk_write_simple_op(chunk, OP_INSTANCE, line);
+            bcchunk_write_value(chunk, VALUE_OBJ(instance), line);
+            break;
+        }
         default:
             fatal_printf("Expected expression in parse_ast_bin_expr()!\n Node type is %d\n", node->type);
     }
@@ -405,6 +417,7 @@ const char* op_to_string(op_t op){
         [OP_POSTINCR_LOCAL] = "OP_POSTINCR_LOCAL",
         [OP_POSTDECR_GLOBAL] = "OP_POSTDECR_GLOBAL",
         [OP_POSTDECR_LOCAL] = "OP_POSTDECR_LOCAL",
+        [OP_INSTANCE] = "OP_INSTANCE",
         [OP_CLARGS] = "OP_CLARGS"
     };
 #ifdef DEBUG 

@@ -298,7 +298,7 @@ void scanner_debug_tokens(){
             case T_FUNC: printf("'func' "); break;
             case T_RETURN: printf("'return' "); break;
             case T_COMMA: printf("',' "); break;
-            //case T_NATIVE_FUNC: printf("'%s' ", ((obj_natfunction_t*)cur_token.data.ptr)->name->str); break;
+            case T_CLASS: printf("'class' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

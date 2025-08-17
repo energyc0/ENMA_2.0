@@ -1,0 +1,10 @@
+class Dog{
+    field name;
+}
+
+func main(){
+    var a = Dog();
+    a.name = "Bober";
+    println("Dog's name is ", a.name);
+    
+}

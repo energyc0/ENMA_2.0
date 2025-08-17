@@ -1,4 +1,5 @@
 #include "native_functions.h"
+#include "lang_types.h"
 #include "utils.h"
 #include "vm.h"
 #include <time.h>
@@ -19,7 +20,9 @@ value_t native_print(int argc, value_t* argv){
         }else if(IS_OBJ(val)){
             switch (AS_OBJ(val)->type) {
                 case OBJ_STRING: printf("%s", AS_OBJSTRING(val)->str); break;
-                default: fatal_printf("Undefined obj_type in interpret()!\n");
+                case OBJ_INSTANCE: printf("Instance of class %s", AS_OBJINSTANCE(val)->impl->name->str); break;
+                case OBJ_CLASS: printf("Class %s", AS_OBJCLASS(val)->name->str); break;
+                default: fatal_printf("Undefined obj_type in print()!\n");
             }
         }else if (IS_NULL(val)){
             interpret_error_printf(get_vm_codeline(), "Cannot print this expression!\n");

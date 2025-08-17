@@ -5,12 +5,14 @@
 #include "garbage_collector.h"
 #include "symtable.h"
 #include "hash_table.h"
+#include "ast.h"
 
 static inline obj_string_t* init_objstr(const char* s, size_t len, int32_t hash, obj_type type){
     obj_string_t* ptr = emalloc(sizeof(obj_string_t));
 
     ptr->obj.type = type;
     ptr->obj.next = NULL;
+    ptr->obj.is_marked = false;
     ptr->hash = hash;
     ptr->len = len;
     ptr->str = emalloc(len + 1);
@@ -37,6 +39,7 @@ obj_function_t* mk_objfunc(obj_string_t* name){
     ptr->entry_offset = 0;
     ptr->base.obj.type = OBJ_FUNCTION;
     ptr->base.obj.next = NULL;
+    ptr->base.obj.is_marked = false;
     gc_add((obj_t*)ptr);
     return ptr;
 }
@@ -48,6 +51,27 @@ obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl){
     ptr->base.name = name;
     ptr->base.obj.next = NULL;
     ptr->base.obj.type = OBJ_NATFUNCTION;
+    ptr->base.obj.is_marked = false;
+    return ptr;
+}
+
+obj_class_t* mk_objclass(obj_id_t* name){
+    obj_class_t* ptr = emalloc(sizeof(obj_class_t));
+    ptr->name = name;
+    ptr->fields = mk_table();
+    ptr->obj.is_marked = false;
+    ptr->obj.next = NULL;
+    ptr->obj.type = OBJ_CLASS;
+    return ptr;
+}
+
+obj_instance_t* mk_objinstance(struct ast_class_info* info){
+    obj_instance_t* ptr = emalloc(sizeof(obj_instance_t));
+    ptr->impl = info->cl;
+    ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->fields->count);
+    ptr->obj.is_marked = false;
+    ptr->obj.next = NULL;
+    ptr->obj.type = OBJ_INSTANCE;
     return ptr;
 }
 
@@ -73,6 +97,12 @@ void obj_free(obj_t* ptr){
             free(((obj_string_t*)ptr)->str);
             break;
         case OBJ_FUNCTION: case OBJ_NATFUNCTION:
+            break;
+        case OBJ_CLASS:
+            table_free(((obj_class_t*)ptr)->fields);
+            break;
+        case OBJ_INSTANCE:
+            free(((obj_instance_t*)ptr)->data);
             break;
         default:
             fatal_printf("Undefined obj_t in obj_free()\n");
@@ -109,7 +139,9 @@ const char* get_obj_name(obj_type type){
         [OBJ_STRING] = "string",
         [OBJ_IDENTIFIER] = "identifier",
         [OBJ_FUNCTION] = "function",
-        [OBJ_NATFUNCTION] = "native function"
+        [OBJ_NATFUNCTION] = "native function",
+        [OBJ_CLASS] = "class",
+        [OBJ_INSTANCE] = "instance"
     };
     return names[type];
 }
@@ -142,6 +174,18 @@ char* examine_value(value_t val){
                     sprintf(buf, "%p %.*s(%d arguments) [native]",
                          AS_OBJNATFUNCTION(val), (int)(sizeof(buf) - 64),
                           AS_OBJNATFUNCTION(val)->base.name->str, AS_OBJNATFUNCTION(val)->base.argc);
+                    return buf;
+                }
+                case OBJ_CLASS:{
+                    sprintf(buf, "%p Class %.*s",
+                         AS_OBJCLASS(val), (int)(sizeof(buf) - 64),
+                          AS_OBJCLASS(val)->name->str);
+                    return buf;
+                }
+                case OBJ_INSTANCE:{
+                    sprintf(buf, "%p Instance of class %.*s",
+                         AS_OBJINSTANCE(val), (int)(sizeof(buf) - 64),
+                          AS_OBJINSTANCE(val)->impl->name->str);
                     return buf;
                 }
                 default: 

@@ -34,7 +34,8 @@ typedef enum {
     AST_STRING,
     AST_IDENT,
 
-    AST_CALL
+    AST_CALL,
+    AST_CONSTRUCTOR
 }ast_node_type;
 
 #define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_PREFDECR)
@@ -68,6 +69,11 @@ struct ast_func_info{
     struct ast_func_arg* args;
 };
 
+struct ast_class_info{
+    struct obj_class_t* cl;
+    struct ast_func_arg* args;
+};
+
 ast_node* ast_mknode(ast_node_type type, ast_data data);
 void ast_freenode(ast_node* node);
 
@@ -77,6 +83,7 @@ ast_node* ast_mknode_string(obj_string_t* str);
 ast_node* ast_mknode_identifier(obj_string_t* id);
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right);
 ast_node* ast_mknode_func(struct ast_func_arg*, struct obj_func_base_t*);
+ast_node* ast_mknode_constructor(struct ast_func_arg*, struct obj_class_t*);
 
 struct ast_func_arg* ast_mknode_func_arg(ast_node* node);
 struct ast_func_info* ast_mknode_func_info(struct obj_func_base_t*, struct ast_func_arg*);

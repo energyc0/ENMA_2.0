@@ -1,0 +1,9 @@
+class My_class{
+
+}
+
+func main(){
+    var a = My_class();
+    println(a);
+    println("Good.");
+}
