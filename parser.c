@@ -51,6 +51,8 @@ static const int precedence[] = {
     [T_COMMA] = -1,
     [T_RETURN] = 0,
     [T_CLASS] = 0,
+    [T_FIELD] = 0,
+    [T_DOT] = 10,
     [T_EOF] = 0
 };
 
@@ -58,6 +60,7 @@ static const int precedence[] = {
 
 extern struct token cur_token;
 
+static inline ast_node_type token_to_ast(token_type t);
 static inline int get_op_precedence(token_type op);
 static ast_node* ast_bin_expr(int prev_precedence);
 static ast_node* ast_primary();
@@ -83,6 +86,28 @@ static void parse_class_declaration(struct bytecode_chunk* chunk);
 static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl);
 static void parse_class_field(obj_class_t* cl);
 
+static inline ast_node_type token_to_ast(token_type t){
+    static ast_node_type types[] = {
+        [T_ADD] = AST_ADD, 
+        [T_SUB] = AST_SUB,    
+        [T_MUL] = AST_MUL,
+        [T_DIV] = AST_DIV,
+        [T_AND] = AST_AND,
+        [T_OR] = AST_OR,
+        [T_XOR] = AST_XOR,
+        [T_NOT] = AST_NOT,
+        [T_EQUAL] = AST_EQUAL,
+        [T_NEQUAL] = AST_NEQUAL,
+        [T_GREATER] = AST_GREATER,
+        [T_EGREATER] = AST_EGREATER,
+        [T_LESS] = AST_LESS, 
+        [T_ELESS] = AST_ELESS,
+        [T_ASSIGN] = AST_ASSIGN,
+        [T_DOT] = AST_PROPERTY
+    };
+    return types[t];
+}
+
 static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
     ast_node* left = ast_primary();
@@ -95,7 +120,7 @@ static ast_node* ast_bin_expr(int prev_precedence){
     while(get_op_precedence(cur_op) > prev_precedence){
         right = ast_bin_expr(precedence[cur_op]);
 
-        left = ast_mknode_binary((ast_node_type)cur_op, left, right);
+        left = ast_mknode_binary(token_to_ast(cur_op), left, right);
 
         cur_op = cur_token.type;
         if(!TOKEN_IS_BIN_OP(cur_op))
@@ -142,11 +167,11 @@ static ast_node* ast_primary(){
                 case T_INCR: return ast_mknode(AST_POSTINCR, AST_DATA_VALUE(VALUE_OBJ(id)));
                 case T_DECR: return ast_mknode(AST_POSTDECR, AST_DATA_VALUE(VALUE_OBJ(id)));
                 case T_LPAR: return ast_call(id);
-                case T_DOT:{    
-                    struct ast_property* prop = ast_mk_property(id);
-                    prop->property = parse_ast_property(ast_mk_property(id));
-                    return ast_mknode_property(prop);
-                }
+                //case T_DOT:{    
+                //    struct ast_property* prop = ast_mk_property(id);
+                //    prop->property = parse_ast_property(ast_mk_property(id));
+                //    return ast_mknode_property(prop);
+                //}
                 default:
                     scanner_putback_token();
                     return ast_mknode_identifier(id);
@@ -590,6 +615,7 @@ static void parse_class_field(obj_class_t* cl){
         compile_error_printf("Field '%s' already presents in class '%s'\n", cur_token.data.ptr, cl->name->str);;
     next_expect(T_SEMI, "Expected ';'\n");
 }
+
 
 #undef UPDATE_JUMP_LENGTH
 #undef READ_BLOCK

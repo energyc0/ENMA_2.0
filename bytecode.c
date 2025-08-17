@@ -1,4 +1,5 @@
 #include "bytecode.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -170,7 +171,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             printf(" instance of class %s\n", ((obj_instance_t*)extracted_value->obj)->impl->name->str);
             break;
         }
-        case OP_GET_PROPERTY: case OP_SET_PROPERTY:{
+        case OP_SET_PROPERTY:case OP_GET_PROPERTY:{
             printf(" [%s]\n", ((obj_id_t*)extracted_value->obj)->str);
             break;
         }
@@ -250,16 +251,25 @@ void bcchunk_write_expression(const ast_node* root, struct bytecode_chunk* chunk
     parse_ast_bin_expr(root, chunk, line);
 }
 
-static void bcchunk_parse_property(const ast_node* node, bool to_set,struct bytecode_chunk* chunk, int line){
-    struct ast_property* p = node->data.ptr;
-    write_get_var(chunk, p->instance, line);
-    while(p->property){
-        if(to_set && p->property->property == NULL)
-            bcchunk_write_simple_op(chunk, OP_SET_PROPERTY, line);
-        else
-            bcchunk_write_simple_op(chunk, OP_GET_PROPERTY, line);
-        bcchunk_write_value(chunk, VALUE_OBJ(p->property->instance), line);
-        p = p->property;
+static void bcchunk_parse_property(const ast_node* node, bool is_final,struct bytecode_chunk* chunk, int line){
+    switch(node->type){
+        case AST_IDENT: 
+            if(is_final)
+                write_get_var(chunk, (obj_id_t*)AS_OBJ(node->data.val), line);
+            else{
+                bcchunk_write_simple_op(chunk, OP_GET_PROPERTY,line);
+                bcchunk_write_value(chunk, node->data.val, line);
+            }
+            break;
+        case AST_PROPERTY:
+            bcchunk_parse_property(((struct ast_binary*)node->data.ptr)->left, true, chunk, line);
+            bcchunk_parse_property(((struct ast_binary*)node->data.ptr)->right, false, chunk, line);
+            break;
+        default:
+            if(is_final)
+                compile_error_printf("Expected instance\n");
+            else
+                compile_error_printf("Expected property\n");
     }
 }
 
@@ -319,7 +329,12 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             if(temp->left->type == AST_IDENT){
                 write_set_var(chunk, AS_OBJIDENTIFIER(temp->left->data.val), line);
             }else if(temp->left->type == AST_PROPERTY){
+                temp = temp->left->data.ptr;
+                if(!IS_OBJIDENTIFIER(temp->right->data.val))
+                    compile_error_printf("Value is not instance, cannot get property\n");
                 bcchunk_parse_property(temp->left, true, chunk, line);
+                bcchunk_write_simple_op(chunk, OP_SET_PROPERTY, line);
+                bcchunk_write_value(chunk,temp->right->data.val, line);
             }else{
                 interpret_error_printf(line, "Left operand is not assignable!\n");
             }
@@ -398,7 +413,11 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             break;
         }
         case AST_PROPERTY:{
-            bcchunk_parse_property(node, false, chunk, line);
+            //struct ast_binary* ptr = node->data.ptr;
+            //parse_ast_bin_expr(ptr->left, chunk, line);
+            //parse_ast_bin_expr(ptr->right, chunk, line);
+            //bcchunk_write_simple_op(chunk, OP_GET_PROPERTY, line);
+            bcchunk_parse_property(node, true, chunk, line);
             break;
         }
         default:

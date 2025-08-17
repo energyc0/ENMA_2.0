@@ -1,0 +1,7 @@
+class Man{
+	field name;
+}
+
+func main(){
+	println(Man().name = "Harry");
+}

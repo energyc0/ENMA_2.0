@@ -35,7 +35,7 @@ void ast_freenode(ast_node* node){
         case AST_ADD: case AST_SUB: case AST_MUL: case AST_DIV:
         case AST_AND: case AST_OR: case AST_XOR: case AST_NEQUAL:
         case AST_EQUAL: case AST_EGREATER: case AST_GREATER: case AST_ELESS:
-        case AST_LESS: case AST_ASSIGN:
+        case AST_LESS: case AST_ASSIGN: case AST_PROPERTY:
             ast_freenode(((struct ast_binary*)node->data.ptr)->left);
             ast_freenode(((struct ast_binary*)node->data.ptr)->right);
             free(node->data.ptr);
@@ -55,6 +55,7 @@ void ast_freenode(ast_node* node){
             free(ptr);
             break;
         }
+        /*
         case AST_PROPERTY:{
             struct ast_property* ptr = node->data.ptr;
             while(ptr){
@@ -63,7 +64,7 @@ void ast_freenode(ast_node* node){
                 free(temp);
             }
             break;
-        }
+        }*/
         default:
             eprintf("ast_freenode() ");
             UNDEFINED_AST_NODE_TYPE(node);
@@ -180,13 +181,11 @@ static void ast_debug_node(const ast_node* node){
             break;
         }
         case AST_PROPERTY:{
-            struct ast_property* p = node->data.ptr;
-            while(p){
-                printf("%s", p->instance->str);
-                if(p->property)
-                    putchar('.');
-                p=p->property;
-            }
+            putchar('(');
+            ast_debug_node(((struct ast_binary*)node->data.ptr)->left);
+            putchar('.');
+            ast_debug_node(((struct ast_binary*)node->data.ptr)->right);
+            putchar(')');
             break;
         }
         default:

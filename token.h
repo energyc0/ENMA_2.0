@@ -20,6 +20,7 @@ typedef enum{
     T_ELESS = 13,
 
     T_ASSIGN = 14,
+    T_DOT = 15,
     T_INCR,
     T_DECR,
     //precedence operators
@@ -48,11 +49,10 @@ typedef enum{
     T_COMMA,
     T_LBRACE, // '{'
     T_RBRACE, // '}'
-    T_DOT,
     T_EOF,
 } token_type; 
 
-#define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_ASSIGN)
+#define TOKEN_IS_BIN_OP(op) (T_ADD <= (op) && (op) <= T_DOT)
 
 struct token{
     token_type type;

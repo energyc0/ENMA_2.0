@@ -28,6 +28,7 @@ typedef enum {
     AST_PREFINCR,
     AST_POSTDECR,
     AST_PREFDECR,
+    AST_PROPERTY,
     /*values */
     AST_NUMBER,
     AST_BOOLEAN,
@@ -36,10 +37,9 @@ typedef enum {
 
     AST_CALL,
     AST_CONSTRUCTOR,
-    AST_PROPERTY
 }ast_node_type;
 
-#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_PREFDECR)
+#define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_PROPERTY)
 
 typedef union{
     void* ptr;
