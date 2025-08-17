@@ -28,21 +28,21 @@ func main(){
     foo();
   }
 
-  print sum(1+2, 5 - 6/3);
-  print "Hello" + ", " + "world!";
+  println(sum(1+2, 5 - 6/3));
+  println("Hello" + ", " + "world!");
 
   var a = 11;
   if(a > 10){
-    print "a is greater than 10";
+    println("a is greater than 10");
   }else{
-    print "a is not greater than 10";
+    println("a is not greater than 10");
   }
 
-  print a > 10;
+  println(a > 10);
 }
 
 func foo(){
-  print ++global_var;
+  println(++global_var);
 }
 
 func sum(a,b){
