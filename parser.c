@@ -32,7 +32,7 @@ static const int precedence[] = {
     [T_DECR] = 0,
     [T_INCR] = 0,
     [T_ASSIGN] = 1,
-    [T_LPAR] = 0,
+    [T_LPAR] = 11,
     [T_RPAR] = -1,
     [T_INT] = 0,
     [T_FALSE] = 0,
@@ -103,7 +103,8 @@ static inline ast_node_type token_to_ast(token_type t){
         [T_LESS] = AST_LESS, 
         [T_ELESS] = AST_ELESS,
         [T_ASSIGN] = AST_ASSIGN,
-        [T_DOT] = AST_PROPERTY
+        [T_DOT] = AST_PROPERTY,
+        [T_LPAR] = AST_CALL
     };
     return types[t];
 }

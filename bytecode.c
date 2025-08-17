@@ -265,6 +265,9 @@ static void bcchunk_parse_property(const ast_node* node, bool is_final,struct by
             bcchunk_parse_property(((struct ast_binary*)node->data.ptr)->left, true, chunk, line);
             bcchunk_parse_property(((struct ast_binary*)node->data.ptr)->right, false, chunk, line);
             break;
+        case AST_CONSTRUCTOR:
+            parse_ast_bin_expr(node, chunk, line);
+            break;
         default:
             if(is_final)
                 compile_error_printf("Expected instance\n");

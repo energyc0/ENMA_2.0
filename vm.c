@@ -387,12 +387,7 @@ static vm_execute_result interpret(){
                  "Instance of class '%s' doesn't have field '%s'\n",
                 AS_OBJINSTANCE(inst)->impl->name->str, field->str);
                 int idx = AS_NUMBER(field_val);
-/*
-                if(!IS_NULL(AS_OBJINSTANCE(inst)->data[idx]) && !is_value_same_type(val, AS_OBJINSTANCE(inst)->data[idx]))
-                    interpret_error_printf(get_vm_codeline(),
-                 "Cannot assign to the field '%s' of instance of class '%s': incompatible types\n",
-                  field->str, AS_OBJINSTANCE(inst)->impl->name->str);
-                */
+                
                 AS_OBJINSTANCE(inst)->data[idx] = val;
                 stack_push(val);
                 break;

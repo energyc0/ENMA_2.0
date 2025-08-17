@@ -5,5 +5,7 @@ class Dog{
 func main(){
     var a = Dog();
     a.name = "Bober";
+    var name = "Max";
     println("Dog's name is ", a.name);
+    println("Other name is ", name);
 }
