@@ -1,0 +1,18 @@
+class Dog{
+    field name;
+
+    meth sound(){
+        println("Bark!");
+    }
+
+    meth eat(food){
+        println(name, " has eaten ", food, ". Yammy!");    
+    }
+}
+
+func main(){
+    var bro = Dog();
+    bro.name = "Oliver";
+    bro.sound();
+    bro.eat("sandwich");
+}

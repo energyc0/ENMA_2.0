@@ -65,7 +65,7 @@ static inline int get_op_precedence(token_type op);
 static ast_node* ast_bin_expr(int prev_precedence);
 static ast_node* ast_primary();
 static ast_node* ast_call(obj_id_t* id);
-static struct ast_property* parse_ast_property(struct ast_property* instance);
+//static struct ast_property* parse_ast_property(struct ast_property* instance);
 
 static inline void read_block(struct bytecode_chunk* chunk);
 
@@ -183,6 +183,7 @@ static ast_node* ast_primary(){
     }
 }
 
+/*
 static struct ast_property* parse_ast_property(struct ast_property* instance){
     next_expect(T_IDENT, "Expected property\n");
     obj_id_t* id = cur_token.data.ptr;
@@ -198,6 +199,7 @@ static struct ast_property* parse_ast_property(struct ast_property* instance){
 
     return prop_inst;
 }
+*/
 
 static inline int get_op_precedence(token_type op){
 #ifdef DEBUG
@@ -585,9 +587,10 @@ static void parse_return(struct bytecode_chunk* chunk){
 static void parse_class_declaration(struct bytecode_chunk* chunk){
     next_expect(T_IDENT, "Expected identifier\n");
     obj_class_t* cl = mk_objclass(cur_token.data.ptr);
-
-    if(symtable_set(cl->name, VALUE_OBJ(cl)))
+    value_t val;
+    if(symtable_get(cl->name, &val) && !IS_NULL(val))
         compile_error_printf("'%s' is already defined\n", cl->name->str);
+    symtable_set(cl->name, VALUE_OBJ(cl));
 
     next_expect(T_LBRACE, "Expected '{'\n");
     parse_class_inners(chunk, cl);

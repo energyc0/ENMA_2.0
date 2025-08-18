@@ -396,6 +396,9 @@ static vm_execute_result interpret(){
                 value_t inst = stack_pop();
                 obj_id_t* field = (obj_id_t*)extract_value(read_constant()).obj;
 
+                if(!IS_OBJINSTANCE(inst))
+                    interpret_error_printf(get_vm_codeline(), "Value is not an instance\n");
+
                 value_t field_val;
                 if(!table_check(AS_OBJINSTANCE(inst)->impl->fields, field, &field_val))
                     interpret_error_printf(get_vm_codeline(),

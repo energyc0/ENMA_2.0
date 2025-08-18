@@ -1,0 +1,10 @@
+class Foo{
+    field val;
+}
+
+func main(){
+    var a = Foo();
+    a.val = 4;
+    3 + a.val = 11;
+    println(a.val);
+}

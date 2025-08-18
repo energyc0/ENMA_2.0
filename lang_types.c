@@ -70,7 +70,7 @@ obj_instance_t* mk_objinstance(struct ast_class_info* info){
     obj_instance_t* ptr = emalloc(sizeof(obj_instance_t));
     ptr->impl = info->cl;
     ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->fields->count);
-    for(int i = 0; i < ptr->impl->fields->count; i++)
+    for(size_t i = 0; i < ptr->impl->fields->count; i++)
         ptr->data[i] = VALUE_NULL;
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;

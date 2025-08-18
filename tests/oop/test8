@@ -1,0 +1,11 @@
+class Foo{
+
+}
+
+class Foo{
+
+}
+
+func main(){
+    println("Bad.");
+}
