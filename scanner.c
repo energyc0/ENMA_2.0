@@ -302,6 +302,8 @@ void scanner_debug_tokens(){
             case T_CLASS: printf("'class' "); break;
             case T_DOT: printf("'.' "); break;
             case T_FIELD: printf("'field' ");break;
+            case T_METH: printf("'meth' "); break;
+            case T_THIS: printf("'this' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

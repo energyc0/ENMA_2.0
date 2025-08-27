@@ -44,7 +44,8 @@ typedef enum{
     T_RETURN,
     T_CLASS,
     T_FIELD,
-    
+    T_METH,
+    T_THIS,
     //other
     T_SEMI,
     T_COMMA,

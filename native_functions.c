@@ -14,26 +14,34 @@ value_t native_clock(int argc, value_t* argv){
 }
 
 value_t native_print(int argc, value_t* argv){
+#ifdef DEBUG
+    #define natprint(...) red_printf(__VA_ARGS__)
+#else
+    #define natprint(...) printf(__VA_ARGS__)
+#endif
+
     for(;--argc >= 0;){
         value_t val = argv[argc];
         if(IS_NUMBER(val)){
-            printf("%d", AS_NUMBER(val));
+            natprint("%d", AS_NUMBER(val));
         }else if(IS_BOOLEAN(val)){
-            printf("%s", AS_BOOLEAN(val) ? "true" : "false");
+            natprint("%s", AS_BOOLEAN(val) ? "true" : "false");
         }else if(IS_OBJ(val)){
             switch (AS_OBJ(val)->type) {
-                case OBJ_STRING: printf("%s", AS_OBJSTRING(val)->str); break;
-                case OBJ_INSTANCE: printf("Instance of class %s", AS_OBJINSTANCE(val)->impl->name->str); break;
-                case OBJ_CLASS: printf("Class %s", AS_OBJCLASS(val)->name->str); break;
+                case OBJ_STRING: natprint("%s", AS_OBJSTRING(val)->str); break;
+                case OBJ_INSTANCE: natprint("Instance of class %s", AS_OBJINSTANCE(val)->impl->name->str); break;
+                case OBJ_CLASS: natprint("Class %s", AS_OBJCLASS(val)->name->str); break;
                 default: fatal_printf("Undefined obj_type in print()!\n");
             }
         }else if (IS_NULL(val)){
             interpret_error_printf(get_vm_codeline(), "Cannot print this expression!\n");
         }else{
-            printf("print: Not implemented instruction :(");
+            natprint("print: Not implemented instruction :(");
         }
     }
     return VALUE_NULL;
+
+#undef natprint
 }
 
 value_t native_println(int argc, value_t* argv){

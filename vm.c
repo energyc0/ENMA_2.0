@@ -6,6 +6,7 @@
 #include "symtable.h"
 #include "utils.h"
 #include "parser.h"
+#include "garbage_collector.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -110,8 +111,11 @@ static vm_execute_result interpret(){
     while (!is_done) {
         byte_t instruction = read_byte();
 
-        dprintf("Current instruction: %04X | %s\n",(unsigned int)(vm.ip - vm.code->_code.data - 1), op_to_string(instruction));
-        dprintf("BP = 0x%lX SP = 0x%lX\n", vm.bp - vm.stack, vm.sp - vm.stack);
+        dprintf("===#\nCurrent instruction:\n");
+#ifdef DEBUG
+        instruction_debug(vm.code, (size_t)(vm.ip - vm.code->_code.data - 1));
+#endif
+        dprintf("          BP = 0x%lX SP = 0x%lX\n===#\n", vm.bp - vm.stack, vm.sp - vm.stack);
         switch (instruction) {
             case OP_RETURN:{
                 if(vm.bp == &vm.stack[0])
@@ -371,7 +375,9 @@ static vm_execute_result interpret(){
                 break;
             }
             case OP_INSTANCE:{
-                stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
+                obj_instance_t* new_instance = mk_objinstance((obj_class_t*)extract_value(read_constant()).obj);
+                gc_add((obj_t*)new_instance);
+                stack_push(VALUE_OBJ(new_instance));
                 break;
             }
             case OP_SET_PROPERTY:{
@@ -382,7 +388,7 @@ static vm_execute_result interpret(){
                     interpret_error_printf(get_vm_codeline(), "Value is not an instance\n");
 
                 value_t field_val;
-                if(!table_check(AS_OBJINSTANCE(inst)->impl->fields, field, &field_val))
+                if(!table_check(AS_OBJINSTANCE(inst)->impl->properties, field, &field_val))
                     interpret_error_printf(get_vm_codeline(),
                  "Instance of class '%s' doesn't have field '%s'\n",
                 AS_OBJINSTANCE(inst)->impl->name->str, field->str);
@@ -400,7 +406,7 @@ static vm_execute_result interpret(){
                     interpret_error_printf(get_vm_codeline(), "Value is not an instance\n");
 
                 value_t field_val;
-                if(!table_check(AS_OBJINSTANCE(inst)->impl->fields, field, &field_val))
+                if(!table_check(AS_OBJINSTANCE(inst)->impl->properties, field, &field_val))
                     interpret_error_printf(get_vm_codeline(),
                  "Instance of class '%s' doesn't have field '%s'\n",
                 AS_OBJINSTANCE(inst)->impl->name->str, field->str);
@@ -505,6 +511,6 @@ static void epilogue(){
 static void examine_stack(){
     printf("\t=== Stack ===\n");
     for(value_t* ptr = vm.stack; ptr < vm.sp; ptr++)
-        printf("\t%04X | %s\n", (unsigned)(ptr - vm.stack), examine_value(*ptr));
+        print_value((ptr - vm.stack), *ptr);
 }
 #endif

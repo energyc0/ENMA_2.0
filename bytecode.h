@@ -100,4 +100,8 @@ void bcchunk_write_expression(const struct ast_node* root, struct bytecode_chunk
 //for debug purposes
 void bcchunk_disassemble(const char* chunk_name, const struct bytecode_chunk* chunk);
 
+#ifdef DEBUG
+size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset);
+#endif
+
 #endif

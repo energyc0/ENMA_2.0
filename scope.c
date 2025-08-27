@@ -5,8 +5,18 @@
 #include "symtable.h"
 #include "utils.h"
 #include "ast.h"
+#include "hash_table.h"
+#include <string.h>
 
-struct scope _scope;
+struct scope _scope = {
+    .locals = {},
+    .locals_count = 0,
+    .arguments = {},
+    .arguments_count = 0,
+    .current_depth = 0,
+    .current_class = NULL,
+    .is_constructor = false
+};
 
 //push it on the 'locals' stack
 //mark as undefined (depth = -1)
@@ -23,6 +33,12 @@ static void perform_local_global_op(struct bytecode_chunk* chunk, const obj_id_t
 
 static int find_argument(const obj_id_t* id);
 
+void scope_init(){
+    //garbage collector stores this memory
+    _scope.this_ = mk_objid("this", strlen("this"), hash_string("this", strlen("this")));
+    symtable_set(_scope.this_, VALUE_NULL);
+}
+
 void begin_scope(){
     _scope.current_depth++;
 }
@@ -38,6 +54,14 @@ bool is_global_scope(){
 
 int get_scope(){
     return _scope.current_depth;
+}
+
+void scope_set_class(obj_class_t* cl){
+    _scope.current_class = cl;
+}
+
+obj_class_t* scope_get_class(){
+    return _scope.current_class;
 }
 
 void end_cycle(struct bytecode_chunk* chunk){
@@ -119,6 +143,28 @@ static void declare_local(obj_id_t* id){
 
 static void define_local(){
     _scope.locals[_scope.locals_count-1].depth = _scope.current_depth;
+}
+
+void scope_constructor_start(){
+    begin_scope();
+    _scope.is_constructor = true;
+}
+void scope_constructor_end(struct bytecode_chunk* chunk){
+    end_scope(chunk);
+    _scope.is_constructor = false;
+}
+bool scope_is_constructor(){
+    return _scope.is_constructor;
+}
+void scope_add_instance_data(struct bytecode_chunk* chunk){
+    declare_local(_scope.this_); //this argument is an instance that uses this method
+    define_local();
+    bcchunk_write_simple_op(chunk, OP_INSTANCE, line_counter);
+    bcchunk_write_value(chunk, VALUE_OBJ(_scope.current_class), line_counter);
+}
+
+obj_id_t* scope_get_this(){
+    return _scope.this_;
 }
 
 bool declare_argument(obj_id_t* id){

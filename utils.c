@@ -63,3 +63,14 @@ void* erealloc(void* ptr, size_t count){
 
     return temp;
 }
+
+void color_printf(const char* color, const char* fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+
+    printf("%s",color);
+    vfprintf(stdout, fmt, ap);
+    printf("\x1b[0m");
+
+    va_end(ap);
+}

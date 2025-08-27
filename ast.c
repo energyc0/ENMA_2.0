@@ -12,12 +12,10 @@ extern struct token cur_token;
 
 #define UNDEFINED_AST_NODE_TYPE(node) fatal_printf("Undefined ast_node_type! type number: %d\n", node->type)
 
-static struct ast_class_info* ast_mk_classinfo(struct ast_func_arg* args, struct obj_class_t*cl);
-
 static void ast_debug_node(const ast_node* node);
-static void ast_debug_args(struct ast_func_arg* arg);
+static void ast_debug_args(struct ast_call_arg* arg);
 
-static void freeargs(struct ast_func_arg* p);
+static void freeargs(struct ast_call_arg* p);
 
 ast_node* ast_mknode(ast_node_type type, ast_data data){
     ast_node* p = emalloc(sizeof(ast_node));
@@ -44,27 +42,11 @@ void ast_freenode(ast_node* node){
             ast_freenode(node->data.ptr);
             break;
         case AST_CALL:{
-            struct ast_func_info* ptr = node->data.ptr;
+            struct ast_call_info* ptr = node->data.ptr;
             freeargs(ptr->args);
             free(ptr);
             break;
         }
-        case AST_CONSTRUCTOR:{
-            struct ast_class_info* ptr = node->data.ptr;
-            freeargs(ptr->args);
-            free(ptr);
-            break;
-        }
-        /*
-        case AST_PROPERTY:{
-            struct ast_property* ptr = node->data.ptr;
-            while(ptr){
-                struct ast_property* temp = ptr;
-                ptr=ptr->property;
-                free(temp);
-            }
-            break;
-        }*/
         default:
             eprintf("ast_freenode() ");
             UNDEFINED_AST_NODE_TYPE(node);
@@ -115,16 +97,6 @@ void ast_debug_tree(const ast_node* node){
     putchar('\n');
 }
 
-static struct ast_class_info* ast_mk_classinfo(struct ast_func_arg* args, struct obj_class_t*cl){
-    struct ast_class_info* ptr = emalloc(sizeof(struct ast_class_info));
-    ptr->args = args;
-    ptr->cl = cl;
-    return ptr;
-}
-
-ast_node* ast_mknode_constructor(struct ast_func_arg* args, struct obj_class_t*cl){
-    return ast_mknode(AST_CONSTRUCTOR, AST_DATA_PTR(ast_mk_classinfo(args,cl)));
-}
 
 static void ast_debug_node(const ast_node* node){
     #define DEBUG_BINARY(op) do{ \
@@ -165,18 +137,10 @@ static void ast_debug_node(const ast_node* node){
         case AST_POSTDECR:  printf("%s--", AS_OBJIDENTIFIER(node->data.val)->str); break;
         case AST_POSTINCR:  printf("%s++", AS_OBJIDENTIFIER(node->data.val)->str); break;
         case AST_CALL:{
-            printf("%s(", ((struct ast_func_info*)node->data.ptr)->func->name->str);
-            struct ast_func_arg* ptr = ((struct ast_func_info*)node->data.ptr)->args;
+            printf("%s(", ((struct ast_call_info*)node->data.ptr)->id->str);
+            struct ast_call_arg* ptr = ((struct ast_call_info*)node->data.ptr)->args;
             if(ptr)
                 ast_debug_args(ptr);
-            putchar(')');
-            break;
-        }
-        case AST_CONSTRUCTOR:{
-            struct ast_class_info* ptr = node->data.ptr;
-            printf("%s(", ptr->cl->name->str);
-            if(ptr->args)
-                ast_debug_args(ptr->args);
             putchar(')');
             break;
         }
@@ -194,19 +158,19 @@ static void ast_debug_node(const ast_node* node){
     }
 }
 
-struct ast_func_info* ast_mknode_func_info(struct obj_func_base_t* func, struct ast_func_arg* args){
-    struct ast_func_info* ptr = emalloc(sizeof(struct ast_func_info));
+struct ast_call_info* ast_mk_call_info(obj_id_t* id, struct ast_call_arg* args){
+    struct ast_call_info* ptr = emalloc(sizeof(struct ast_call_info));
     ptr->args = args;
-    ptr->func = func;
+    ptr->id = id;
     return ptr;
 }
 
-ast_node* ast_mknode_func(struct ast_func_arg* args, struct obj_func_base_t* func){
-    return ast_mknode(AST_CALL, AST_DATA_PTR(ast_mknode_func_info(func, args)));
+ast_node* ast_mknode_call(struct ast_call_arg* args, obj_id_t* id){
+    return ast_mknode(AST_CALL, AST_DATA_PTR(ast_mk_call_info(id, args)));
 }
 
-struct ast_func_arg* ast_mknode_func_arg(ast_node* node){
-    struct ast_func_arg* ptr = emalloc(sizeof(struct ast_func_arg));
+struct ast_call_arg* ast_mk_call_arg(ast_node* node){
+    struct ast_call_arg* ptr = emalloc(sizeof(struct ast_call_arg));
     ptr->next = NULL;
     ptr->arg = node;
     return ptr;
@@ -350,7 +314,7 @@ value_t ast_eval(ast_node* root){
     }
 }
 
-static void ast_debug_args(struct ast_func_arg* arg){
+static void ast_debug_args(struct ast_call_arg* arg){
     if(arg->next){
         ast_debug_args(arg->next);
         printf(", ");
@@ -358,9 +322,9 @@ static void ast_debug_args(struct ast_func_arg* arg){
     ast_debug_node(arg->arg);
 }
 
-static void freeargs(struct ast_func_arg* p){
+static void freeargs(struct ast_call_arg* p){
     while(p){
-        struct ast_func_arg* temp = p->next;
+        struct ast_call_arg* temp = p->next;
         ast_freenode(p->arg);
         free(p);
         p = temp;

@@ -133,9 +133,10 @@ void table_debug(const struct hash_table* t){
     printf("%lu entries:\n", t->count);
     for(size_t i = 0; i < t->capacity; i++){
         if(t->entries[i].key != NULL){
-            printf("Entry with key '%s' and value %s\n", t->entries[i].key->str, examine_value(t->entries[i].value));
+            printf("Entry with key '%s' and value ", t->entries[i].key->str);
+            examine_value(t->entries[i].value);
+            putchar('\n');
         }
     }
 }
-
 #endif

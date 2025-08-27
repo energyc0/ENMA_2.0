@@ -1,0 +1,30 @@
+class Dog{
+    field name;
+    field age;
+    
+    Dog(){
+        this.name = "noname";
+        this.age = 0;
+    }
+    Dog(name){
+        this.name = name;
+        this.age = 0;
+    }
+    Dog(name, age){
+        this.name = name;
+        this.age = age;
+    }
+}
+
+func print_dog_info(dog){
+    println(dog, " ", dog.name, " ", dog.age);
+}
+
+func main(){
+    var a = Dog();
+    print_dog_info(a);
+    var b = Dog("Max");
+    print_dog_info(b);
+    var c = Dog("Alex", 5);
+    print_dog_info(c);
+}

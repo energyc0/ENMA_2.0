@@ -35,8 +35,7 @@ typedef enum {
     AST_STRING,
     AST_IDENT,
 
-    AST_CALL,
-    AST_CONSTRUCTOR,
+    AST_CALL
 }ast_node_type;
 
 #define AST_IS_BIN_OP(op) (AST_ADD <= (op) && (op) <= AST_PROPERTY)
@@ -60,19 +59,14 @@ struct ast_binary{
     ast_node* right;
 };
 
-struct ast_func_arg{
+struct ast_call_arg{
     ast_node* arg;
-    struct ast_func_arg* next;
+    struct ast_call_arg* next;
 };
 
-struct ast_func_info{
-    struct obj_func_base_t* func;
-    struct ast_func_arg* args;
-};
-
-struct ast_class_info{
-    struct obj_class_t* cl;
-    struct ast_func_arg* args;
+struct ast_call_info{
+    obj_id_t* id;
+    struct ast_call_arg* args;
 };
 
 struct ast_property{
@@ -88,12 +82,11 @@ ast_node* ast_mknode_boolean(bool val);
 ast_node* ast_mknode_string(obj_string_t* str);
 ast_node* ast_mknode_identifier(obj_string_t* id);
 ast_node* ast_mknode_binary(ast_node_type bin_op, ast_node* left, ast_node* right);
-ast_node* ast_mknode_func(struct ast_func_arg*, struct obj_func_base_t*);
-ast_node* ast_mknode_constructor(struct ast_func_arg*, struct obj_class_t*);
+ast_node* ast_mknode_call(struct ast_call_arg*, obj_id_t*);
 ast_node* ast_mknode_property(struct ast_property*);
 
-struct ast_func_arg* ast_mknode_func_arg(ast_node* node);
-struct ast_func_info* ast_mknode_func_info(struct obj_func_base_t*, struct ast_func_arg*);
+struct ast_call_arg* ast_mk_call_arg(ast_node* node);
+struct ast_call_info* ast_mk_call_info(obj_id_t*, struct ast_call_arg*);
 struct ast_property* ast_mk_property(obj_id_t* instance);
 
 value_t ast_eval(ast_node* root);

@@ -76,10 +76,13 @@ typedef struct obj_natfunction_t{
 typedef value_t field_t;
 struct hash_table;
 
+#define CONSTRUCTORS_LIMIT (16)
+
 typedef struct obj_class_t{
     obj_t obj;
     obj_id_t* name;
-    struct hash_table* fields;
+    struct hash_table* properties;
+    obj_function_t* constructors[CONSTRUCTORS_LIMIT + 1]; // for default constructor
 }obj_class_t;
 
 typedef struct obj_instance_t{
@@ -131,7 +134,7 @@ obj_id_t* mk_objid(const char* s, size_t len, int32_t hash);
 obj_function_t* mk_objfunc(obj_string_t* name);
 obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl);
 obj_class_t* mk_objclass(obj_id_t* name);
-obj_instance_t* mk_objinstance(struct ast_class_info* info);
+obj_instance_t* mk_objinstance(obj_class_t* cl);
 
 obj_string_t* objstring_conc(value_t a, value_t b);
 
@@ -139,10 +142,14 @@ bool is_equal_objstring(const obj_string_t* s1, const obj_string_t* s2);
 
 bool is_value_same_type(const value_t a, const value_t b);
 
+void set_constructor(obj_class_t* cl, obj_function_t* f);
+obj_function_t* find_constructor(obj_class_t* cl, int argc);
+
 #ifdef DEBUG
 const char* get_value_name(value_type type);
 const char* get_obj_name(obj_type type);
-char* examine_value(value_t val);
+void examine_value(value_t val);
+void print_value(int offset, value_t val);
 #endif
 
 #endif

@@ -8,6 +8,7 @@
 #include "lang_types.h"
 #include "scope.h"
 #include "utils.h"
+#include "symtable.h"
 
 static void chunk_init(struct chunk* chunk);
 static void chunk_write(struct chunk* chunk, byte_t byte);
@@ -23,7 +24,6 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
 static inline value_t readvalue(const struct bytecode_chunk* chunk, size_t code_offset);
 
 #ifdef DEBUG
-static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset);
 static inline void print_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 static inline size_t simple_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
 static inline size_t constant_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
@@ -92,7 +92,7 @@ static inline void bcchunk_write_data(struct bytecode_chunk* chunk, byte_t byte)
 }
 
 #ifdef DEBUG
-static inline size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset){
+size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset){
     op_t op = chunk->_code.data[offset];
     switch (op) {
         case OP_RETURN: return simple_instruction_debug(op_to_string(op),chunk, offset);
@@ -168,7 +168,7 @@ static inline size_t constant_instruction_debug(const char* name, const struct b
             break;
         }
         case OP_INSTANCE:{
-            printf(" instance of class %s\n", ((obj_instance_t*)extracted_value->obj)->impl->name->str);
+            printf(" instance of class %s\n", ((obj_class_t*)extracted_value->obj)->name->str);
             break;
         }
         case OP_SET_PROPERTY:case OP_GET_PROPERTY:{
@@ -265,7 +265,7 @@ static void bcchunk_parse_property(const ast_node* node, bool is_final,struct by
             bcchunk_parse_property(((struct ast_binary*)node->data.ptr)->left, true, chunk, line);
             bcchunk_parse_property(((struct ast_binary*)node->data.ptr)->right, false, chunk, line);
             break;
-        case AST_CONSTRUCTOR:
+        case AST_CALL:
             parse_ast_bin_expr(node, chunk, line);
             break;
         default:
@@ -376,50 +376,56 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             write_postincr_var(chunk,AS_OBJIDENTIFIER(node->data.val),line);
             break;
         case AST_CALL:{
-            struct ast_func_info* info = node->data.ptr;
-            struct ast_func_arg* p = info->args;
+            struct ast_call_info* info = node->data.ptr;
+            struct ast_call_arg* p = info->args;
             int argc = 0;
             while(p){
                 parse_ast_bin_expr(p->arg, chunk, line);
                 p = p->next;
                 argc++;
             }
+            value_t val;
+            if(!symtable_get(info->id, &val) || IS_NULL(val))
+                compile_error_printf("'%s' is not defined\n", info->id->str);
+            if(!IS_OBJ(val))
+                compile_error_printf("'%s' is not callable\n", info->id->str);
             op_t op;
-            switch(info->func->obj.type){
-                case OBJ_FUNCTION:
-                    if(argc != info->func->argc)
+            switch(AS_OBJ(val)->type){
+                case OBJ_FUNCTION:{
+                    obj_function_t* func = (obj_function_t*)AS_OBJ(val);
+                    if(argc != func->base.argc)
                         compile_error_printf("Expected %d arguments in '%s' function call, found %d\n",
-                        info->func->argc, info->func->name->str, argc);
+                        func->base.argc, func->base.name->str, argc);
                     op = OP_CALL;
                     break;
+                }
                 case OBJ_NATFUNCTION:
                     bcchunk_write_code(chunk, OP_NUMBER, line);
                     bcchunk_write_value(chunk, VALUE_NUMBER(argc), line);
                     op = OP_NATIVE_CALL;
                     break;
+                case OBJ_CLASS:{
+                    obj_function_t* constructor = find_constructor(AS_OBJCLASS(val), argc);
+                    if(constructor == NULL)
+                        compile_error_printf(
+                    "Constructor for instance of class '%s' with %d arguments is not defined\n",
+                    AS_OBJCLASS(val)->name->str, argc);   
+                    val = VALUE_OBJ(constructor);
+                    op = OP_CALL;
+                    break;
+                }
                 default:
                     compile_error_printf("Undefined type of function processing AST_CALL in parse_ast_bin_expr()");
             }
             bcchunk_write_simple_op(chunk, op, line);
-            bcchunk_write_value(chunk, VALUE_OBJ(info->func), line);
+            bcchunk_write_value(chunk, val, line);
             if(argc > 0){
                 bcchunk_write_simple_op(chunk,OP_CLARGS, line);
                 bcchunk_write_constant(chunk,argc,line);
             }
             break;
         }
-        case AST_CONSTRUCTOR:{
-            struct ast_class_info* info = node->data.ptr;
-            struct obj_instance_t* instance = mk_objinstance(info);
-            bcchunk_write_simple_op(chunk, OP_INSTANCE, line);
-            bcchunk_write_value(chunk, VALUE_OBJ(instance), line);
-            break;
-        }
         case AST_PROPERTY:{
-            //struct ast_binary* ptr = node->data.ptr;
-            //parse_ast_bin_expr(ptr->left, chunk, line);
-            //parse_ast_bin_expr(ptr->right, chunk, line);
-            //bcchunk_write_simple_op(chunk, OP_GET_PROPERTY, line);
             bcchunk_parse_property(node, true, chunk, line);
             break;
         }

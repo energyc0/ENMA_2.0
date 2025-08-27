@@ -24,7 +24,13 @@ struct scope{
     int arguments_count;
 
     int current_depth;
+
+    obj_class_t* current_class;
+    bool is_constructor;
+    obj_id_t* this_;
 };
+
+void scope_init();
 
 void begin_scope();
 void begin_cycle(struct bytecode_chunk* chunk); //calls begin_scope()
@@ -34,6 +40,13 @@ bool is_global_scope();
 void end_cycle(struct bytecode_chunk* chunk); //calls end_scope()
 void end_scope(struct bytecode_chunk* chunk);
 
+void scope_set_class(obj_class_t* cl);
+obj_class_t* scope_get_class();
+void scope_constructor_start(); //is_constructor = true and opens scope
+void scope_constructor_end(struct bytecode_chunk* chunk);   //is_constructor = false and closes scope
+bool scope_is_constructor();
+void scope_add_instance_data(struct bytecode_chunk* chunk); //adds 'this'
+obj_id_t* scope_get_this();
 
 int get_scope();
 

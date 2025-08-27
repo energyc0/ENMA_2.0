@@ -5,7 +5,6 @@
 #include "garbage_collector.h"
 #include "symtable.h"
 #include "hash_table.h"
-#include "ast.h"
 
 static inline obj_string_t* init_objstr(const char* s, size_t len, int32_t hash, obj_type type){
     obj_string_t* ptr = emalloc(sizeof(obj_string_t));
@@ -36,7 +35,7 @@ obj_function_t* mk_objfunc(obj_string_t* name){
     obj_function_t* ptr = emalloc(sizeof(obj_function_t));
     ptr->base.name = name;
     ptr->base.argc = 0;
-    ptr->entry_offset = 0;
+    ptr->entry_offset = -1;
     ptr->base.obj.type = OBJ_FUNCTION;
     ptr->base.obj.next = NULL;
     ptr->base.obj.is_marked = false;
@@ -58,19 +57,21 @@ obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl){
 obj_class_t* mk_objclass(obj_id_t* name){
     obj_class_t* ptr = emalloc(sizeof(obj_class_t));
     ptr->name = name;
-    ptr->fields = mk_table();
-    table_init(ptr->fields);
+    ptr->properties = mk_table();
+    table_init(ptr->properties);
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;
     ptr->obj.type = OBJ_CLASS;
+    for(int i = 0;i < CONSTRUCTORS_LIMIT; i++)
+        ptr->constructors[i] = NULL;
     return ptr;
 }
 
-obj_instance_t* mk_objinstance(struct ast_class_info* info){
+obj_instance_t* mk_objinstance(obj_class_t* cl){
     obj_instance_t* ptr = emalloc(sizeof(obj_instance_t));
-    ptr->impl = info->cl;
-    ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->fields->count);
-    for(size_t i = 0; i < ptr->impl->fields->count; i++)
+    ptr->impl = cl;
+    ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->properties->count);
+    for(size_t i = 0; i < ptr->impl->properties->count; i++)
         ptr->data[i] = VALUE_NULL;
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;
@@ -102,7 +103,7 @@ void obj_free(obj_t* ptr){
         case OBJ_FUNCTION: case OBJ_NATFUNCTION:
             break;
         case OBJ_CLASS:
-            table_free(((obj_class_t*)ptr)->fields);
+            table_free(((obj_class_t*)ptr)->properties);
             break;
         case OBJ_INSTANCE:
             free(((obj_instance_t*)ptr)->data);
@@ -124,6 +125,25 @@ bool is_value_same_type(const value_t a, const value_t b){
 
 bool is_equal_objstring(const obj_string_t* s1, const obj_string_t* s2){
     return s1->len == s2->len && strncmp(s1->str, s2->str, s1->len) == 0;
+}
+
+void set_constructor(obj_class_t* cl, obj_function_t* f){
+    int i = 0;
+    for(;i < CONSTRUCTORS_LIMIT && cl->constructors[i] != NULL; i++){
+        if(cl->constructors[i]->base.argc == f->base.argc)
+            compile_error_printf("Class '%s' already has a constructor with %d arguments\n",cl->name->str, f->base.argc);
+    }
+    if(i < CONSTRUCTORS_LIMIT || f->base.argc == 0) // for default constructor
+        cl->constructors[i] = f;
+    else
+        compile_error_printf("Constructors limit exceeded\n");
+}
+
+obj_function_t* find_constructor(obj_class_t* cl, int argc){
+    for(int i = 0; i <= CONSTRUCTORS_LIMIT && cl->constructors[i] != NULL; i++) // <= because of default constructor
+        if(cl->constructors[i]->base.argc == argc)
+            return cl->constructors[i];
+    return NULL;
 }
 
 #ifdef DEBUG
@@ -149,56 +169,84 @@ const char* get_obj_name(obj_type type){
     return names[type];
 }
 
-char* examine_value(value_t val){
-    static char buf[1024];
+void examine_value(value_t val){
     switch (val.type) {
         case VT_NUMBER: 
-            sprintf(buf, "%d", AS_NUMBER(val));
-            return buf;
+            printf("%d", AS_NUMBER(val));
+            break;
         case VT_BOOL: 
-            return AS_BOOLEAN(val) ? "true" : "false";
+            printf(AS_BOOLEAN(val) ? "true" : "false");
+            break;
         case VT_OBJ:{
             switch (AS_OBJ(val)->type) {
                 case OBJ_STRING:{
-                    sprintf(buf, "\"%.*s\"",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
-                    return buf;
+                    printf("\"%s\"",AS_OBJIDENTIFIER(val)->str);
+                    break;
                 }
                 case OBJ_IDENTIFIER:{
-                    sprintf(buf, "{%.*s}",(int)(sizeof(buf) - 3), AS_OBJIDENTIFIER(val)->str);
-                    return buf;
+                    printf("{%s}",(AS_OBJIDENTIFIER(val)->str));
+                    break;
                 }
                 case OBJ_FUNCTION:{
-                    sprintf(buf, "%p %.*s(%d arguments) [0x%X]",
-                         AS_OBJFUNCTION(val), (int)(sizeof(buf) - 64),
-                          AS_OBJFUNCTION(val)->base.name->str, AS_OBJFUNCTION(val)->base.argc, AS_OBJFUNCTION(val)->entry_offset);
-                         return buf;
+                    printf("%p %s(%d arguments) [0x%X]",
+                    AS_OBJFUNCTION(val),
+                    AS_OBJFUNCTION(val)->base.name->str,
+                    AS_OBJFUNCTION(val)->base.argc,
+                    AS_OBJFUNCTION(val)->entry_offset);
+                    break;
                 }
                 case OBJ_NATFUNCTION:{
-                    sprintf(buf, "%p %.*s(%d arguments) [native]",
-                         AS_OBJNATFUNCTION(val), (int)(sizeof(buf) - 64),
-                          AS_OBJNATFUNCTION(val)->base.name->str, AS_OBJNATFUNCTION(val)->base.argc);
-                    return buf;
+                    printf("%p %s(%d arguments) [native]",
+                    AS_OBJNATFUNCTION(val),
+                    AS_OBJNATFUNCTION(val)->base.name->str,
+                    AS_OBJNATFUNCTION(val)->base.argc);
+                    break;
                 }
                 case OBJ_CLASS:{
-                    sprintf(buf, "%p Class %.*s",
-                         AS_OBJCLASS(val), (int)(sizeof(buf) - 64),
-                          AS_OBJCLASS(val)->name->str);
-                    return buf;
+                    obj_class_t* p = AS_OBJCLASS(val);
+                    printf("%p Class %s\n",p , p->name->str);
+                    printf("Constructors:\n\t[");
+                    int len = ARR_SIZE(p->constructors);
+                    for(int i = 0; i < len && p->constructors[i] != NULL; i++){
+                        examine_value(VALUE_OBJ(p->constructors[i]));
+                        if(i + 1 < len && p->constructors[i] != NULL)
+                            printf(", ");
+                    }
+                    printf("]\n");
+                    printf("Properties: \n\t[");
+                    table_debug(p->properties);
+                    putchar(']');
+                    break;
                 }
                 case OBJ_INSTANCE:{
-                    sprintf(buf, "%p Instance of class %.*s",
-                         AS_OBJINSTANCE(val), (int)(sizeof(buf) - 64),
-                          AS_OBJINSTANCE(val)->impl->name->str);
-                    return buf;
+                    obj_instance_t* p = AS_OBJINSTANCE(val);
+                    printf("%p Instance of class %s with properties:\n\t[", p,p->impl->name->str);
+                    int data_count = p->impl->properties->count;    
+                    for(int i = 0; i < data_count; i++){
+                        examine_value(p->data[i]);
+                        if(i + 1 < data_count)
+                            printf(", ");
+                    }
+                    putchar(']');
+                    break;
                 }
                 default: 
                     fatal_printf("Undefined object type in examine_value()\n");
             }
+            break;
         }
         case VT_NULL:
-            return "NULL";
+            printf("NULL");
+            break;
         default: 
             fatal_printf("Undefined value in the stack! Check examine_value()\n");
     }
 }
+
+void print_value(int offset, value_t val){
+    printf("\t%04X | ", offset);
+    examine_value(val);
+    putchar('\n');
+}
+
 #endif

@@ -53,6 +53,8 @@ static const int precedence[] = {
     [T_CLASS] = 0,
     [T_FIELD] = 0,
     [T_DOT] = 10,
+    [T_METH] = 0,
+    [T_THIS] = 0,
     [T_EOF] = 0
 };
 
@@ -78,13 +80,15 @@ static void parse_return(struct bytecode_chunk* chunk);
 
 static void parse_func(struct bytecode_chunk* chunk);
 static int count_func_args();
-static struct ast_func_arg* parse_func_args();
+static struct ast_call_arg* parse_func_args();
 static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* func);
 static void parse_func_declaration(obj_function_t* func);
 
 static void parse_class_declaration(struct bytecode_chunk* chunk);
 static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl);
 static void parse_class_field(obj_class_t* cl);
+static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk);
+static void add_def_constructor(struct bytecode_chunk* chunk, obj_class_t* cl); //check if class doesn't have default constructor, create if needed
 
 static inline ast_node_type token_to_ast(token_type t){
     static ast_node_type types[] = {
@@ -279,20 +283,33 @@ bool parse_command(struct bytecode_chunk* chunk){
         case T_FUNC:{
             if(!is_global_scope())
                 compile_error_printf("Function declaration expected in the global scope\n");
+            if(scope_get_class() != NULL)
+                compile_error_printf("Function declaration is not expected in a class declaration. Maybe you wanted 'meth'?\n");
             parse_func(chunk);
             break;
         }
         case T_RETURN:{
             if(is_global_scope())
                 compile_error_printf("'return' must be used only in functions\n");
+            if(scope_is_constructor())
+                compile_error_printf("'return' cannot be used in constructors\n");
             parse_return(chunk);
             break;
         }
         case T_CLASS:{
             if(!is_global_scope())
                 compile_error_printf("Class declaration cannot be in a function\n");
+            if(scope_get_class() != NULL)
+                compile_error_printf("Class declaration is not expected in a class declaration.\n");
             parse_class_declaration(chunk);
             break;
+        }
+        case T_METH:{
+            if(scope_get_class()==NULL)
+                compile_error_printf("Methods can be declared only in classes\n");
+            if(!is_global_scope())
+                compile_error_printf("It is not allowed to declare methods in methods\n");
+            compile_error_printf("Cannot declare a method here\n");
         }
         //it is an expression statement
         default:{
@@ -498,13 +515,13 @@ static int count_func_args(){
     return c;
 }
 
-static struct ast_func_arg* parse_func_args(){
-    struct ast_func_arg* args = NULL;
+static struct ast_call_arg* parse_func_args(){
+    struct ast_call_arg* args = NULL;
     if(!is_match(T_RPAR)){
         do{
             scanner_putback_token();
             ast_node* arg = ast_process_expr();
-            struct ast_func_arg* temp = ast_mknode_func_arg(arg);
+            struct ast_call_arg* temp = ast_mk_call_arg(arg);
             temp->next = args;
             args = temp;
             if(!is_match(T_COMMA))
@@ -556,18 +573,17 @@ static void parse_func_declaration(obj_function_t* func){
 static ast_node* ast_call(obj_id_t* id){
     scanner_next_token(&cur_token);
     value_t instance;
-    if(!symtable_get(id, &instance))
-        compile_error_printf("Undefined identifier '%s'\n", id->str);
+    if(!symtable_get(id, &instance) || IS_NULL(instance)){
+        obj_class_t* cl = scope_get_class();
+        if(cl == NULL || !table_check(cl->properties, id, &instance) || IS_NULL(instance))
+            compile_error_printf("Undefined identifier '%s'\n", id->str);
+    }
 
-    struct ast_func_arg* args = NULL;
+    struct ast_call_arg* args = NULL;
     args = parse_func_args();
     cur_expect(T_RPAR,"Expected ')'\n");
 
-    if(IS_OBJFUNC(instance))
-        return ast_mknode_func(args, AS_OBJFUNCBASE(instance));
-    if(IS_OBJCLASS(instance))
-        return ast_mknode_constructor(args, AS_OBJCLASS(instance));
-    compile_error_printf("'%s' is not callable\n", id->str);
+    return ast_mknode_call(args, id);
 }
 
 static void parse_return(struct bytecode_chunk* chunk){
@@ -591,10 +607,34 @@ static void parse_class_declaration(struct bytecode_chunk* chunk){
     if(symtable_get(cl->name, &val) && !IS_NULL(val))
         compile_error_printf("'%s' is already defined\n", cl->name->str);
     symtable_set(cl->name, VALUE_OBJ(cl));
-
+    
+    scope_set_class(cl);
     next_expect(T_LBRACE, "Expected '{'\n");
     parse_class_inners(chunk, cl);
     cur_expect(T_RBRACE, "Expected '}'\n");
+    add_def_constructor(chunk, cl);
+    scope_set_class(NULL);
+}
+
+static void parse_constructor(struct bytecode_chunk* chunk){
+    obj_function_t* p = mk_objfunc(cur_token.data.ptr);
+
+    next_expect(T_LPAR, "Expected '('\n");
+    begin_scope();
+    scope_constructor_start();
+    p->entry_offset = bcchunk_get_codesize(chunk);
+    scope_add_instance_data(chunk);
+    p->base.argc = count_func_args();
+    cur_expect(T_RPAR, "Expected ')'\n");
+
+    next_expect(T_LBRACE, "Expected '{'\n");
+    read_block(chunk);
+    
+    write_get_var(chunk, scope_get_this(), line_counter);
+    bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
+    scope_constructor_end(chunk);
+    end_scope(chunk);
+    set_constructor(scope_get_class(), p);
 }
 
 static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl){
@@ -604,6 +644,14 @@ static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl){
             case T_FIELD: 
                 parse_class_field(cl);
                 break;
+            case T_METH:
+                parse_class_meth(cl, chunk);
+                break;
+            case T_IDENT:
+                if(!is_equal_objstring(cl->name, cur_token.data.ptr))
+                    compile_error_printf("Constructor must have the same identifier as class\n");
+                parse_constructor(chunk);
+                break;
             case T_EOF: case T_RBRACE:
                 return;
             default:
@@ -612,14 +660,37 @@ static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl){
     }
 }
 
+static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk){
+    next_expect(T_IDENT, "Expected identifier\n");
+    obj_id_t* id = cur_token.data.ptr;
+
+    next_expect(T_LPAR, "Expected '('\n");
+    begin_scope();
+    int argc = count_func_args();
+    cur_expect(T_RPAR, "Expected ')'\n");
+    next_expect(T_LBRACE, "Expected '{'\n");
+    read_block(chunk);
+    end_scope(chunk);
+}
+
 static void parse_class_field(obj_class_t* cl){
     next_expect(T_IDENT, "Expected identifier\n");
 
-    if(!table_set(cl->fields, cur_token.data.ptr, VALUE_NULL))
+    if(!table_set(cl->properties, cur_token.data.ptr, VALUE_NUMBER(cl->properties->count)))
         compile_error_printf("Field '%s' already presents in class '%s'\n", cur_token.data.ptr, cl->name->str);;
     next_expect(T_SEMI, "Expected ';'\n");
 }
 
+static void add_def_constructor(struct bytecode_chunk* chunk, obj_class_t* cl){
+    if(find_constructor(cl, 0) == NULL){
+        obj_function_t* func = mk_objfunc(cl->name);
+        func->entry_offset = bcchunk_get_codesize(chunk);
+        bcchunk_write_simple_op(chunk, OP_INSTANCE, line_counter);
+        bcchunk_write_value(chunk, VALUE_OBJ(cl), line_counter);
+        bcchunk_write_simple_op(chunk, OP_RETURN, line_counter);
+        set_constructor(cl, func);
+    }
+}
 
 #undef UPDATE_JUMP_LENGTH
 #undef READ_BLOCK

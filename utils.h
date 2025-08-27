@@ -35,6 +35,16 @@ static inline void next_expect(token_type expect, const char* err_msg){
 void* emalloc(size_t count);
 void* erealloc(void* ptr, size_t count);
 
+#define PRRED "\x1b[0;31m"
+#define PRGREEN "\x1b[0;32m"
+#define PRBLUE "\x1b[0;34m"
+
+void color_printf(const char* color, const char* fmt, ...);
+
+#define red_printf(...) color_printf(PRRED, __VA_ARGS__)
+#define green_printf(...) color_printf(PRGREEN, __VA_ARGS__)
+#define blue_printf(...) color_printf(PRBLUE, __VA_ARGS__)
+
 #ifdef DEBUG
     #define dprintf(...) printf(__VA_ARGS__)
 #else
