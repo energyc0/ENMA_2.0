@@ -212,7 +212,7 @@ value_t ast_eval(ast_node* root){
     }while(0)
 
     #define EXTRACT_IDENTIFIER(val)do{\
-        if(!symtable_get(AS_OBJIDENTIFIER(root->data.val), &val) || IS_NULL(val))\
+        if(!symtable_get(AS_OBJIDENTIFIER(root->data.val), &val) || IS_NONE(val))\
             compile_error_printf("Undefined identifier %s\n", AS_OBJIDENTIFIER(root->data.val)->str);\
     }while(0)
 
@@ -294,7 +294,7 @@ value_t ast_eval(ast_node* root){
             if(!IS_OBJIDENTIFIER(a))
                 compile_error_printf("Left value is not assignable\n");
             value_t val;
-            if(!symtable_get(AS_OBJIDENTIFIER(a), &val) || IS_NULL(val))
+            if(!symtable_get(AS_OBJIDENTIFIER(a), &val) || IS_NONE(val))
                 compile_error_printf("Undefined identifier '%s'\n", AS_OBJIDENTIFIER(a)->str);
             if(!is_value_same_type(b,val))
                 compile_error_printf("Incorrect type for assignment\n");

@@ -8,6 +8,10 @@ class Dog{
     meth eat(food){
         println(name, " has eaten ", food, ". Yammy!");    
     }
+
+    meth getname(){
+        return name
+    }
 }
 
 func main(){

@@ -9,7 +9,8 @@ typedef uint8_t byte_t;
 typedef struct obj_t obj_t;
 
 typedef enum{
-    VT_NULL,
+    VT_NONE,    //value is initialized this first
+    VT_UNINIT,  //for class fields
     VT_BOOL,
     VT_NUMBER,
     VT_OBJ
@@ -27,7 +28,7 @@ typedef struct{
 }value_t;
 
 typedef enum obj_type{
-    OBJ_STRING,
+    OBJ_STRING,    
     OBJ_IDENTIFIER,
     OBJ_FUNCTION,
     OBJ_NATFUNCTION, //native function
@@ -91,8 +92,6 @@ typedef struct obj_instance_t{
     field_t* data;
 }obj_instance_t;
 
-#define VALUE_NULL ((value_t){.type = VT_NULL})
-
 #define INNERVALUE_AS_NUMBER(value) ((union _inner_value_t){.number = (value)})
 #define INNERVALUE_AS_BOOLEAN(value) ((union _inner_value_t){.boolean = (value)})
 #define INNERVALUE_AS_OBJ(value) ((union _inner_value_t){.obj = (value)})
@@ -100,6 +99,8 @@ typedef struct obj_instance_t{
 #define VALUE_BOOLEAN(value) ((value_t){.type = VT_BOOL, .as = {.boolean = (value)}})
 #define VALUE_NUMBER(value) ((value_t){.type = VT_NUMBER, .as = {.number = (value)}})
 #define VALUE_OBJ(value) ((value_t){.type = VT_OBJ, .as = {.obj = (obj_t*)(value)}})
+#define VALUE_NONE ((value_t){.type = VT_NONE})
+#define VALUE_UNINIT ((value_t){.type = VT_UNINIT})
 
 #define AS_NUMBER(value) ((value).as.number)
 #define AS_BOOLEAN(value) ((value).as.boolean)
@@ -115,7 +116,9 @@ typedef struct obj_instance_t{
 #define IS_BOOLEAN(value) ((value).type == VT_BOOL)
 #define IS_NUMBER(value) ((value).type == VT_NUMBER)
 #define IS_OBJ(value) ((value).type == VT_OBJ)
-#define IS_NULL(value) ((value).type == VT_NULL)
+#define IS_NONE(value) ((value).type == VT_NONE)
+#define IS_UNINIT(value) ((value).type == VT_UNINIT)
+#define IS_EMPTY(value) ({value_t t = (value).type; t == VT_UNINIT || t == VT_NONE})
 
 #define IS_OBJSTRING(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_STRING)
 #define IS_OBJIDENTIFIER(value) (IS_OBJ(value) && AS_OBJ(value)->type == OBJ_IDENTIFIER)

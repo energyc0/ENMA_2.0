@@ -1,18 +1,18 @@
 class Dog{
     field name;
     field age;
-    
+
     Dog(){
-        this.name = "noname";
-        this.age = 0;
+        name = "noname";
+        age = 0;
     }
-    Dog(name){
-        this.name = name;
-        this.age = 0;
+    Dog(name_){
+        name = name_;
+        age = 0;
     }
-    Dog(name, age){
-        this.name = name;
-        this.age = age;
+    Dog(name_, age_){
+        name = name_;
+        age = age_;
     }
 }
 

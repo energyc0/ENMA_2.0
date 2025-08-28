@@ -160,8 +160,8 @@ static vm_execute_result interpret(){
             case OP_STRING:
                 stack_push(VALUE_OBJ(extract_value(read_constant()).obj));
                 break;
-            case OP_NULL:
-                stack_push(VALUE_NULL);
+            case OP_NONE:
+                stack_push(VALUE_NONE);
                 break;
             case OP_GET_GLOBAL:{
                 obj_string_t* id = (obj_string_t*)(extract_value(read_constant()).obj);
@@ -471,7 +471,7 @@ static value_t get_variable_value(obj_id_t* id){
     if(idx != -1)
         return vm.bp[idx];
     value_t val;
-    if(!symtable_get(id, &val) || val.type == VT_NULL)
+    if(!symtable_get(id, &val) || val.type == VT_NONE)
         interpret_error_printf(get_vm_codeline(), "Undefined identifier %s\n", id->str);
     return val;
 }
@@ -484,7 +484,7 @@ static void set_variable_value(obj_id_t* id, value_t value){
         vm.bp[idx] = value;
     }else {
         value_t var_val;
-        if(!symtable_get(id, &var_val) || var_val.type == VT_NULL)  
+        if(!symtable_get(id, &var_val) || var_val.type == VT_NONE)  
             interpret_error_printf(get_vm_codeline(), "Undefined identifier %s\n", id->str);
         if(!is_value_same_type(var_val, value))
             interpret_error_printf(get_vm_codeline(), "Incorrect assignment type for '%s'\n", id->str);

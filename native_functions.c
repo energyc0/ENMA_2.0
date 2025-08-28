@@ -33,13 +33,16 @@ value_t native_print(int argc, value_t* argv){
                 case OBJ_CLASS: natprint("Class %s", AS_OBJCLASS(val)->name->str); break;
                 default: fatal_printf("Undefined obj_type in print()!\n");
             }
-        }else if (IS_NULL(val)){
+        }
+        else if(IS_UNINIT(val)){
+            natprint("NULL");
+        }else if (IS_NONE(val)){
             interpret_error_printf(get_vm_codeline(), "Cannot print this expression!\n");
         }else{
-            natprint("print: Not implemented instruction :(");
+            natprint("print: Not implemented :(");
         }
     }
-    return VALUE_NULL;
+    return VALUE_NONE;
 
 #undef natprint
 }
@@ -47,5 +50,5 @@ value_t native_print(int argc, value_t* argv){
 value_t native_println(int argc, value_t* argv){
     native_print(argc,argv);
     putchar('\n');
-    return VALUE_NULL;
+    return VALUE_NONE;
 }

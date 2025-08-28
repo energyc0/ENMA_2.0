@@ -34,7 +34,7 @@ typedef enum{
     OP_NUMBER,
     OP_BOOLEAN,
     OP_STRING,
-    OP_NULL, //it is a simple op, just push NULL on the stack
+    OP_NONE, //it is a simple op, just push VT_NONE on the stack
     OP_INSTANCE,
 
     //binary ops

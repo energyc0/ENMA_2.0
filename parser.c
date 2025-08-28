@@ -534,7 +534,7 @@ static struct ast_call_arg* parse_func_args(){
 
 static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* func){
     value_t val;
-    if(symtable_get(func->base.name, &val) && !IS_NULL(val)){
+    if(symtable_get(func->base.name, &val) && !IS_NONE(val)){
         if(!IS_OBJFUNCTION(val)){
             if(IS_OBJNATFUNCTION(val))
                 compile_error_printf("'%s' is a native function\n", func->base.name->str);
@@ -550,7 +550,7 @@ static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* 
     func->entry_offset = bcchunk_get_codesize(chunk);
     symtable_set(func->base.name, VALUE_OBJ(func));
     read_block(chunk);
-    bcchunk_write_simple_op(chunk, OP_NULL, line_counter);
+    bcchunk_write_simple_op(chunk, OP_NONE, line_counter);
     bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
 }
 
@@ -558,7 +558,7 @@ static void parse_func_declaration(obj_function_t* func){
     cur_expect(T_SEMI, "Expected ';' or '{'\n");
     func->entry_offset = -1;
     value_t val;
-    if(symtable_get(func->base.name, &val) && !IS_NULL(val)){
+    if(symtable_get(func->base.name, &val) && !IS_NONE(val)){
         if(IS_OBJNATFUNCTION(val))
             compile_error_printf("'%s' is a native function\n");
         else if(!IS_OBJFUNCTION(val))
@@ -573,9 +573,9 @@ static void parse_func_declaration(obj_function_t* func){
 static ast_node* ast_call(obj_id_t* id){
     scanner_next_token(&cur_token);
     value_t instance;
-    if(!symtable_get(id, &instance) || IS_NULL(instance)){
+    if(!symtable_get(id, &instance) || IS_NONE(instance)){
         obj_class_t* cl = scope_get_class();
-        if(cl == NULL || !table_check(cl->properties, id, &instance) || IS_NULL(instance))
+        if(cl == NULL || !table_check(cl->properties, id, &instance) || IS_NONE(instance))
             compile_error_printf("Undefined identifier '%s'\n", id->str);
     }
 
@@ -589,7 +589,7 @@ static ast_node* ast_call(obj_id_t* id){
 static void parse_return(struct bytecode_chunk* chunk){
     scanner_next_token(&cur_token);
     if(is_match(T_SEMI)){
-        bcchunk_write_simple_op(chunk, OP_NULL, line_counter);
+        bcchunk_write_simple_op(chunk, OP_NONE, line_counter);
     }else{
         scanner_putback_token();
         ast_node* expr = ast_process_expr();
@@ -604,7 +604,7 @@ static void parse_class_declaration(struct bytecode_chunk* chunk){
     next_expect(T_IDENT, "Expected identifier\n");
     obj_class_t* cl = mk_objclass(cur_token.data.ptr);
     value_t val;
-    if(symtable_get(cl->name, &val) && !IS_NULL(val))
+    if(symtable_get(cl->name, &val) && !IS_NONE(val))
         compile_error_printf("'%s' is already defined\n", cl->name->str);
     symtable_set(cl->name, VALUE_OBJ(cl));
     

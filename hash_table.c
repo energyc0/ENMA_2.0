@@ -30,7 +30,7 @@ bool table_set(struct hash_table* t, obj_string_t* key, value_t value){
     if(t->capacity * LOAD_RATIO < t->count +1)
         table_grow(t);
     hash_entry* ptr = find_entry(t, key);
-    bool is_new = ptr->key == NULL && (IS_NULL(ptr->value) || (IS_BOOLEAN(ptr->value) && AS_BOOLEAN(ptr->value)));
+    bool is_new = ptr->key == NULL && (IS_NONE(ptr->value) || (IS_BOOLEAN(ptr->value) && AS_BOOLEAN(ptr->value)));
     if(is_new){
         t->count++;
     }
@@ -109,7 +109,7 @@ obj_string_t* table_find_string(struct hash_table* t, const char* s, size_t sz, 
 static void entries_init(hash_entry* entries, size_t count){
     for(size_t i = 0; i < count; i++){
         entries[i].key = NULL;
-        entries[i].value = VALUE_NULL;
+        entries[i].value = VALUE_NONE;
     }
 }
 

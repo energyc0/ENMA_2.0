@@ -128,7 +128,7 @@ size_t instruction_debug(const struct bytecode_chunk* chunk, size_t offset){
         case OP_POSTINCR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POSTDECR_LOCAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_POSTDECR_GLOBAL: return constant_instruction_debug(op_to_string(op), chunk, offset);
-        case OP_NULL: return simple_instruction_debug(op_to_string(op), chunk, offset);
+        case OP_NONE: return simple_instruction_debug(op_to_string(op), chunk, offset);
         case OP_CLARGS: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_INSTANCE: return constant_instruction_debug(op_to_string(op), chunk, offset);
         case OP_GET_PROPERTY: return constant_instruction_debug(op_to_string(op), chunk, offset);
@@ -385,7 +385,7 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
                 argc++;
             }
             value_t val;
-            if(!symtable_get(info->id, &val) || IS_NULL(val))
+            if(!symtable_get(info->id, &val) || IS_NONE(val))
                 compile_error_printf("'%s' is not defined\n", info->id->str);
             if(!IS_OBJ(val))
                 compile_error_printf("'%s' is not callable\n", info->id->str);
@@ -453,7 +453,7 @@ const char* op_to_string(op_t op){
         [OP_NUMBER] = "OP_NUMBER",
         [OP_BOOLEAN] = "OP_BOOLEAN",
         [OP_STRING] = "OP_STRING",
-        [OP_NULL] = "OP_NULL",
+        [OP_NONE] = "OP_NONE",
         [OP_GET_GLOBAL] = "OP_GET_GLOBAL",
         [OP_SET_GLOBAL] = "OP_SET_GLOBAL",
         [OP_GET_LOCAL] = "OP_GET_LOCAL",

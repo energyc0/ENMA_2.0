@@ -30,13 +30,14 @@ static void define_local();
 static bool check_current_depth_local(obj_string_t* id);
 static inline void pop_locals(struct bytecode_chunk* chunk, int var_k);
 static void perform_local_global_op(struct bytecode_chunk* chunk, const obj_id_t* id, op_t local, op_t global, int line);
+static bool resolve_field(struct bytecode_chunk* chunk, const obj_id_t* id, int line, op_t op);
 
 static int find_argument(const obj_id_t* id);
 
 void scope_init(){
     //garbage collector stores this memory
     _scope.this_ = mk_objid("this", strlen("this"), hash_string("this", strlen("this")));
-    symtable_set(_scope.this_, VALUE_NULL);
+    symtable_set(_scope.this_, VALUE_UNINIT);
 }
 
 void begin_scope(){
@@ -104,7 +105,7 @@ bool define_variable(obj_id_t* id, struct ast_node* expr, struct bytecode_chunk*
         value_t val;
         if(!symtable_get(id, &val))
             compile_error_printf("Identifier '%s' is not in symtable! Some shit has occured!\n", id->str);
-        if(!IS_NULL(val))
+        if(!IS_NONE(val))
             compile_error_printf("'%s' variable redefenition.\n", id->str);
         symtable_set(id, ast_eval(expr));
     }else{
@@ -201,11 +202,27 @@ static void perform_local_global_op(struct bytecode_chunk* chunk, const obj_id_t
 }
 
 void write_set_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line){
-    perform_local_global_op(chunk, id, OP_SET_LOCAL, OP_SET_GLOBAL, line);
+    if(!resolve_field(chunk, id, line, OP_SET_PROPERTY))
+        perform_local_global_op(chunk, id, OP_SET_LOCAL, OP_SET_GLOBAL, line);
 }
 
 void write_get_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line){
-    perform_local_global_op(chunk, id, OP_GET_LOCAL, OP_GET_GLOBAL, line);
+    if(!resolve_field(chunk, id, line, OP_GET_PROPERTY))
+        perform_local_global_op(chunk, id, OP_GET_LOCAL, OP_GET_GLOBAL, line);
+}
+
+static bool resolve_field(struct bytecode_chunk* chunk, const obj_id_t* id, int line, op_t op){
+    if(_scope.current_class == NULL)
+        return false;
+
+    if(table_check(_scope.current_class->properties, id, NULL)){
+        write_get_var(chunk, _scope.this_, line);
+        bcchunk_write_simple_op(chunk, op, line);
+        bcchunk_write_value(chunk, VALUE_OBJ(id), line);
+        return true;
+    }
+
+    return false;
 }
 
 void write_postincr_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line){

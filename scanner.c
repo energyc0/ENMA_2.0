@@ -245,7 +245,7 @@ int scanner_next_token(struct token* t){
                     t->data.ptr = symtable_findstr(word, len, hash);
                     if(t->data.ptr == NULL){
                         t->data.ptr = mk_objid(word, len, hash);
-                        symtable_set(t->data.ptr, VALUE_NULL);
+                        symtable_set(t->data.ptr, VALUE_NONE);
                     }
                 }
                 break;

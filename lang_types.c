@@ -1,6 +1,7 @@
 #include "lang_types.h"
 #include "utils.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include "garbage_collector.h"
 #include "symtable.h"
@@ -72,7 +73,7 @@ obj_instance_t* mk_objinstance(obj_class_t* cl){
     ptr->impl = cl;
     ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->properties->count);
     for(size_t i = 0; i < ptr->impl->properties->count; i++)
-        ptr->data[i] = VALUE_NULL;
+        ptr->data[i] = VALUE_UNINIT;
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;
     ptr->obj.type = OBJ_INSTANCE;
@@ -149,7 +150,8 @@ obj_function_t* find_constructor(obj_class_t* cl, int argc){
 #ifdef DEBUG
 const char* get_value_name(value_type type){
     static const char* names[] = {
-        [VT_NULL] = "null",
+        [VT_NONE] = "nothing",
+        [VT_UNINIT] = "null",
         [VT_NUMBER] = "number",
         [VT_BOOL] = "bool",
         [VT_OBJ] = "obj"
@@ -209,12 +211,13 @@ void examine_value(value_t val){
                     int len = ARR_SIZE(p->constructors);
                     for(int i = 0; i < len && p->constructors[i] != NULL; i++){
                         examine_value(VALUE_OBJ(p->constructors[i]));
-                        if(i + 1 < len && p->constructors[i] != NULL)
+                        if(i + 1 < len && p->constructors[i+1] != NULL)
                             printf(", ");
                     }
                     printf("]\n");
                     printf("Properties: \n\t[");
-                    table_debug(p->properties);
+                    if(p->properties->count > 0)
+                        table_debug(p->properties);
                     putchar(']');
                     break;
                 }
@@ -235,8 +238,11 @@ void examine_value(value_t val){
             }
             break;
         }
-        case VT_NULL:
-            printf("NULL");
+        case VT_NONE:
+            printf("NONE");
+            break;
+        case VT_UNINIT:
+            printf("UNINIT");
             break;
         default: 
             fatal_printf("Undefined value in the stack! Check examine_value()\n");

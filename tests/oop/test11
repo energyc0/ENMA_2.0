@@ -1,0 +1,14 @@
+class A{
+    meth foo(){
+        println("A method!");
+    }
+}
+
+func foo(){
+    println("Function!");
+}
+
+func main(){
+    foo();
+    A().foo();
+}

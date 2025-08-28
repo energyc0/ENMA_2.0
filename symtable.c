@@ -70,7 +70,7 @@ bool symtable_set(obj_id_t* id, value_t val){
     return table_set(&symtable, id, val);
 }
 bool stringtable_set(obj_string_t* str){
-    return table_set(&stringtable, str, VALUE_NULL);
+    return table_set(&stringtable, str, VALUE_NONE);
 }
 
 bool symtable_get(const obj_id_t* id, value_t* value){
