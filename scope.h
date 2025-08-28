@@ -58,7 +58,7 @@ bool declare_variable(obj_id_t* id);
 /*return false if variable exists*/
 bool define_variable(obj_id_t* id, struct ast_node* expr, struct bytecode_chunk* chunk);
 /*return false if variable exists*/
-bool declare_argument(obj_id_t* id);
+void declare_argument(obj_id_t* id);
 
 //return variable index for vm.bp[]
 //return -1 if not found(vm.bp[-1] is old bp and vm.bp[-2] is return address)

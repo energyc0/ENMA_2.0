@@ -168,13 +168,14 @@ obj_id_t* scope_get_this(){
     return _scope.this_;
 }
 
-bool declare_argument(obj_id_t* id){
+void declare_argument(obj_id_t* id){
+    if(_scope.current_class != NULL && table_check(_scope.current_class->properties, id, NULL))
+        compile_error_printf("'%s' is a class field\n", id->str);
     if(find_argument(id) != -1)
-        return false;
+        compile_error_printf("Argument '%s' has already defined\n", id->str);
     if(_scope.arguments_count >= ARGUMENTS_COUNT)
         compile_error_printf("Arguments number has reached limit!\n");
     _scope.arguments[_scope.arguments_count++] = id;
-    return true;
 }
 
 int resolve_local(const obj_id_t* id){

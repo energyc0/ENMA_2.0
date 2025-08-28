@@ -503,8 +503,7 @@ static int count_func_args(){
     if(!is_match(T_RPAR)){
         do{
             cur_expect(T_IDENT, "Expected identifier\n");
-            if(!declare_argument(cur_token.data.ptr))
-                compile_error_printf("Already have argument named '%s'\n", ((obj_id_t*)cur_token.data.ptr)->str);
+            declare_argument(cur_token.data.ptr);
             c++;
             scanner_next_token(&cur_token);
             if(!is_match(T_COMMA))
@@ -676,6 +675,8 @@ static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk){
 static void parse_class_field(obj_class_t* cl){
     next_expect(T_IDENT, "Expected identifier\n");
 
+    if(cur_token.data.ptr == scope_get_this())
+        compile_error_printf("Cannot use 'this' as field of class\n");
     if(!table_set(cl->properties, cur_token.data.ptr, VALUE_NUMBER(cl->properties->count)))
         compile_error_printf("Field '%s' already presents in class '%s'\n", cur_token.data.ptr, cl->name->str);;
     next_expect(T_SEMI, "Expected ';'\n");

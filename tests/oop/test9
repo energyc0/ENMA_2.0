@@ -10,13 +10,14 @@ class Dog{
     }
 
     meth getname(){
-        return name
+        return name;
     }
 }
 
 func main(){
     var bro = Dog();
     bro.name = "Oliver";
+    println("Dog's name is ", bro.getname());
     bro.sound();
     bro.eat("sandwich");
 }
