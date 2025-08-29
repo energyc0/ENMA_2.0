@@ -58,8 +58,10 @@ obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl){
 obj_class_t* mk_objclass(obj_id_t* name){
     obj_class_t* ptr = emalloc(sizeof(obj_class_t));
     ptr->name = name;
-    ptr->properties = mk_table();
-    table_init(ptr->properties);
+    ptr->fields = mk_table();
+    table_init(ptr->fields);
+    ptr->methods = mk_table();
+    table_init(ptr->methods);
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;
     ptr->obj.type = OBJ_CLASS;
@@ -71,8 +73,8 @@ obj_class_t* mk_objclass(obj_id_t* name){
 obj_instance_t* mk_objinstance(obj_class_t* cl){
     obj_instance_t* ptr = emalloc(sizeof(obj_instance_t));
     ptr->impl = cl;
-    ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->properties->count);
-    for(size_t i = 0; i < ptr->impl->properties->count; i++)
+    ptr->data = emalloc(sizeof(ptr->data[0]) * ptr->impl->fields->count);
+    for(size_t i = 0; i < ptr->impl->fields->count; i++)
         ptr->data[i] = VALUE_UNINIT;
     ptr->obj.is_marked = false;
     ptr->obj.next = NULL;
@@ -104,7 +106,8 @@ void obj_free(obj_t* ptr){
         case OBJ_FUNCTION: case OBJ_NATFUNCTION:
             break;
         case OBJ_CLASS:
-            table_free(((obj_class_t*)ptr)->properties);
+            table_free(((obj_class_t*)ptr)->fields);
+            table_free(((obj_class_t*)ptr)->methods);
             break;
         case OBJ_INSTANCE:
             free(((obj_instance_t*)ptr)->data);
@@ -215,16 +218,16 @@ void examine_value(value_t val){
                             printf(", ");
                     }
                     printf("]\n");
-                    printf("Properties: \n\t[");
-                    if(p->properties->count > 0)
-                        table_debug(p->properties);
+                    printf("Fields: \n\t[");
+                    if(p->fields->count > 0)
+                        table_debug(p->fields);
                     putchar(']');
                     break;
                 }
                 case OBJ_INSTANCE:{
                     obj_instance_t* p = AS_OBJINSTANCE(val);
                     printf("%p Instance of class %s with properties:\n\t[", p,p->impl->name->str);
-                    int data_count = p->impl->properties->count;    
+                    int data_count = p->impl->fields->count;    
                     for(int i = 0; i < data_count; i++){
                         examine_value(p->data[i]);
                         if(i + 1 < data_count)

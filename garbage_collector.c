@@ -1,5 +1,4 @@
 #include "garbage_collector.h"
-#include "bytecode.h"
 #include "hash_table.h"
 #include "lang_types.h"
 #include <stdio.h>
@@ -136,6 +135,8 @@ void print_gc_entry(obj_t* p){
             default:
                 fatal_printf("Undefined obj_t type in gc_debug()\n"); 
         }
-    printf("%s %s\n", objnames[p->type], examine_value(VALUE_OBJ(p)));
+    printf("%s\n", objnames[p->type]);
+    examine_value(VALUE_OBJ(p));
+    putchar('\n');
 }
 #endif

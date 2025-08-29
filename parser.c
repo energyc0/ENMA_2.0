@@ -89,6 +89,7 @@ static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl);
 static void parse_class_field(obj_class_t* cl);
 static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk);
 static void add_def_constructor(struct bytecode_chunk* chunk, obj_class_t* cl); //check if class doesn't have default constructor, create if needed
+static void function_return_stub(struct bytecode_chunk* chunk);
 
 static inline ast_node_type token_to_ast(token_type t){
     static ast_node_type types[] = {
@@ -549,8 +550,7 @@ static void parse_func_definition(struct bytecode_chunk* chunk, obj_function_t* 
     func->entry_offset = bcchunk_get_codesize(chunk);
     symtable_set(func->base.name, VALUE_OBJ(func));
     read_block(chunk);
-    bcchunk_write_simple_op(chunk, OP_NONE, line_counter);
-    bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
+    function_return_stub(chunk);
 }
 
 static void parse_func_declaration(obj_function_t* func){
@@ -571,13 +571,14 @@ static void parse_func_declaration(obj_function_t* func){
 
 static ast_node* ast_call(obj_id_t* id){
     scanner_next_token(&cur_token);
-    value_t instance;
+    /*value_t instance;
+    
     if(!symtable_get(id, &instance) || IS_NONE(instance)){
         obj_class_t* cl = scope_get_class();
-        if(cl == NULL || !table_check(cl->properties, id, &instance) || IS_NONE(instance))
+        if(cl == NULL || !table_check(cl->methods, id, &instance) || IS_NONE(instance))
             compile_error_printf("Undefined identifier '%s'\n", id->str);
     }
-
+    */
     struct ast_call_arg* args = NULL;
     args = parse_func_args();
     cur_expect(T_RPAR,"Expected ')'\n");
@@ -622,7 +623,7 @@ static void parse_constructor(struct bytecode_chunk* chunk){
     begin_scope();
     scope_constructor_start();
     p->entry_offset = bcchunk_get_codesize(chunk);
-    scope_add_instance_data(chunk);
+    scope_add_constructor_data(chunk);
     p->base.argc = count_func_args();
     cur_expect(T_RPAR, "Expected ')'\n");
 
@@ -661,14 +662,23 @@ static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl){
 
 static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk){
     next_expect(T_IDENT, "Expected identifier\n");
-    obj_id_t* id = cur_token.data.ptr;
+    obj_function_t* p = mk_objfunc(cur_token.data.ptr);
 
     next_expect(T_LPAR, "Expected '('\n");
     begin_scope();
     int argc = count_func_args();
     cur_expect(T_RPAR, "Expected ')'\n");
     next_expect(T_LBRACE, "Expected '{'\n");
+
+    p->entry_offset = bcchunk_get_codesize(chunk);
+    bcchunk_write_simple_op(chunk, OP_GET_LOCAL, line_counter);
+    bcchunk_write_value(chunk, VALUE_NUMBER(-3 - argc), line_counter);//caller
+    scope_add_instance_data(chunk, argc);
+    if(!table_set(cl->methods,p->base.name,VALUE_OBJ(p)))
+        compile_error_printf("Method '%s' already exists\n", p->base.name->str);
+
     read_block(chunk);
+    function_return_stub(chunk);
     end_scope(chunk);
 }
 
@@ -677,7 +687,7 @@ static void parse_class_field(obj_class_t* cl){
 
     if(cur_token.data.ptr == scope_get_this())
         compile_error_printf("Cannot use 'this' as field of class\n");
-    if(!table_set(cl->properties, cur_token.data.ptr, VALUE_NUMBER(cl->properties->count)))
+    if(!table_set(cl->fields, cur_token.data.ptr, VALUE_NUMBER(cl->fields->count)))
         compile_error_printf("Field '%s' already presents in class '%s'\n", cur_token.data.ptr, cl->name->str);;
     next_expect(T_SEMI, "Expected ';'\n");
 }
@@ -691,6 +701,11 @@ static void add_def_constructor(struct bytecode_chunk* chunk, obj_class_t* cl){
         bcchunk_write_simple_op(chunk, OP_RETURN, line_counter);
         set_constructor(cl, func);
     }
+}
+
+static void function_return_stub(struct bytecode_chunk* chunk){
+    bcchunk_write_simple_op(chunk, OP_NONE, line_counter);
+    bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
 }
 
 #undef UPDATE_JUMP_LENGTH

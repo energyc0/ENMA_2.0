@@ -37,6 +37,9 @@ static inline union _inner_value_t extract_value(int offset);
 static value_t get_variable_value(obj_id_t* id);
 static void set_variable_value(obj_id_t* id, value_t value);
 
+static void extract_instance(value_t* val, int argc);
+static void perform_call(obj_function_t* p);
+
 static void preamble();
 static void epilogue();
 
@@ -360,12 +363,7 @@ static vm_execute_result interpret(){
             #undef POST_OP_GLOBAL
             #undef POST_OP_LOCAL
             case OP_CALL:{
-                obj_function_t* p = (obj_function_t*)extract_value(read_constant()).obj;
-                if(p->entry_offset < 0)
-                    interpret_error_printf(get_vm_codeline(), "Function '%s' is declared but not defined\n", p->base.name->str);
-                stack_push(VALUE_NUMBER(vm.ip - vm.code->_code.data));
-                vm.ip = &vm.code->_code.data[p->entry_offset];
-                preamble();
+                perform_call((obj_function_t*)extract_value(read_constant()).obj);
                 break;
             }
             case OP_NATIVE_CALL:{
@@ -380,15 +378,15 @@ static vm_execute_result interpret(){
                 stack_push(VALUE_OBJ(new_instance));
                 break;
             }
-            case OP_SET_PROPERTY:{
-                value_t inst = stack_pop();
+            case OP_SET_FIELD:{
+                value_t inst;
+                extract_instance(&inst,0);
+                vm.sp--;
                 value_t val = stack_pop();
                 obj_id_t* field = (obj_id_t*)extract_value(read_constant()).obj;
-                if(!IS_OBJINSTANCE(inst))
-                    interpret_error_printf(get_vm_codeline(), "Value is not an instance\n");
 
                 value_t field_val;
-                if(!table_check(AS_OBJINSTANCE(inst)->impl->properties, field, &field_val))
+                if(!table_check(AS_OBJINSTANCE(inst)->impl->fields, field, &field_val))
                     interpret_error_printf(get_vm_codeline(),
                  "Instance of class '%s' doesn't have field '%s'\n",
                 AS_OBJINSTANCE(inst)->impl->name->str, field->str);
@@ -398,21 +396,35 @@ static vm_execute_result interpret(){
                 stack_push(val);
                 break;
             }
-            case OP_GET_PROPERTY:{
-                value_t inst = stack_pop();
+            case OP_GET_FIELD:{
+                value_t inst;
+                extract_instance(&inst,0);
+                vm.sp--;
                 obj_id_t* field = (obj_id_t*)extract_value(read_constant()).obj;
 
                 if(!IS_OBJINSTANCE(inst))
                     interpret_error_printf(get_vm_codeline(), "Value is not an instance\n");
 
                 value_t field_val;
-                if(!table_check(AS_OBJINSTANCE(inst)->impl->properties, field, &field_val))
+                if(!table_check(AS_OBJINSTANCE(inst)->impl->fields, field, &field_val))
                     interpret_error_printf(get_vm_codeline(),
                  "Instance of class '%s' doesn't have field '%s'\n",
                 AS_OBJINSTANCE(inst)->impl->name->str, field->str);
                 int idx = AS_NUMBER(field_val);
 
                 stack_push(AS_OBJINSTANCE(inst)->data[idx]);
+                break;
+            }
+            case OP_METHOD:{
+                int argc = AS_NUMBER(stack_pop());
+                value_t inst;
+                extract_instance(&inst, argc);
+                obj_id_t* meth = (obj_id_t*)extract_value(read_constant()).obj;
+                value_t val;
+                if(!table_check(AS_OBJINSTANCE(inst)->impl->methods, meth,&val))
+                    interpret_error_printf(get_vm_codeline(), "Instance of class '%s' doesn't have method '%s'\n", 
+                AS_OBJINSTANCE(inst)->impl->name->str, meth->str);
+                perform_call(AS_OBJFUNCTION(val));
                 break;
             }
             default: 
@@ -505,6 +517,20 @@ static void epilogue(){
         fatal_printf("Stack smashed! Expected BP offset.\n");
 #endif          
     vm.bp = &vm.stack[AS_NUMBER(val)];
+}
+
+static void perform_call(obj_function_t* p){
+    if(p->entry_offset < 0)
+        interpret_error_printf(get_vm_codeline(), "Function '%s' is declared but not defined\n", p->base.name->str);
+    stack_push(VALUE_NUMBER(vm.ip - vm.code->_code.data));
+    vm.ip = &vm.code->_code.data[p->entry_offset];
+    preamble();
+}
+
+static void extract_instance(value_t* val, int argc){
+    *val = vm.sp[-argc - 1];
+    if(!IS_OBJINSTANCE(*val))
+        interpret_error_printf(get_vm_codeline(), "Value is not an instance\n");
 }
 
 #ifdef DEBUG

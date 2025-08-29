@@ -45,7 +45,8 @@ obj_class_t* scope_get_class();
 void scope_constructor_start(); //is_constructor = true and opens scope
 void scope_constructor_end(struct bytecode_chunk* chunk);   //is_constructor = false and closes scope
 bool scope_is_constructor();
-void scope_add_instance_data(struct bytecode_chunk* chunk); //adds 'this'
+void scope_add_constructor_data(struct bytecode_chunk* chunk); //adds new 'this'
+void scope_add_instance_data(struct bytecode_chunk* chunk, int argc); //adds caller 'this'
 obj_id_t* scope_get_this();
 
 int get_scope();

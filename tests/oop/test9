@@ -17,7 +17,7 @@ class Dog{
 func main(){
     var bro = Dog();
     bro.name = "Oliver";
-    println("Dog's name is ", bro.getname());
     bro.sound();
+    println("Dog's name is ", bro.getname());
     bro.eat("sandwich");
 }

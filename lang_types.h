@@ -82,7 +82,8 @@ struct hash_table;
 typedef struct obj_class_t{
     obj_t obj;
     obj_id_t* name;
-    struct hash_table* properties;
+    struct hash_table* fields;
+    struct hash_table* methods;
     obj_function_t* constructors[CONSTRUCTORS_LIMIT + 1]; // for default constructor
 }obj_class_t;
 

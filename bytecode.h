@@ -61,8 +61,9 @@ typedef enum{
     OP_PREFDECR_GLOBAL,
     OP_PREFDECR_LOCAL,
 
-    OP_GET_PROPERTY,
-    OP_SET_PROPERTY
+    OP_GET_FIELD,
+    OP_SET_FIELD,
+    OP_METHOD
 } op_t;
 
 struct chunk{

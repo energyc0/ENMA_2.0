@@ -157,11 +157,18 @@ void scope_constructor_end(struct bytecode_chunk* chunk){
 bool scope_is_constructor(){
     return _scope.is_constructor;
 }
-void scope_add_instance_data(struct bytecode_chunk* chunk){
+void scope_add_constructor_data(struct bytecode_chunk* chunk){
     declare_local(_scope.this_); //this argument is an instance that uses this method
     define_local();
     bcchunk_write_simple_op(chunk, OP_INSTANCE, line_counter);
     bcchunk_write_value(chunk, VALUE_OBJ(_scope.current_class), line_counter);
+}
+
+void scope_add_instance_data(struct bytecode_chunk* chunk, int argc){
+    declare_local(_scope.this_); //this argument is an instance that uses this method
+    define_local();
+    bcchunk_write_simple_op(chunk, OP_GET_LOCAL, line_counter);
+    bcchunk_write_value(chunk, VALUE_NUMBER(-3-argc), line_counter);
 }
 
 obj_id_t* scope_get_this(){
@@ -169,7 +176,7 @@ obj_id_t* scope_get_this(){
 }
 
 void declare_argument(obj_id_t* id){
-    if(_scope.current_class != NULL && table_check(_scope.current_class->properties, id, NULL))
+    if(_scope.current_class != NULL && table_check(_scope.current_class->fields, id, NULL))
         compile_error_printf("'%s' is a class field\n", id->str);
     if(find_argument(id) != -1)
         compile_error_printf("Argument '%s' has already defined\n", id->str);
@@ -203,12 +210,12 @@ static void perform_local_global_op(struct bytecode_chunk* chunk, const obj_id_t
 }
 
 void write_set_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line){
-    if(!resolve_field(chunk, id, line, OP_SET_PROPERTY))
+    if(!resolve_field(chunk, id, line, OP_SET_FIELD))
         perform_local_global_op(chunk, id, OP_SET_LOCAL, OP_SET_GLOBAL, line);
 }
 
 void write_get_var(struct bytecode_chunk* chunk, const obj_id_t* id, int line){
-    if(!resolve_field(chunk, id, line, OP_GET_PROPERTY))
+    if(!resolve_field(chunk, id, line, OP_GET_FIELD))
         perform_local_global_op(chunk, id, OP_GET_LOCAL, OP_GET_GLOBAL, line);
 }
 
@@ -216,7 +223,7 @@ static bool resolve_field(struct bytecode_chunk* chunk, const obj_id_t* id, int 
     if(_scope.current_class == NULL)
         return false;
 
-    if(table_check(_scope.current_class->properties, id, NULL)){
+    if(table_check(_scope.current_class->fields, id, NULL)){
         write_get_var(chunk, _scope.this_, line);
         bcchunk_write_simple_op(chunk, op, line);
         bcchunk_write_value(chunk, VALUE_OBJ(id), line);
