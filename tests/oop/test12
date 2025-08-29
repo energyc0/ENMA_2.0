@@ -1,0 +1,16 @@
+class A{
+    meth print1(a){
+        println(a);
+    }
+
+    meth print2(a,b){
+        println(a,b);
+    }
+
+}
+
+func main(){
+    var a = A();
+    a.print1(123);
+    a.print2(123);
+}

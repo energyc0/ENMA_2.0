@@ -1,0 +1,12 @@
+class A{
+    meth foo(){
+        println(1);
+    }
+    meth foo(a){
+        println(a);
+    }
+}
+
+func main(){
+    println("bad.");
+}

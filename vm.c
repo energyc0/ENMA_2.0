@@ -424,6 +424,9 @@ static vm_execute_result interpret(){
                 if(!table_check(AS_OBJINSTANCE(inst)->impl->methods, meth,&val))
                     interpret_error_printf(get_vm_codeline(), "Instance of class '%s' doesn't have method '%s'\n", 
                 AS_OBJINSTANCE(inst)->impl->name->str, meth->str);
+                if(AS_OBJFUNCTION(val)->base.argc != argc)
+                    interpret_error_printf(get_vm_codeline(), "Expected %d arguments, found %d in '%s' method\n",
+                 AS_OBJFUNCTION(val)->base.argc, argc, AS_OBJFUNCTION(val)->base.name->str);
                 perform_call(AS_OBJFUNCTION(val));
                 break;
             }

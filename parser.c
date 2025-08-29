@@ -671,6 +671,7 @@ static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk){
     next_expect(T_LBRACE, "Expected '{'\n");
 
     p->entry_offset = bcchunk_get_codesize(chunk);
+    p->base.argc = argc;
     bcchunk_write_simple_op(chunk, OP_GET_LOCAL, line_counter);
     bcchunk_write_value(chunk, VALUE_NUMBER(-3 - argc), line_counter);//caller
     scope_add_instance_data(chunk, argc);
