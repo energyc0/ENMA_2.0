@@ -1,0 +1,17 @@
+class A{
+    meth say(){
+        println("Hello!");
+    }
+}
+
+class B : A{
+    meth sum(a,b){
+        return a + b;
+    }
+}
+
+func main(){
+    var b = B();
+    b.say();
+    println(b.sum(1,2));
+}

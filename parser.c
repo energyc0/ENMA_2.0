@@ -55,6 +55,8 @@ static const int precedence[] = {
     [T_DOT] = 10,
     [T_METH] = 0,
     [T_THIS] = 0,
+    [T_COLON] = 0,
+    [T_OVERRIDE] = 0,
     [T_EOF] = 0
 };
 
@@ -91,6 +93,8 @@ static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk);
 static void add_def_constructor(struct bytecode_chunk* chunk, obj_class_t* cl); //check if class doesn't have default constructor, create if needed
 static void function_return_stub(struct bytecode_chunk* chunk);
 
+static void parse_class_parents(obj_class_t* cl);
+
 static inline ast_node_type token_to_ast(token_type t){
     static ast_node_type types[] = {
         [T_ADD] = AST_ADD, 
@@ -118,7 +122,7 @@ static ast_node* ast_bin_expr(int prev_precedence){
     ast_node* right;
     ast_node* left = ast_primary();
 
-    if(!scanner_next_token(&cur_token))
+    if(!scanner_next_token())
         return left;
     
     token_type cur_op = cur_token.type;
@@ -136,7 +140,7 @@ static ast_node* ast_bin_expr(int prev_precedence){
 }
 
 static ast_node* ast_primary(){
-    if(!scanner_next_token(&cur_token))
+    if(!scanner_next_token())
         compile_error_printf("Expected expression\n");
 
     ast_node* temp;
@@ -168,7 +172,7 @@ static ast_node* ast_primary(){
             return ast_mknode(AST_PREFDECR, AST_DATA_VALUE(VALUE_OBJ(cur_token.data.ptr)));
         case T_IDENT:{
             obj_id_t* id = cur_token.data.ptr;
-            scanner_next_token(&cur_token);
+            scanner_next_token();
             switch(cur_token.type){
                 case T_INCR: return ast_mknode(AST_POSTINCR, AST_DATA_VALUE(VALUE_OBJ(id)));
                 case T_DECR: return ast_mknode(AST_POSTDECR, AST_DATA_VALUE(VALUE_OBJ(id)));
@@ -188,24 +192,6 @@ static ast_node* ast_primary(){
     }
 }
 
-/*
-static struct ast_property* parse_ast_property(struct ast_property* instance){
-    next_expect(T_IDENT, "Expected property\n");
-    obj_id_t* id = cur_token.data.ptr;
-    struct ast_property* prop_inst = ast_mk_property(id);
-
-    scanner_next_token(&cur_token);
-    if(is_match(T_DOT)){
-        instance->property = prop_inst;
-        prop_inst->property = parse_ast_property(prop_inst);
-    }else{
-        scanner_putback_token();
-    }
-
-    return prop_inst;
-}
-*/
-
 static inline int get_op_precedence(token_type op){
 #ifdef DEBUG
     if(PRECEDENCE_ARR_SIZE != T_EOF + 1)
@@ -219,7 +205,7 @@ static inline int get_op_precedence(token_type op){
 }
 
 static inline void read_block(struct bytecode_chunk* chunk){
-    while (scanner_next_token(&cur_token) && !is_match(T_RBRACE)) {
+    while (scanner_next_token() && !is_match(T_RBRACE)) {
         scanner_putback_token();
         if(!parse_command(chunk))
             break;
@@ -237,7 +223,7 @@ bool parse_command(struct bytecode_chunk* chunk){
             compile_error_printf(__VA_ARGS__);\
     }while(0)
 
-    if(!scanner_next_token(&cur_token))
+    if(!scanner_next_token())
         return false;
 
     switch(cur_token.type){
@@ -370,7 +356,7 @@ static void parse_if(struct bytecode_chunk* chunk){
     bcchunk_write_constant(chunk, -(int)sizeof(int), line_counter); 
     READ_BLOCK(chunk);
 
-    if(!scanner_next_token(&cur_token) || !is_match(T_ELSE)){
+    if(!scanner_next_token() || !is_match(T_ELSE)){
         UPDATE_JUMP_LENGTH(chunk, offset);
         scanner_putback_token();
         return;
@@ -412,7 +398,7 @@ static void parse_while(struct bytecode_chunk* chunk){
 static void parse_for(struct bytecode_chunk* chunk){
     begin_cycle(chunk);
     next_expect(T_LPAR, "Expected '('\n");
-    if(!scanner_next_token(&cur_token))
+    if(!scanner_next_token())
         compile_error_printf("Expected expression\n");
 
     switch(cur_token.type){
@@ -426,7 +412,7 @@ static void parse_for(struct bytecode_chunk* chunk){
 
     cur_expect(T_SEMI, "Expected ';'\n");
 
-    if(!scanner_next_token(&cur_token))
+    if(!scanner_next_token())
         compile_error_printf("Expected expression\n");
 
     int loop_start = bcchunk_get_codesize(chunk);
@@ -446,7 +432,7 @@ static void parse_for(struct bytecode_chunk* chunk){
 
     cur_expect(T_SEMI, "Expected ';'\n");
 
-    if(!scanner_next_token(&cur_token))
+    if(!scanner_next_token())
         compile_error_printf("Expected expression\n");
     
     int postexpr_line = line_counter;
@@ -460,7 +446,7 @@ static void parse_for(struct bytecode_chunk* chunk){
 
     cur_expect(T_RPAR, "Expected ')'\n");
 
-    if(!scanner_next_token(&cur_token))
+    if(!scanner_next_token())
         compile_error_printf("Expected '{' or ';'\n");
     if(is_match(T_LBRACE))
         read_block(chunk);
@@ -488,7 +474,7 @@ static void parse_func(struct bytecode_chunk* chunk){
     p->base.argc = count_func_args();
     cur_expect(T_RPAR, "Expected ')'\n");
 
-    scanner_next_token(&cur_token);
+    scanner_next_token();
     if(is_match(T_LBRACE)){
         parse_func_definition(chunk, p);
     }else{
@@ -500,16 +486,16 @@ static void parse_func(struct bytecode_chunk* chunk){
 
 static int count_func_args(){
     int c = 0;
-    scanner_next_token(&cur_token);
+    scanner_next_token();
     if(!is_match(T_RPAR)){
         do{
             cur_expect(T_IDENT, "Expected identifier\n");
             declare_argument(cur_token.data.ptr);
             c++;
-            scanner_next_token(&cur_token);
+            scanner_next_token();
             if(!is_match(T_COMMA))
                 break;
-            scanner_next_token(&cur_token);
+            scanner_next_token();
         }while(1);
     }
     return c;
@@ -526,7 +512,7 @@ static struct ast_call_arg* parse_func_args(){
             args = temp;
             if(!is_match(T_COMMA))
                 break;
-            scanner_next_token(&cur_token);
+            scanner_next_token();
         }while(1);
     }
     return args;
@@ -570,7 +556,7 @@ static void parse_func_declaration(obj_function_t* func){
 }
 
 static ast_node* ast_call(obj_id_t* id){
-    scanner_next_token(&cur_token);
+    scanner_next_token();
     /*value_t instance;
     
     if(!symtable_get(id, &instance) || IS_NONE(instance)){
@@ -587,7 +573,7 @@ static ast_node* ast_call(obj_id_t* id){
 }
 
 static void parse_return(struct bytecode_chunk* chunk){
-    scanner_next_token(&cur_token);
+    scanner_next_token();
     if(is_match(T_SEMI)){
         bcchunk_write_simple_op(chunk, OP_NONE, line_counter);
     }else{
@@ -608,8 +594,9 @@ static void parse_class_declaration(struct bytecode_chunk* chunk){
         compile_error_printf("'%s' is already defined\n", cl->name->str);
     symtable_set(cl->name, VALUE_OBJ(cl));
     
+    parse_class_parents(cl);
     scope_set_class(cl);
-    next_expect(T_LBRACE, "Expected '{'\n");
+    cur_expect(T_LBRACE, "Expected '{'\n");
     parse_class_inners(chunk, cl);
     cur_expect(T_RBRACE, "Expected '}'\n");
     add_def_constructor(chunk, cl);
@@ -639,7 +626,7 @@ static void parse_constructor(struct bytecode_chunk* chunk){
 
 static void parse_class_inners(struct bytecode_chunk* chunk, obj_class_t* cl){
     while(1){
-        scanner_next_token(&cur_token);
+        scanner_next_token();
         switch(cur_token.type){
             case T_FIELD: 
                 parse_class_field(cl);
@@ -668,6 +655,14 @@ static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk){
     begin_scope();
     int argc = count_func_args();
     cur_expect(T_RPAR, "Expected ')'\n");
+
+    bool is_override;
+    if(scanner_next_token() && is_match(T_OVERRIDE)){
+        is_override = true;
+    }else{
+        is_override = false;
+        scanner_putback_token();
+    }
     next_expect(T_LBRACE, "Expected '{'\n");
 
     p->entry_offset = bcchunk_get_codesize(chunk);
@@ -675,7 +670,7 @@ static void parse_class_meth(obj_class_t* cl, struct bytecode_chunk* chunk){
     bcchunk_write_simple_op(chunk, OP_GET_LOCAL, line_counter);
     bcchunk_write_value(chunk, VALUE_NUMBER(-3 - argc), line_counter);//caller
     scope_add_instance_data(chunk, argc);
-    if(!table_set(cl->methods,p->base.name,VALUE_OBJ(p)))
+    if(!table_set(cl->methods,p->base.name,VALUE_OBJ(p)) && !is_override)
         compile_error_printf("Method '%s' already exists\n", p->base.name->str);
 
     read_block(chunk);
@@ -707,6 +702,17 @@ static void add_def_constructor(struct bytecode_chunk* chunk, obj_class_t* cl){
 static void function_return_stub(struct bytecode_chunk* chunk){
     bcchunk_write_simple_op(chunk, OP_NONE, line_counter);
     bcchunk_write_simple_op(chunk, OP_RETURN, line_counter); // in case if user doesn't write 'return' implicitly
+}
+
+static void parse_class_parents(obj_class_t* cl){
+    if(scanner_next_token() && !is_match(T_COLON))
+        return;
+
+    do{
+        next_expect(T_IDENT, "Expected identifier\n");
+        add_ancestor(cl, cur_token.data.ptr);
+        scanner_next_token();
+    }while(is_match(T_COMMA));
 }
 
 #undef UPDATE_JUMP_LENGTH

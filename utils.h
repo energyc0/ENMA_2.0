@@ -28,7 +28,7 @@ static inline void cur_expect(token_type expect, const char* err_msg){
 }
 
 static inline void next_expect(token_type expect, const char* err_msg){
-    if(!scanner_next_token(&cur_token) || !is_match(expect))
+    if(!scanner_next_token() || !is_match(expect))
         compile_error_printf(err_msg);
 }
 

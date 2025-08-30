@@ -134,7 +134,7 @@ void scanner_putback_token(){
     is_putback = 1;
 }
 
-int scanner_next_token(struct token* t){
+int scanner_next_token(){
     if(is_putback){
         is_putback = 0;
         return 1;
@@ -144,19 +144,19 @@ int scanner_next_token(struct token* t){
     switch (c) {
         case '+':{
             if((c = _get()) == '+'){
-                t->type = T_INCR;
+                cur_token.type = T_INCR;
             }else{
                 _putback(c);
-                t->type = T_ADD;
+                cur_token.type = T_ADD;
             }
             break;
         }
         case '-':{ 
             if((c = _get()) == '-'){
-                t->type = T_DECR;
+                cur_token.type = T_DECR;
             }else{
                 _putback(c);
-                t->type = T_SUB;
+                cur_token.type = T_SUB;
             }
             break;
         }
@@ -164,60 +164,61 @@ int scanner_next_token(struct token* t){
             //it is a commentary 
             if((c = _get()) == '/'){
                 _skip_until('\n');
-                return scanner_next_token(t);
+                return scanner_next_token();
             }else{
                 _putback(c);
-                t->type = T_DIV; break;
+                cur_token.type = T_DIV; break;
             }
         }
         case '#':{
             _skip_until('\n');
-            return scanner_next_token(t);
+            return scanner_next_token();
         }
-        case '*': t->type = T_MUL; break;
+        case '*': cur_token.type = T_MUL; break;
         case '=':{
             if((c = _get()) == '='){
-                t->type = T_EQUAL;
+                cur_token.type = T_EQUAL;
             }else{
-                t->type = T_ASSIGN;
+                cur_token.type = T_ASSIGN;
                 _putback(c);
             }
             break;
         }
         case '>':{
             if((c = _get()) == '='){
-                t->type = T_EGREATER;
+                cur_token.type = T_EGREATER;
             }else{
-                t->type = T_GREATER;
+                cur_token.type = T_GREATER;
                 _putback(c);
             }
             break;
         }
         case '<':{
             if((c = _get()) == '='){
-                t->type = T_ELESS;
+                cur_token.type = T_ELESS;
             }else{
-                t->type = T_LESS;
+                cur_token.type = T_LESS;
                 _putback(c);
             }
             break;
         }
-        case '.': t->type = T_DOT; break;
-        case '(': t->type = T_LPAR; break;
-        case ')': t->type = T_RPAR; break;
-        case ';': t->type = T_SEMI; break;
-        case '{': t->type = T_LBRACE; break;
-        case '}': t->type = T_RBRACE; break;
-        case ',': t->type = T_COMMA; break;
+        case ':': cur_token.type = T_COLON; break;
+        case '.': cur_token.type = T_DOT; break;
+        case '(': cur_token.type = T_LPAR; break;
+        case ')': cur_token.type = T_RPAR; break;
+        case ';': cur_token.type = T_SEMI; break;
+        case '{': cur_token.type = T_LBRACE; break;
+        case '}': cur_token.type = T_RBRACE; break;
+        case ',': cur_token.type = T_COMMA; break;
         case '!':{
             if(_get() != '='){
                 compile_error_printf("Undefined character '!'\n");
             }
-            t->type = T_NEQUAL;
+            cur_token.type = T_NEQUAL;
             break;
         }
         case '\"':{
-            t->type = T_STRING;
+            cur_token.type = T_STRING;
             size_t sz;
             char* str = _readstring(&sz);
             if(_get() != '\"')
@@ -228,24 +229,24 @@ int scanner_next_token(struct token* t){
                 k = mk_objstring(str, sz, hash);
                 stringtable_set(k);
             }
-            t->data.ptr = k;
+            cur_token.data.ptr = k;
             break;
         }
-        case EOF: t->type = T_EOF; return 0;
+        case EOF: cur_token.type = T_EOF; return 0;
         default:{
             if(isdigit(c)){
-                t->type = T_INT;
-                t->data.num = _readint(c);
+                cur_token.type = T_INT;
+                cur_token.data.num = _readint(c);
             }else if(isalpha(c)){
                 size_t len;
                 char* word = _readword(c, &len);
-                t->type = symtable_procword(word);
-                if(t->type == T_IDENT){
+                cur_token.type = symtable_procword(word);
+                if(cur_token.type == T_IDENT){
                     int32_t hash = hash_string(word, len);
-                    t->data.ptr = symtable_findstr(word, len, hash);
-                    if(t->data.ptr == NULL){
-                        t->data.ptr = mk_objid(word, len, hash);
-                        symtable_set(t->data.ptr, VALUE_NONE);
+                    cur_token.data.ptr = symtable_findstr(word, len, hash);
+                    if(cur_token.data.ptr == NULL){
+                        cur_token.data.ptr = mk_objid(word, len, hash);
+                        symtable_set(cur_token.data.ptr, VALUE_NONE);
                     }
                 }
                 break;
@@ -260,7 +261,7 @@ int scanner_next_token(struct token* t){
 
 void scanner_debug_tokens(){
     printf("Debug tokens:\n");
-    while (scanner_next_token(&cur_token)) {
+    while (scanner_next_token()) {
         switch (cur_token.type) {
             case T_INT: printf("'%d' ", cur_token.data.num); break;
             case T_ADD: printf("'+' "); break;
@@ -304,6 +305,8 @@ void scanner_debug_tokens(){
             case T_FIELD: printf("'field' ");break;
             case T_METH: printf("'meth' "); break;
             case T_THIS: printf("'this' "); break;
+            case T_COLON: printf("':' "); break;
+            case T_OVERRIDE: printf("'override' "); break;
             default:
                 fatal_printf("Undefined token in scanner_debug_tokens()!\n");
         }

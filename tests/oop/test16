@@ -1,0 +1,26 @@
+class A{
+    meth a(){
+        return "a";
+    } 
+}
+
+class B{
+    meth b(){
+        return "b";
+    }
+}
+
+class C{
+    meth c(){
+        return "c";
+    }
+}
+
+class ABC : A, B, C{
+
+}
+
+func main(){
+    var a = ABC();
+    println(a.a() + a.b() + a.c());
+}

@@ -34,7 +34,7 @@ void symtable_init(){
     tr_add(keywords, "class", T_CLASS);
     tr_add(keywords, "field", T_FIELD);
     tr_add(keywords, "meth", T_METH);
-   // tr_add(keywords, "this", T_THIS);
+    tr_add(keywords, "override", T_OVERRIDE);
 
     table_init(&symtable);
     table_init(&stringtable);

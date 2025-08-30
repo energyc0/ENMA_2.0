@@ -1,0 +1,11 @@
+func F(){
+
+}
+
+class A : F{
+
+}
+
+func main(){
+    println("Bad.");
+}

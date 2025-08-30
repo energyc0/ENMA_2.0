@@ -148,6 +148,7 @@ bool is_value_same_type(const value_t a, const value_t b);
 
 void set_constructor(obj_class_t* cl, obj_function_t* f);
 obj_function_t* find_constructor(obj_class_t* cl, int argc);
+void add_ancestor(obj_class_t* cl, obj_id_t* id);
 
 #ifdef DEBUG
 const char* get_value_name(value_type type);

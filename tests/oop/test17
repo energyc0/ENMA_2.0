@@ -1,0 +1,15 @@
+class A{
+    meth method(){
+        println("a");
+    }
+}
+
+class B : A{
+    meth method(){
+        println("b");
+    }
+}
+
+func main(){
+    B().method();
+}

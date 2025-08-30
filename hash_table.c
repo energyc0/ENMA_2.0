@@ -128,6 +128,16 @@ static void table_grow(struct hash_table*t){
     free(entries);
 }
 
+void table_insert(struct hash_table* dst, const struct hash_table* src){
+    size_t inserted = 0;
+    for(size_t i = 0; inserted < src->count; i++){
+        if(src->entries[i].key != NULL){
+            inserted++;
+            table_set(dst, src->entries[i].key, src->entries[i].value);
+        }
+    }
+}
+
 #ifdef DEBUG
 void table_debug(const struct hash_table* t){
     printf("%lu entries:\n", t->count);

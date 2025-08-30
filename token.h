@@ -46,11 +46,13 @@ typedef enum{
     T_FIELD,
     T_METH,
     T_THIS,
+    T_OVERRIDE,
     //other
     T_SEMI,
     T_COMMA,
     T_LBRACE, // '{'
     T_RBRACE, // '}'
+    T_COLON,
     T_EOF,
 } token_type; 
 

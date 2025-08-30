@@ -7,6 +7,18 @@
 #include "symtable.h"
 #include "hash_table.h"
 
+static bool add_entries(struct hash_table* dst, const struct hash_table* src){
+    size_t inserted = 0;
+    for(size_t i = 0; inserted < src->count; i++){
+        if(src->entries[i].key != NULL){
+            inserted++;
+            if(!table_set(dst, src->entries[i].key, src->entries[i].value))
+                return false;
+        }
+    }
+    return true;
+}
+
 static inline obj_string_t* init_objstr(const char* s, size_t len, int32_t hash, obj_type type){
     obj_string_t* ptr = emalloc(sizeof(obj_string_t));
 
@@ -52,6 +64,7 @@ obj_natfunction_t* mk_objnatfunc(obj_string_t* name, native_function impl){
     ptr->base.obj.next = NULL;
     ptr->base.obj.type = OBJ_NATFUNCTION;
     ptr->base.obj.is_marked = false;
+    gc_add((obj_t*)ptr);
     return ptr;
 }
 
@@ -67,6 +80,7 @@ obj_class_t* mk_objclass(obj_id_t* name){
     ptr->obj.type = OBJ_CLASS;
     for(int i = 0;i < CONSTRUCTORS_LIMIT; i++)
         ptr->constructors[i] = NULL;
+    gc_add((obj_t*)ptr);
     return ptr;
 }
 
@@ -98,6 +112,7 @@ obj_string_t* objstring_conc(value_t a, value_t b){
     
     return ptr;
 }
+
 void obj_free(obj_t* ptr){
     switch (ptr->type) {
         case OBJ_STRING: case OBJ_IDENTIFIER:
@@ -107,7 +122,9 @@ void obj_free(obj_t* ptr){
             break;
         case OBJ_CLASS:
             table_free(((obj_class_t*)ptr)->fields);
+            free(((obj_class_t*)ptr)->fields);
             table_free(((obj_class_t*)ptr)->methods);
+            free(((obj_class_t*)ptr)->methods);
             break;
         case OBJ_INSTANCE:
             free(((obj_instance_t*)ptr)->data);
@@ -148,6 +165,18 @@ obj_function_t* find_constructor(obj_class_t* cl, int argc){
         if(cl->constructors[i]->base.argc == argc)
             return cl->constructors[i];
     return NULL;
+}
+
+void add_ancestor(obj_class_t* cl, obj_id_t* id){
+    value_t val;
+    if(!symtable_get(id, &val) || !IS_OBJCLASS(val))
+        compile_error_printf("'%s' is not class\n", id->str);
+    if(!add_entries(cl->methods, AS_OBJCLASS(val)->methods))
+        compile_error_printf("'%s' class has multiple entries of the same methods\n",
+        cl->name->str);
+    if(!add_entries(cl->fields, AS_OBJCLASS(val)->fields))
+        compile_error_printf("'%s' class, has multiple entries of the same fields\n",
+    cl->name->str);
 }
 
 #ifdef DEBUG
