@@ -1,0 +1,18 @@
+class A{
+    field val1;
+    field val2;
+
+    meth init(a,b){
+        val1 = a;
+        val2 = b;
+    }
+
+    A(a,b){
+        init(a,b);
+    }
+}
+
+func main(){
+    var a = A("Hello", "World");
+    println(a.val1,a.val2);
+}

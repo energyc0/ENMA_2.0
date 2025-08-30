@@ -1,0 +1,15 @@
+class A{
+    field val;
+}
+
+class B{
+    field val;
+}
+
+class C : A, B{
+
+}
+
+func main(){
+    println("Bad.");
+}

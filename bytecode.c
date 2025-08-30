@@ -26,6 +26,13 @@ static int bcchunk_parse_call_args(struct ast_call_arg* p, struct bytecode_chunk
 static void bcchunk_clear_args(struct bytecode_chunk* chunk, int argc, int line);
 static value_t extract_callable(struct ast_call_info* info);
 static void bcchunk_write_constructor(obj_class_t* cl, int argc, struct bytecode_chunk* chunk, int line);
+static void bcchunk_write_method(struct bytecode_chunk*chunk, obj_id_t* id, int argc, int line){
+        bcchunk_write_simple_op(chunk, OP_NUMBER, line);
+        bcchunk_write_value(chunk, VALUE_NUMBER(argc), line);
+        bcchunk_write_simple_op(chunk, OP_METHOD, line);
+        bcchunk_write_value(chunk, VALUE_OBJ(id), line);
+        bcchunk_clear_args(chunk, argc + 1, line);
+}
 
 #ifdef DEBUG
 static inline void print_instruction_debug(const char* name, const struct bytecode_chunk* chunk, size_t offset);
@@ -287,11 +294,7 @@ static void bcchunk_parse_property(const ast_node* node, bool is_final,struct by
             if(IS_OBJCLASS(val)){
                 bcchunk_write_constructor(AS_OBJCLASS(val), argc, chunk, line);
             }else {
-                bcchunk_write_simple_op(chunk, OP_NUMBER, line);
-                bcchunk_write_value(chunk, VALUE_NUMBER(argc), line);
-                bcchunk_write_simple_op(chunk, OP_METHOD, line);
-                bcchunk_write_value(chunk, VALUE_OBJ(info->id), line);
-                bcchunk_clear_args(chunk, argc + 1, line);
+                bcchunk_write_method(chunk, info->id, argc,line);
             }
             break;
         }
@@ -356,7 +359,7 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
         case AST_ASSIGN:{
             struct ast_binary* temp = ((struct ast_binary*)node->data.ptr);
             parse_ast_bin_expr(temp->right, chunk, line);
-            if(temp->left->type == AST_IDENT){
+            if(temp->left->type == AST_IDENT && AS_OBJIDENTIFIER(temp->left->data.val) != scope_get_this()){
                 write_set_var(chunk, AS_OBJIDENTIFIER(temp->left->data.val), line);
             }else if(temp->left->type == AST_PROPERTY){
                 temp = temp->left->data.ptr;
@@ -404,8 +407,16 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
             break;
         case AST_CALL:{
             struct ast_call_info* info = node->data.ptr;
-            int argc = bcchunk_parse_call_args(info->args, chunk, line);
             value_t val = extract_callable(info);
+            if(IS_OBJIDENTIFIER(val)){
+                if(scope_get_class() != NULL){
+                    bcchunk_write_simple_op(chunk,OP_GET_LOCAL,line);
+                    bcchunk_write_value(chunk, VALUE_NUMBER(0), line);
+                }else{
+                    compile_error_printf("Undefined identifier '%s'\n", AS_OBJIDENTIFIER(val)->str);
+                }
+            }
+            int argc = bcchunk_parse_call_args(info->args, chunk, line);
             op_t op;
             switch(AS_OBJ(val)->type){
                 case OBJ_FUNCTION:{
@@ -423,6 +434,10 @@ static void parse_ast_bin_expr(const ast_node* node, struct bytecode_chunk* chun
                     break;
                 case OBJ_CLASS:{
                     bcchunk_write_constructor(AS_OBJCLASS(val),argc, chunk, line);
+                    return;
+                }
+                case OBJ_IDENTIFIER:{
+                    bcchunk_write_method(chunk, AS_OBJIDENTIFIER(val), argc, line);
                     return;
                 }
                 default:
@@ -456,8 +471,12 @@ static int bcchunk_parse_call_args(struct ast_call_arg* p, struct bytecode_chunk
 
 static value_t extract_callable(struct ast_call_info* info){
     value_t val;
-    if(!symtable_get(info->id, &val) || IS_NONE(val))
-        compile_error_printf("'%s' is not defined\n", info->id->str);
+    if(!symtable_get(info->id, &val) || IS_NONE(val)){
+        if(scope_get_class() == NULL)
+            compile_error_printf("'%s' is not defined\n", info->id->str);
+        else
+            val = VALUE_OBJ(info->id);
+    }
     if(!IS_OBJ(val))
         compile_error_printf("'%s' is not callable\n", info->id->str);
     return val;

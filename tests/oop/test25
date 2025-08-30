@@ -1,0 +1,9 @@
+class A{
+    meth method(){
+        this = 123;
+    }
+}
+
+func main(){
+    println("Bad.");
+}

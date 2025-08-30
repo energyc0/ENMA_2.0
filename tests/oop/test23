@@ -1,0 +1,17 @@
+class A{
+    field a;
+}
+
+class B : A{
+    field b;
+
+    B(a_, b_){
+        a = a_;
+        b = b_;
+    }
+}
+
+func main(){
+    var val = B(1,2);
+    println(val.a, val.b);
+}
