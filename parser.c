@@ -684,7 +684,7 @@ static void parse_class_field(obj_class_t* cl){
     if(cur_token.data.ptr == scope_get_this())
         compile_error_printf("Cannot use 'this' as field of class\n");
     if(!table_set(cl->fields, cur_token.data.ptr, VALUE_NUMBER(cl->fields->count)))
-        compile_error_printf("Field '%s' already presents in class '%s'\n", cur_token.data.ptr, cl->name->str);;
+        compile_error_printf("Field '%s' already presents in class '%s'\n", ((obj_id_t*)(cur_token.data.ptr))->str, cl->name->str);;
     next_expect(T_SEMI, "Expected ';'\n");
 }
 

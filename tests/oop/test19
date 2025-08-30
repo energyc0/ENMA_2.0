@@ -1,0 +1,11 @@
+class A{
+    field someval;
+}
+
+class B : A{
+    field someval;
+}
+
+func main(){
+    println("Bad.");
+}

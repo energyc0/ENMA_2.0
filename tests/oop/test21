@@ -1,0 +1,23 @@
+class A{
+    field a;
+}
+
+class B{
+    field b;
+}
+
+class C{
+    field c;
+}
+
+class ABC : A, B, C{
+
+}
+
+func main(){
+    var a = ABC();
+    a.a = 1;
+    a.b = 2;
+    a.c = 3;
+    println(a.a + a.b + a.c);
+}

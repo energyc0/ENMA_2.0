@@ -7,16 +7,30 @@
 #include "symtable.h"
 #include "hash_table.h"
 
-static bool add_entries(struct hash_table* dst, const struct hash_table* src){
+static void add_entries(struct obj_class_t* dst_cl, const struct obj_class_t* src_cl){
+    struct hash_table* dst = dst_cl->methods;
+    struct hash_table* src = src_cl->methods;
     size_t inserted = 0;
     for(size_t i = 0; inserted < src->count; i++){
         if(src->entries[i].key != NULL){
             inserted++;
             if(!table_set(dst, src->entries[i].key, src->entries[i].value))
-                return false;
+                compile_error_printf("'%s' class has multiple entries of '%s' method\n",
+        dst_cl->name->str, src->entries[i].key->str);
         }
     }
-    return true;
+
+    inserted = 0; 
+    src = src_cl->fields;
+    dst = dst_cl->fields;  
+    for(size_t i = 0; inserted < src->count; i++){
+        if(src->entries[i].key != NULL){
+            inserted++;
+            if(!table_set(dst, src->entries[i].key, VALUE_NUMBER(dst->count)))
+                compile_error_printf("'%s' class has multiple entries of '%s' field\n",
+        dst_cl->name->str, src->entries[i].key->str);
+        }
+    }
 }
 
 static inline obj_string_t* init_objstr(const char* s, size_t len, int32_t hash, obj_type type){
@@ -171,12 +185,7 @@ void add_ancestor(obj_class_t* cl, obj_id_t* id){
     value_t val;
     if(!symtable_get(id, &val) || !IS_OBJCLASS(val))
         compile_error_printf("'%s' is not class\n", id->str);
-    if(!add_entries(cl->methods, AS_OBJCLASS(val)->methods))
-        compile_error_printf("'%s' class has multiple entries of the same methods\n",
-        cl->name->str);
-    if(!add_entries(cl->fields, AS_OBJCLASS(val)->fields))
-        compile_error_printf("'%s' class, has multiple entries of the same fields\n",
-    cl->name->str);
+    add_entries(cl, AS_OBJCLASS(val));
 }
 
 #ifdef DEBUG

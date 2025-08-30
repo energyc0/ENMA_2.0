@@ -1,0 +1,13 @@
+class A{
+    field someval;
+}
+
+class B : A{
+
+}
+
+func main(){
+    var b = B();
+    b.someval = 123;
+    println(b.someval);
+}
