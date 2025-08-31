@@ -165,6 +165,9 @@ int scanner_next_token(){
             if((c = _get()) == '/'){
                 _skip_until('\n');
                 return scanner_next_token();
+            }else if(c == '*'){
+                while(!((c = _get()) == '*' && (c = _get()) == '/'));
+                return scanner_next_token();
             }else{
                 _putback(c);
                 cur_token.type = T_DIV; break;
@@ -224,12 +227,7 @@ int scanner_next_token(){
             if(_get() != '\"')
                 compile_error_printf("Unclosed '\"'\n");
             int32_t hash = hash_string(str, sz);
-            obj_string_t* k = stringtable_findstr(str, sz, hash);
-            if(k == NULL){
-                k = mk_objstring(str, sz, hash);
-                stringtable_set(k);
-            }
-            cur_token.data.ptr = k;
+            cur_token.data.ptr = stringtable_findstr(str, sz, hash);
             break;
         }
         case EOF: cur_token.type = T_EOF; return 0;
@@ -244,10 +242,6 @@ int scanner_next_token(){
                 if(cur_token.type == T_IDENT){
                     int32_t hash = hash_string(word, len);
                     cur_token.data.ptr = symtable_findstr(word, len, hash);
-                    if(cur_token.data.ptr == NULL){
-                        cur_token.data.ptr = mk_objid(word, len, hash);
-                        symtable_set(cur_token.data.ptr, VALUE_NONE);
-                    }
                 }
                 break;
             }else{

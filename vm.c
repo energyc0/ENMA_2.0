@@ -188,8 +188,8 @@ static vm_execute_result interpret(){
             case OP_SET_LOCAL:{
                 int idx = extract_value(read_constant()).number;
                 value_t val = stack_pop();
-                if(!is_value_same_type(val, vm.bp[idx]))
-                    interpret_error_printf(get_vm_codeline(), "Incorrect assignment type\n");
+                //if(!is_value_same_type(val, vm.bp[idx]))
+                //    interpret_error_printf(get_vm_codeline(), "Incorrect assignment type\n");
                 vm.bp[idx] = val;
                 stack_push(vm.bp[idx]);
                 break;
@@ -495,15 +495,15 @@ static value_t get_variable_value(obj_id_t* id){
 static void set_variable_value(obj_id_t* id, value_t value){
     int idx = resolve_local(id);
     if(idx != -1){
-        if(!is_value_same_type(value, vm.bp[idx]))
-            interpret_error_printf(get_vm_codeline(), "Incorrect assignment type for '%s'\n", id->str);
+        //if(!is_value_same_type(value, vm.bp[idx]))
+        //    interpret_error_printf(get_vm_codeline(), "Incorrect assignment type for '%s'\n", id->str);
         vm.bp[idx] = value;
     }else {
         value_t var_val;
         if(!symtable_get(id, &var_val) || var_val.type == VT_NONE)  
             interpret_error_printf(get_vm_codeline(), "Undefined identifier %s\n", id->str);
-        if(!is_value_same_type(var_val, value))
-            interpret_error_printf(get_vm_codeline(), "Incorrect assignment type for '%s'\n", id->str);
+        //if(!is_value_same_type(var_val, value))
+        //    interpret_error_printf(get_vm_codeline(), "Incorrect assignment type for '%s'\n", id->str);
         symtable_set(id, value);
     }
 }

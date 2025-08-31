@@ -46,8 +46,10 @@ void symtable_init(){
     natfunc_set("isstr", native_isstr);
     natfunc_set("isbool", native_isbool);
     natfunc_set("isinst", native_isinst);
+    natfunc_set("isnone", native_isnone);
+    natfunc_set("isuninit", native_isuninit);
     natfunc_set("exit", native_exit);
-
+    natfunc_set("getchar", native_getchar); 
 }
 
 void symtable_cleanup(){
@@ -66,10 +68,20 @@ token_type symtable_procword(char* str){
 }
 
 obj_id_t* symtable_findstr(const char* s, size_t sz, int32_t hash){
-    return table_find_string(&symtable, s, sz, hash);
+    obj_string_t* k = table_find_string(&symtable, s, sz, hash);
+    if(k == NULL){
+        k = mk_objid(s, sz, hash);
+        symtable_set(k, VALUE_NONE);
+    }
+    return k;
 }
 obj_string_t* stringtable_findstr(const char* s, size_t sz, int32_t hash){
-    return table_find_string(&stringtable, s, sz, hash);
+    obj_string_t* k = table_find_string(&stringtable, s, sz, hash);
+    if(k == NULL){
+        k = mk_objstring(s, sz, hash);
+        stringtable_set(k);
+    }
+    return k;
 }
 
 bool symtable_set(obj_id_t* id, value_t val){

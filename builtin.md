@@ -1,3 +1,9 @@
  - **print()** - takes any argument count and prints all the arguments without separators.
  - **println()** - the same as **print()** but prints newline in the end.
  - **clock()** - takes 0 arguments, returns time in seconds (just clock() / CLOCKS_PER_SEC in C). 
+ - **isnum()** - takes 1 argument. Return true if value is a number.
+ - **isstr()** - takes 1 argument. Return true if value is a string.
+ - **isbool()** - takes 1 argument. Return true if value is a boolean.
+ - **isinst()** - takes 1 argument. Return true if value is an instance.
+ - **exit()** - takes 1 number argument. Terminate the program execution with the given code.
+ - **getchar()** - takes 0 arguments. Returns string consisting of 1 characted or **none** value if found EOF in stdin.

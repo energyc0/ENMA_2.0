@@ -1,7 +1,10 @@
 #include "native_functions.h"
 #include "lang_types.h"
+#include "symtable.h"
 #include "utils.h"
 #include "vm.h"
+#include "hash_table.h"
+#include <stdint.h>
 #include <time.h>
 
 #define UNUSED(x) ((void)(x))
@@ -82,6 +85,19 @@ value_t native_isinst(int argc, value_t* argv){
     return VALUE_BOOLEAN(IS_OBJINSTANCE(argv[0]));
 }
 
+value_t native_isnone(int argc, value_t* argv){
+    if(argc != 1)
+        interpret_error_printf(get_vm_codeline(),
+     "Expected 1 argument in 'isnone' function call, found %d\n", argc);
+    return VALUE_BOOLEAN(IS_NONE(argv[0]));
+}
+value_t native_isuninit(int argc, value_t* argv){
+    if(argc != 1)
+        interpret_error_printf(get_vm_codeline(),
+     "Expected 1 argument in 'isuninit' function call, found %d\n", argc);
+    return VALUE_BOOLEAN(IS_UNINIT(argv[0]));
+}
+
 value_t native_exit(int argc, value_t* argv){
     if(argc != 1)
         interpret_error_printf(get_vm_codeline(),
@@ -91,4 +107,17 @@ value_t native_exit(int argc, value_t* argv){
     is_done = 1;
     return_code = AS_NUMBER(argv[0]);
     return VALUE_NONE;
+}
+
+value_t native_getchar(int argc, value_t* argv){
+    UNUSED(argv);
+    if(argc!= 0)
+        interpret_error_printf(get_vm_codeline(),
+     "Expected 0 arguments in 'getchar' function call, found %d\n", argc);
+    int ch = getchar();
+    if(ch == EOF)
+        return VALUE_NONE;
+    int32_t hash = hash_string((char*)&ch,1);
+    obj_string_t* retval = stringtable_findstr((char*)&ch, 1, hash);
+    return VALUE_OBJ(retval);
 }

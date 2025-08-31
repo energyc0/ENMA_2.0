@@ -11,6 +11,9 @@ value_t native_isnum(int argc, value_t* argv);
 value_t native_isstr(int argc, value_t* argv);
 value_t native_isbool(int argc, value_t* argv);
 value_t native_isinst(int argc, value_t* argv);
+value_t native_isnone(int argc, value_t* argv);
+value_t native_isuninit(int argc, value_t* argv);
 
 value_t native_exit(int argc, value_t* argv);
+value_t native_getchar(int argc, value_t* argv);
 #endif 

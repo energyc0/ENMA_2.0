@@ -4,6 +4,8 @@ func check_type(a){
 	println("isstr(): ",isstr(a));
 	println("isbool(): ",isbool(a));
 	println("isinst(): ",isinst(a));
+	println("isuninit(): ",isuninit(a));
+	println("isnone(): ",isnone(a));
 }
 
 class A{}

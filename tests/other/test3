@@ -1,0 +1,9 @@
+func exit_func(code){
+	exit(code);
+}
+
+func main(){
+	println("Start.");
+	exit_func("bad");
+	println("End.");
+}

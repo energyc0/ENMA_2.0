@@ -1,0 +1,10 @@
+func main(){
+	println("Start.");
+/*
+	var c = "";
+	while(not isnone(c = getchar())){
+		print(c);	
+	}
+*/
+	println("End.");
+}
