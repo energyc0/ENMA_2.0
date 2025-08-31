@@ -42,6 +42,10 @@ void symtable_init(){
     natfunc_set("clock", native_clock);
     natfunc_set("print", native_print);
     natfunc_set("println", native_println);
+    natfunc_set("isnum", native_isnum);
+    natfunc_set("isstr", native_isstr);
+    natfunc_set("isbool", native_isbool);
+    natfunc_set("isinst", native_isinst);
 }
 
 void symtable_cleanup(){

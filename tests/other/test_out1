@@ -1,0 +1,20 @@
+value: [1]
+isnum(): true
+isstr(): false
+isbool(): false
+isinst(): false
+value: [true]
+isnum(): false
+isstr(): false
+isbool(): true
+isinst(): false
+value: [somestr]
+isnum(): false
+isstr(): true
+isbool(): false
+isinst(): false
+value: [Instance of class A]
+isnum(): false
+isstr(): false
+isbool(): false
+isinst(): true

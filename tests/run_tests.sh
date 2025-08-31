@@ -4,7 +4,7 @@ cd ${CUR_DIR}
 make -C .. clean
 make -C ..
 
-EXECUTABLE=../build/release/result
+EXECUTABLE=../build/release/enma
 TESTNAME=test
 
 RED='\033[0;31m'

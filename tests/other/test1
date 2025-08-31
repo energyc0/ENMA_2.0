@@ -1,0 +1,16 @@
+func check_type(a){
+	println("value: [",a, "]");
+	println("isnum(): ",isnum(a));
+	println("isstr(): ",isstr(a));
+	println("isbool(): ",isbool(a));
+	println("isinst(): ",isinst(a));
+}
+
+class A{}
+
+func main(){
+    check_type(1);
+	check_type(true);
+	check_type("somestr");
+	check_type(A());
+}

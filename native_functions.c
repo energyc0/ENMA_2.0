@@ -52,3 +52,29 @@ value_t native_println(int argc, value_t* argv){
     putchar('\n');
     return VALUE_NONE;
 }
+
+
+value_t native_isnum(int argc, value_t* argv){
+    if(argc != 1)
+        interpret_error_printf(get_vm_codeline(),
+     "Expected 1 argument in 'isnum' function call, found %d\n", argc);
+    return VALUE_BOOLEAN(IS_NUMBER(argv[0]));
+}
+value_t native_isstr(int argc, value_t* argv){
+    if(argc != 1)
+        interpret_error_printf(get_vm_codeline(),
+    "Expected 1 argument in 'isstr' function call, found %d\n", argc);
+    return VALUE_BOOLEAN(IS_OBJSTRING(argv[0]));
+}
+value_t native_isbool(int argc, value_t* argv){
+    if(argc != 1)
+        interpret_error_printf(get_vm_codeline(),
+     "Expected 1 argument in 'isbool' function call, found %d\n", argc);
+    return VALUE_BOOLEAN(IS_BOOLEAN(argv[0]));
+}
+value_t native_isinst(int argc, value_t* argv){
+    if(argc != 1)
+        interpret_error_printf(get_vm_codeline(),
+     "Expected 1 argument in 'isinst' function call, found %d\n", argc);
+    return VALUE_BOOLEAN(IS_OBJINSTANCE(argv[0]));
+}
