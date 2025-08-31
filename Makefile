@@ -1,5 +1,5 @@
 BUILD_DIR := build
-INTERPRETER := result
+INTERPRETER := enma
 EXE_DIR := $(BUILD_DIR)/release
 
 CC:=gcc

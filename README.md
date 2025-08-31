@@ -33,6 +33,26 @@ Firstly, it translates user-written code into bytecode for virtual machine. Then
 ## Built-in function
 You can see the list of built-in function in **builtin.md**
 
+## How to build
+```bash
+make
+```
+which will create **enma** executable in **build/release/**.
+```bash
+make debug
+```
+which will create **enma.dbg** executable in **build/debug/**.
+```bash
+make clean
+```
+which will just delete **debug/** directory.
+
+## How to use
+```bash
+enma [enma source file]
+```
+it just takes one argument and interprets the code.
+
 ## Program example
 ```c++
 class Dog{

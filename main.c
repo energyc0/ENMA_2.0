@@ -12,7 +12,12 @@
 int main(int argc, char** argv){
     if(argc != 2)
         user_error_printf("Usage: %s [input file]\n", argv[0]);
-    
+    if(strcmp("--help", argv[1]) == 0 ||
+        strcmp("-help", argv[1]) == 0 || 
+        strcmp("-h", argv[1]) == 0){
+        printf("Usage: %s [input file]\n", argv[0]);
+        return 0;
+    }
 
     FILE* fp = fopen(argv[1], "r");
     if(fp == NULL)
