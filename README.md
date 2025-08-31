@@ -138,3 +138,4 @@ Oliver has eaten sandwich. Yammy!
 ## TODO list
 - Add more builtin functions and functions to check value type
 - Bytecode optimization
+- Add more options
