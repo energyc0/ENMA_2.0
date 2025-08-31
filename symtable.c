@@ -46,6 +46,8 @@ void symtable_init(){
     natfunc_set("isstr", native_isstr);
     natfunc_set("isbool", native_isbool);
     natfunc_set("isinst", native_isinst);
+    natfunc_set("exit", native_exit);
+
 }
 
 void symtable_cleanup(){

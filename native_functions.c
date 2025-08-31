@@ -6,6 +6,9 @@
 
 #define UNUSED(x) ((void)(x))
 
+extern int is_done;
+extern int return_code;
+
 value_t native_clock(int argc, value_t* argv){
     UNUSED(argv);
     if(argc != 0)
@@ -77,4 +80,15 @@ value_t native_isinst(int argc, value_t* argv){
         interpret_error_printf(get_vm_codeline(),
      "Expected 1 argument in 'isinst' function call, found %d\n", argc);
     return VALUE_BOOLEAN(IS_OBJINSTANCE(argv[0]));
+}
+
+value_t native_exit(int argc, value_t* argv){
+    if(argc != 1)
+        interpret_error_printf(get_vm_codeline(),
+     "Expected 1 argument in 'exit' function call, found %d\n",argc);
+    if(!IS_NUMBER(argv[0]))
+        interpret_error_printf(get_vm_codeline(), "Expected number as argument in 'exit' function call\n");
+    is_done = 1;
+    return_code = AS_NUMBER(argv[0]);
+    return VALUE_NONE;
 }

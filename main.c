@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <stdio.h>
 
+extern int return_code;
+
 int main(int argc, char** argv){
     if(argc != 2)
         user_error_printf("Usage: %s [input file]\n", argv[0]);
@@ -39,6 +41,5 @@ int main(int argc, char** argv){
     gc_cleanup();
     
     fclose(fp);
-    return 0;
-
+    return return_code;
 }

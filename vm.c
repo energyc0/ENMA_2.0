@@ -11,6 +11,8 @@
 #include <string.h>
 
 struct virtual_machine vm;
+int is_done = 0;
+int return_code = 0;
 
 #define VM_STACK_START (vm.stack)
 #define VM_STACK_END (VM_STACK_START + sizeof(vm.stack) / sizeof(vm.stack[0]))
@@ -110,7 +112,6 @@ static void vm_free(){}
 
 static vm_execute_result interpret(){
     value_t val;
-    int is_done = 0;
     while (!is_done) {
         byte_t instruction = read_byte();
 

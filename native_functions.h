@@ -12,4 +12,5 @@ value_t native_isstr(int argc, value_t* argv);
 value_t native_isbool(int argc, value_t* argv);
 value_t native_isinst(int argc, value_t* argv);
 
+value_t native_exit(int argc, value_t* argv);
 #endif 
