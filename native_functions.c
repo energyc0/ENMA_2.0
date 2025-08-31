@@ -29,7 +29,7 @@ value_t native_print(int argc, value_t* argv){
     for(;--argc >= 0;){
         value_t val = argv[argc];
         if(IS_NUMBER(val)){
-            natprint("%d", AS_NUMBER(val));
+            natprint("%g", AS_NUMBER(val));
         }else if(IS_BOOLEAN(val)){
             natprint("%s", AS_BOOLEAN(val) ? "true" : "false");
         }else if(IS_OBJ(val)){

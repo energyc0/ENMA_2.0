@@ -18,7 +18,7 @@ typedef enum{
 
 union _inner_value_t{
     bool boolean;
-    int number;
+    double number;
     obj_t* obj;
 };
 

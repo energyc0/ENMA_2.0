@@ -108,7 +108,7 @@ static void ast_debug_node(const ast_node* node){
     }while(0)
 
     switch (node->type) {
-        case AST_NUMBER: printf("%d", AS_NUMBER(node->data.val)); break;
+        case AST_NUMBER: printf("%g", AS_NUMBER(node->data.val)); break;
         case AST_BOOLEAN: printf("%s", AS_BOOLEAN(node->data.val) ? "true" : "false"); break;
         case AST_STRING: printf("\"%s\"", AS_OBJSTRING(node->data.val)->str); break;
         case AST_IDENT: printf("%s", AS_OBJIDENTIFIER(node->data.val)->str); break; 

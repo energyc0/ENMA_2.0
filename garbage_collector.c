@@ -96,7 +96,7 @@ static void mark_stack(){
         mark_stack_frame(start, end - start);
         end = start - 2;
         if(start > vm.stack)
-            start = &vm.stack[AS_NUMBER(start[-1])];
+            start = &vm.stack[(int)AS_NUMBER(start[-1])];
         else
             break;
     }while(true);

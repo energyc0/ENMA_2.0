@@ -128,7 +128,7 @@ static vm_execute_result interpret(){
                     value_t ret_val = stack_pop();
                     epilogue();
                     value_t ret_ip = stack_pop();
-                    vm.ip = &vm.code->_code.data[AS_NUMBER(ret_ip)];
+                    vm.ip = &vm.code->_code.data[(int)AS_NUMBER(ret_ip)];
                     stack_push(ret_val);
                 }
                 break;
@@ -209,9 +209,17 @@ static vm_execute_result interpret(){
             case OP_SUB: 
                 CALC_NUMERICAL_OP(VALUE_NUMBER,-);
                 break;
-            case OP_DIV: 
-                CALC_NUMERICAL_OP(VALUE_NUMBER,/);
+            case OP_DIV: {
+                value_t b = stack_pop();
+                value_t a = stack_pop();
+                if(!IS_NUMBER(a) || !IS_NUMBER(b)) 
+                    interpret_error_printf(get_vm_codeline(),
+                     "Incompatible type for operation. All operands must be numbers!\n");
+                     if(AS_NUMBER(b) == 0)
+                        interpret_error_printf(get_vm_codeline(), "Division by zero\n");
+                stack_push(VALUE_NUMBER(AS_NUMBER(a) / AS_NUMBER(b))); 
                 break;
+            }
             case OP_MUL: 
                 CALC_NUMERICAL_OP(VALUE_NUMBER,*);
                 break; 
@@ -520,7 +528,7 @@ static void epilogue(){
     if(!IS_NUMBER(val))
         fatal_printf("Stack smashed! Expected BP offset.\n");
 #endif          
-    vm.bp = &vm.stack[AS_NUMBER(val)];
+    vm.bp = &vm.stack[(int)AS_NUMBER(val)];
 }
 
 static void perform_call(obj_function_t* p){

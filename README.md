@@ -137,4 +137,3 @@ Oliver has eaten sandwich. Yammy!
 
 ## TODO list
 - Bytecode optimization
-- Add more options
