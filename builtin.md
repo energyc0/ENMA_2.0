@@ -1,0 +1,3 @@
+ - **print()** - takes any argument count and prints all the arguments without separators.
+ - **println()** - the same as **print()** but prints newline in the end.
+ - **clock()** - takes 0 arguments, returns time in seconds (just clock() / CLOCKS_PER_SEC in C). 

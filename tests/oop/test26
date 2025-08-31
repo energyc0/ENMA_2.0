@@ -1,0 +1,63 @@
+class Dog{
+  field name;
+  field age;
+
+  Dog(name_, age_){
+    name = name_;
+    age = age_;
+  }
+
+  meth sound(){
+    println("Bark!");
+  }
+
+  meth getname(){
+    return name;
+  }
+
+  meth getage(){
+    return age;
+  }
+
+  meth eat(food){
+    println(name, " has eaten ", food, ". Yammy!");
+  }
+}
+
+func main();
+func sum(a,b);
+func foo();
+
+var global_var = 0;
+
+func main(){
+  for(var i = 0; i < 5; i++){
+    foo();
+  }
+
+  println(sum(1+2, 5 - 6/3));
+  println("Hello" + ", " + "world!");
+
+  var a = 11;
+  if(a > 10){
+    println("a is greater than 10");
+  }else{
+    println("a is not greater than 10");
+  }
+
+  println(a > 10);
+
+
+  var mydog = Dog("Oliver", 5);
+  println("Dog's name is ", mydog.getname(), ". It is ", mydog.getage(), " years old.");
+  mydog.sound();
+  mydog.eat("sandwich");
+}
+
+func foo(){
+  println(++global_var);
+}
+
+func sum(a,b){
+  return a + b;
+}

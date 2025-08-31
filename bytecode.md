@@ -34,3 +34,6 @@
  - **OP_PREFINCR_LOCAL** - constant operation. Constant value is an index for bp. Pushes data on the stack and then increments it.
  - **OP_PREFDECR_GLOBAL** - constant operation. Constant value is an index in _data section for an obj_id_t* instance. Pushes data on the stack and then decrements it.
  - **OP_PREFDECR_LOCAL** - constant operation. Constant value is an index for bp. Pushes data on the stack and then decrements it.
+ - **OP_GET_FIELD** - constant operation. Pops instance value and pushes its field value no the stack.
+ - **OP_SET_FIELD** - constant operation. Pops instance value, assigns value to its field and pushes it on the stack.
+ - **OP_METHOD** - constant operation. Pops argument count, gets instance by vm.bp[-1 - argc] and performs method call.
