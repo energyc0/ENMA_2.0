@@ -1,0 +1,9 @@
+class A{
+    field val;
+}
+
+var a = A();
+
+func main(){
+    println(a);
+}

@@ -9,20 +9,22 @@
 <declaration> ::= <function_declaration>
 | <function_definition>
 | <variable_declaration>
+| <class_declaration>
 
 <variable_declaration> ::= "var" <variable> "=" <expression> ";"
 
-<function_declaration> ::= "func" <identifier> "(" <arglist> ")" ";"
+<function_declaration> ::= "func" <identifier> "(" <arglist>? ")" ";"
 
-<function_definition> ::= "func" <identifier> "(" <arglist> ")" <code_block>
+<function_definition> ::= "func" <identifier> "(" <arglist>? ")" <code_block>
+
+<class_declaration> ::= "class" <identifier> (":" <classlist>)? <class_block>
 ```
 ## Statements
 
 ```
-<statements> ::= <statement> (<statement>)*
+<statements> ::= <statement> <statement>*
 
-<statement> ::= <print_statement>
-| <if_statement>
+<statement> ::= <if_statement>
 | <for_statement>
 | <while_statement> 
 | <break_statement>
@@ -30,9 +32,8 @@
 | <return_statement>
 | <variable_declaration>
 | <code_block>
+| <class_block>
 | <expression_statement>
-
-<print_statement> ::= "print" <expression> ";" 
 
 <if_statement> ::= "if" "(" <logical_expression> ")" <code_block>
 
@@ -49,6 +50,16 @@
 <code_block> ::= "{" <statements>? "}"
 
 <expression_statement> ::= <expression> ";"
+
+<class_block> ::= "{" <class_statements>? "}"
+
+<class_statements> ::= <class_statement> <class_statement>*
+
+<class_statement> ::= <method_definition> | <field_declaration>
+
+<method_definition> ::= "meth" <identifier> "(" <arglist>? ")" <code_block>
+
+<field_declaration> ::= "field" <identifier> ";"
 ```
 
 ## Expressions
@@ -58,6 +69,7 @@
 | <string_expression>
 | <assignment_expression>
 | <function_call>
+| <get_property>
 | "(" <expression> ")"
 
 <numerical_expression> ::= (<variable> | <number>) (<numerical_op> <numerical_expression>)?
@@ -68,13 +80,25 @@
 
 <assignment_expression> ::= <variable> "=" <expression>
 
-<function_call> ::= <identifier> "(" <arglist> ")"
+<function_call> ::= <identifier> "(" <arglist>? ")"
+
+<get_property> ::= <instance> "." (<get_property> | <property>)
+
+<property> ::= <variable> | <function_call>
+
+<instance> ::= <variable> | <constructor>
+
+<constructor> ::= <class_name> "(" <arglist>? ")"
 
 <variable> ::= <identifier>
 ```
 ## Lexical grammar
 ```
 <arglist> ::= <identifier> ("," <identifier>)*
+
+<classlist> ::= <class_name> ("," <class_name>)*
+
+<class_name> ::= <identifier>
 
 <string_op> ::= "+"
 
@@ -98,5 +122,5 @@
 
 <digit> ::= [0-9]
 
-<alpha> ::= [a-z] | [A-Z]```
+<alpha> ::= [a-z] | [A-Z]
 ```

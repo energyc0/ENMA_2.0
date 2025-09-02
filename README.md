@@ -134,6 +134,3 @@ Dog's name is Oliver. It is 5 years old.
 Bark!
 Oliver has eaten sandwich. Yammy!
 ```
-
-## TODO list
-- Bytecode optimization

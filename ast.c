@@ -309,6 +309,8 @@ value_t ast_eval(ast_node* root){
             POST_OP(--);
         case AST_PREFDECR:
             PREF_OP(--);
+        case AST_CALL:
+            compile_error_printf("Global variables must have constant value\n");
         default:
             fatal_printf("Undefined ast_type in ast_eval()!\nast_type = %d\n", root->type);
     }
